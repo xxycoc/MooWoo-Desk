@@ -1,0 +1,37 @@
+"""Deterministic strategy thresholds; freeze this file with the trading config."""
+
+GATES = {
+    "marketCap": 5_000_000_000,
+    "floatShares": 50_000_000,
+    "floatRatio": 0.5,
+    "avgDollarVolume": 50_000_000,
+    "lastClose": 5,
+}
+US_EXCHANGES = ("NYQ", "NMS", "NGM", "NCM", "ASE", "PCX", "BTS")
+STOCK_QUOTE_TYPE = "EQUITY"
+ADR_NAME_TERMS = ("depositary", "depository", " adr", " ads")
+CORE_ETFS = ("USMV", "XLP", "XLV", "IEF", "GLD")
+ATR_PERIOD = 14
+EMA_PERIOD = 20
+VOLUME_PERIOD = 20
+MOVE_PERIOD = 20
+STD_DDOF = 1
+MOVE_MIN_Z = 2
+RVOL_CAP = 3
+PICK_COUNT = 15
+EARNINGS_SESSIONS = 2
+SWING_WINDOW = 20
+SWING_RADIUS = 2
+GAP_WINDOW = 60
+LEVEL_SESSIONS = 3
+LEVEL_ATR_DISTANCE = 1
+HAMMER_LOWER_BODY = 2
+HAMMER_UPPER_BODY = 1
+HAMMER_CLOSE_FRACTION = 2 / 3
+MOMENTUM_BODY_FRACTION = 0.7
+MOMENTUM_ATR_RANGE = 1.5
+VOLUME_MULTIPLIER = 1.5
+HISTORY_CALENDAR_DAYS = 180
+DATA_ATTEMPTS = 2
+DATA_TIMEOUT_SECONDS = 20
+EARNINGS_HISTORY_LIMIT = 12

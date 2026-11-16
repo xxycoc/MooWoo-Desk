@@ -9,3 +9,4 @@ ledger/*.sqlite
 *.egg-info/
 build/
 dist/
+.cache/
