@@ -35,6 +35,8 @@ def test_exact_market_tracker_is_zero_despite_raw_shock():
                   earnings={}, mode='raw')['picked'] == ['A']
     assert screen({'passing': ['A']}, stock.index[-1], bars={'A': stock, 'SPY': spy},
                   earnings={}, mode='abnormal')['picked'] == []
+    assert screen({'passing': ['A']}, stock.index[-1], bars={'A': stock, 'SPY': spy},
+                  earnings={})['picked'] == []
 
 
 def test_ols_parameters_exclude_signal_day_and_match_prior_fit():

@@ -73,7 +73,8 @@ absolute z, preserving its sign; ties choose the close return. `movePct` is that
 selected move in percentage points. Insufficient history and zero denominators
 produce unavailable indicators and a recorded screen skip, never infinity.
 
-`MOVE_MODE` defaults to `"raw"`, preserving that behavior. `"abnormal"` uses
+`MOVE_MODE` defaults to `"abnormal"`, the FIT-selected history-check mode. `"raw"`
+remains available explicitly for diagnostics. `"abnormal"` uses
 `abnormal_move_z(df, spy_df, n=60)`: OLS beta with an intercept and residual
 standard error (n minus 2 degrees of freedom) fitted to prior close returns,
 excluding the signal session. Both the close move and overnight gap subtract

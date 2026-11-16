@@ -41,3 +41,26 @@ SQLite is a disposable projection; JSONL is the source of truth.
 
 See [the event contract](docs/event-contract.md) for schemas, examples, integrity
 limits, and the single-writer requirement. Only `SIMULATE` is accepted.
+
+## Preregistered configuration
+
+All strategy defaults are data in `moowoo/config.py`. The 17 Nov setup adopts the
+FIT-selected abnormal-move thresholds. See `PREREGISTRATION.md` for the planned
+live experiment, allocation, risk rules and verdicts. These settings are not proof
+that a portfolio executor or broker risk enforcement has been implemented.
+
+After committing the code, freeze its defaults and source provenance with:
+
+```powershell
+.venv/Scripts/python scripts/freeze_config.py --date 2026-11-17
+```
+
+The default inputs are `config/universe-2026-11-16.json` and
+`config/history-check-2026-11-16.json`. The output is `config/frozen-<date>.json`.
+`--universe`, `--history-check` and `--out` override those paths. The passing-list
+hash and FIT recommendations are checked before writing. No network calls occur.
+`configHash` covers the canonical JSON of the full payload except itself, including
+the source commit SHA. Repeating at the same commit with unchanged inputs gives
+identical bytes and hash. Commit the freeze and preregistration after the code
+commit; the embedded SHA identifies the code, not its later artifact commit.
+Prompts remain `pending` until a dated pre-order addendum freezes their hash.

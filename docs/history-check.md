@@ -19,7 +19,7 @@ Each cell: trades / mean net return / mean excess over SPY [95% interval]. Inter
 | follow-all | 3078 / 0.47% / 0.16% [-0.04%, 0.35%] | 1801 / 0.25% / 0.22% [-0.08%, 0.51%] |
 | fade-all | 3138 / 0.08% / -0.02% [-0.16%, 0.11%] | 1802 / 0.11% / 0.06% [-0.15%, 0.26%] |
 
-FIT-selected parameters: `{"MOVE_MODE": "abnormal", "K_drift": 3, "R_drift": 2, "K_bounce": 2}`. Live defaults were not changed.
+FIT-selected parameters: `{"MOVE_MODE": "abnormal", "K_drift": 3, "R_drift": 2, "K_bounce": 2}`. These were adopted as live defaults in the 17 Nov preregistration; they were not changed during the history-check run.
 The holdout edge is weak or absent: positive excess is not established by its interval. These parameters are a FIT selection, not evidence of reliable profit.
 
 | Setup score | FIT | HOLDOUT |

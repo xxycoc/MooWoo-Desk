@@ -59,13 +59,13 @@ def test_screen_no_lookahead_ranking_and_event(tmp_path):
     frame = bars()
     asof = frame.index[-2]
     frame.loc[asof, "open"] = frame.close.iloc[-3] * 1.03
-    original = screen({"passing": ["A"]}, asof, bars={"A": frame}, earnings={})
+    original = screen({"passing": ["A"]}, asof, bars={"A": frame}, earnings={}, mode="raw")
     frame.iloc[-1] = [10000, 10001, 9999, 10000, 1e12]
-    assert screen({"passing": ["A"]}, asof, bars={"A": frame}, earnings={}) == original
+    assert screen({"passing": ["A"]}, asof, bars={"A": frame}, earnings={}, mode="raw") == original
     strong = frame.copy()
     strong.loc[asof, "open"] *= 1.2
     result = screen({"passing": ["A", "B"]}, asof, bars={"A": strong, "B": frame},
-                    earnings={"B": [str(asof.date())], "A": [str(frame.index[-1].date())]})
+                    earnings={"B": [str(asof.date())], "A": [str(frame.index[-1].date())]}, mode="raw")
     assert result["picked"] == ["B", "A"]
     assert result["candidates"][0]["earnings"]
     log = tmp_path / "screen.jsonl"
@@ -210,7 +210,7 @@ def test_top15_stale_prices_and_hash():
     frame.iloc[-1, frame.columns.get_loc("open")] *= 1.1
     tickers = [f"T{i:02}" for i in range(20)]
     result = screen({"passing": tickers}, frame.index[-1],
-                    bars={t: frame for t in tickers}, earnings={})
+                    bars={t: frame for t in tickers}, earnings={}, mode="raw")
     assert result["picked"] == tickers[:15]
     stale = screen({"passing": ["A"]}, frame.index[-1], bars={"A": frame.iloc[:-1]}, earnings={})
     assert stale["skipped"]["A"] == "no bar on asof session"
