@@ -73,6 +73,25 @@ absolute z, preserving its sign; ties choose the close return. `movePct` is that
 selected move in percentage points. Insufficient history and zero denominators
 produce unavailable indicators and a recorded screen skip, never infinity.
 
+`MOVE_MODE` defaults to `"raw"`, preserving that behavior. `"abnormal"` uses
+`abnormal_move_z(df, spy_df, n=60)`: OLS beta with an intercept and residual
+standard error (n minus 2 degrees of freedom) fitted to prior close returns,
+excluding the signal session. Both the close move and overnight gap subtract
+beta times SPY's corresponding move; they share that residual denominator.
+The fitted intercept is not subtracted from today's move. An exact tracker with
+a zero current residual scores zero; zero historical residual risk with a new
+nonzero residual is unavailable. SPY is fetched automatically in abnormal mode,
+or supplied in the injected bars mapping. Ranking and picking are unchanged.
+
+`scripts/history_check.py` replays this same screen for both modes and writes the
+fixed FIT/HOLDOUT experiment to `config/history-check-2026-11-16.json` and
+`docs/history-check.md`. Run with `.venv/Scripts/python scripts/history_check.py`.
+Price data uses the existing cache; historical earnings requests use limit 80 and
+their own `.cache/history` snapshots, without changing live earnings defaults.
+The compressed trade ledger records every simulated strategy/stop combination;
+RVOL 2 variants filter the shared drift pool. This is a price-only study with
+earnings proxies, not a historical test of news classification or portfolio NAV.
+
 The screen slices supplied bars through the as-of date, then asserts the cutoff.
 A ticker without a bar exactly on that date is skipped rather than screening an
 old move. Candidates require `abs(z) >= 2` (`MOVE_MIN_Z`). Rank earnings movers

@@ -45,3 +45,40 @@ def move_z(df, n=C.MOVE_PERIOD):
     kind = max(moves, key=lambda k: abs(moves[k]))
     return dict(z=float(moves[kind] / sigma), movePct=float(moves[kind] * 100),
                 kind=kind, sigma=float(sigma))
+
+
+def abnormal_move_z(df, spy_df, n=C.ABNORMAL_MOVE_PERIOD):
+    """OLS with intercept on prior n close returns; apply beta to close and gap.
+
+    The requested abnormal move does not subtract the fitted intercept. Residual
+    standard error uses n-2 degrees of freedom. An exact tracker has z=0 when
+    today's residual is also zero; a new residual with zero historical risk is
+    unavailable, rather than infinite.
+    """
+    missing = dict(z=np.nan, movePct=np.nan, kind=None, sigma=np.nan, beta=np.nan)
+    if len(df) < n + 2 or spy_df.empty:
+        return missing
+    market = spy_df.reindex(df.index)
+    x = market.close.pct_change(fill_method=None).iloc[-n-1:-1].to_numpy()
+    y = df.close.pct_change(fill_method=None).iloc[-n-1:-1].to_numpy()
+    if n <= 2 or not np.isfinite(x).all() or not np.isfinite(y).all():
+        return missing
+    centered = x - x.mean()
+    denominator = centered @ centered
+    if denominator <= 0:
+        return missing
+    beta = float(centered @ (y-y.mean()) / denominator)
+    residual = y - (y.mean()-beta*x.mean()) - beta*x
+    sigma = float(np.sqrt(residual @ residual / (n-2)))
+    previous, spy_previous = df.close.iloc[-2], market.close.iloc[-2]
+    moves = {kind: float(df[column].iloc[-1]/previous - 1
+                        - beta*(market[column].iloc[-1]/spy_previous - 1))
+             for kind, column in (("close", "close"), ("gap", "open"))}
+    if not all(np.isfinite(v) for v in moves.values()):
+        return missing
+    kind = max(moves, key=lambda k: abs(moves[k]))
+    if sigma < 1e-12:
+        z = 0.0 if abs(moves[kind]) < 1e-12 else np.nan
+    else:
+        z = moves[kind]/sigma
+    return dict(z=float(z), movePct=moves[kind]*100, kind=kind, sigma=sigma, beta=beta)

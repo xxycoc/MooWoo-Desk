@@ -8,7 +8,7 @@ import pandas as pd
 from . import config as C
 from .data import get_daily_bars, get_earnings_dates, session_index
 from .events import canonical_bytes
-from .indicators import move_z, rvol
+from .indicators import abnormal_move_z, move_z, rvol
 
 
 def through_asof(df, asof):
@@ -21,7 +21,7 @@ def through_asof(df, asof):
     return frame
 
 
-def screen(universe, asof, *, bars=None, earnings=None):
+def screen(universe, asof, *, bars=None, earnings=None, mode=None):
     """Inject bars and earnings mappings for offline use. Future rows are removed.
 
     Requires the latest bar to equal asof; no stale bar is treated as today's move.
@@ -29,13 +29,18 @@ def screen(universe, asof, *, bars=None, earnings=None):
     disclosed in metadata; it is not a point-in-time universe backtest.
     """
     tickers = universe["passing"]
+    mode = C.MOVE_MODE if mode is None else mode
+    if mode not in ("raw", "abnormal"):
+        raise ValueError("MOVE_MODE must be raw or abnormal")
     if "passingSha256" in universe:
         digest = hashlib.sha256(canonical_bytes(tickers)).hexdigest()
         if digest != universe["passingSha256"]:
             raise ValueError("universe passing-list hash mismatch")
     date = pd.Timestamp(asof).normalize()
     if bars is None:
-        bars = get_daily_bars(tickers, date - pd.Timedelta(days=C.HISTORY_CALENDAR_DAYS), date)
+        bars = get_daily_bars(list(dict.fromkeys(tickers + (["SPY"] if mode == "abnormal" else []))),
+                              date - pd.Timedelta(days=C.HISTORY_CALENDAR_DAYS), date)
+    spy = through_asof(bars.get("SPY", pd.DataFrame()), date)
     candidates, skipped, earnings_errors = [], {}, {}
     for ticker in tickers:
         if ticker not in bars:
@@ -45,7 +50,8 @@ def screen(universe, asof, *, bars=None, earnings=None):
         if df.empty or df.index[-1] != date:
             skipped[ticker] = "no bar on asof session"
             continue
-        move, relative_volume = move_z(df), rvol(df)
+        move = abnormal_move_z(df, spy) if mode == "abnormal" else move_z(df)
+        relative_volume = rvol(df)
         if not math.isfinite(move["z"]) or not math.isfinite(relative_volume):
             skipped[ticker] = "insufficient valid history or zero denominator"
             continue
@@ -62,7 +68,7 @@ def screen(universe, asof, *, bars=None, earnings=None):
                                      -abs(row["z"]) * min(row["rvol"], C.RVOL_CAP), row["ticker"]))
     return dict(candidates=candidates, picked=[r["ticker"] for r in candidates[:C.PICK_COUNT]],
                 asof=str(date.date()), universeDate=universe.get("date"),
-                source="yfinance", skipped=skipped, earningsErrors=earnings_errors)
+                source="yfinance", moveMode=mode, skipped=skipped, earningsErrors=earnings_errors)
 
 
 def format_table(result):
