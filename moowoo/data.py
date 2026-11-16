@@ -32,10 +32,19 @@ def session_index(index):
     return index.tz_localize(None).normalize()
 
 
+def _normalize_bars(frame):
+    """Keep provider and JSON-cache frames identical across pandas versions."""
+    frame = frame[COLUMNS].astype("float64").copy()
+    frame.index = pd.DatetimeIndex(session_index(frame.index).as_unit("ns"), name="date")
+    frame = frame.sort_index()
+    frame.index.freq = None
+    return frame
+
+
 def _empty(reason):
     frame = pd.DataFrame(columns=COLUMNS, index=pd.DatetimeIndex([]), dtype=float)
     frame.attrs.update(source="yfinance", unavailable=reason)
-    return frame
+    return _normalize_bars(frame)
 
 
 def get_daily_bars(tickers, start, end):
@@ -52,7 +61,7 @@ def get_daily_bars(tickers, start, end):
                 cached = json.loads(path.read_text(encoding="utf-8"))
                 frame = pd.read_json(StringIO(cached["bars"]), orient="table")
                 frame.attrs.update(cached["metadata"])
-                output[ticker] = frame
+                output[ticker] = _normalize_bars(frame)
                 continue
             except (ValueError, KeyError, OSError):
                 pass  # A damaged cache is recoverable from the original source.
@@ -68,7 +77,7 @@ def get_daily_bars(tickers, start, end):
                 frame = frame[COLUMNS].copy()
                 frame.index = session_index(frame.index)
                 frame = frame.loc[(frame.index >= start) & (frame.index <= end)].sort_index()
-                frame = frame[~frame.index.duplicated(keep="last")]
+                frame = _normalize_bars(frame[~frame.index.duplicated(keep="last")])
                 if frame.empty:
                     raise ValueError("no bars returned")
                 frame.attrs.update(source="yfinance", unavailable=None,
