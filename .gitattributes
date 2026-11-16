@@ -1,0 +1,2 @@
+# Hash-chain fixtures must retain their canonical LF bytes on Windows.
+*.jsonl text eol=lf
