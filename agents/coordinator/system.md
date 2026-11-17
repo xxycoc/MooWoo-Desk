@@ -83,7 +83,9 @@ day or outside regular hours), stop; do not wait under the lease.
    with validated primary ratings using this run's decision IDs, `quotes.json`
    with aware `now`, sessionDate and timestamped quotes, `bars.json` with completed
    daily bars including benchmarks, and `session.json` containing `barsAsOf` for
-   the last completed session before this trading session. Preserve transcripts
+   the last completed session before this trading session. Take barsAsOf and
+   session hours from `python3 scripts/session_info.py` (the frozen calendar);
+   never research the exchange calendar. Preserve transcripts
    and second opinions separately; never include second opinions in ratings.json.
 3. Run `python3 scripts/run_session.py --kind morning --phase plan`, then
    `python3 scripts/run_session.py --kind morning --phase prepare`, checking
@@ -134,7 +136,8 @@ entries; this kind invokes only the deterministic exit watcher.
    the stop conditions after each command. Watch also requires preflight.
    Before plan, write fresh `quotes.json` with aware `now`, sessionDate and
    timestamped quotes, `bars.json` with completed daily bars and benchmarks,
-   and `session.json` with `barsAsOf` before the current trading session.
+   and `session.json` with `barsAsOf` before the current trading session, taken
+   from `python3 scripts/session_info.py`; never research the exchange calendar.
    Do not write ratings.json for watch.
 3. Run `python3 scripts/run_session.py --kind watch --phase plan`, then
    `python3 scripts/run_session.py --kind watch --phase prepare`, checking

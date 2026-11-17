@@ -246,3 +246,15 @@ Written on 17 November 2026 at about 23:00 Singapore, still before any order in 
   verified UTC time when it delegates; the executor no longer halts only because it cannot read a
   clock. The runner still enforces the lease (`require_owned`) and ticket freshness in code.
   Classes, sizing, risk limits, horizons, grading and hypotheses H1 to H3 are unchanged.
+## 11. Addendum 2026-11-17: barsAsOf comes from the frozen calendar
+
+Written on 17 November 2026 at about 23:10 Singapore, still before any order in the competition account.
+
+- promptVersion `9742d80fd83db2e36e9b7768e7f970dcf46fd363b113e67d2445f26027948397`, computed by `scripts/hash_prompts.py`. It replaces `7ee7873b...`.
+- Why: the second manual rerun passed preflight and reconciliation, then halted because the
+  coordinator tried to prove the previous session (Friday 14 November) from news searches; the
+  calendar listed only 17 to 27 November.
+- Change: `moowoo/calendar.py` records 14 November 2026 as a completed full session, and
+  `scripts/session_info.py` prints barsAsOf and session hours from the frozen calendar. The
+  coordinator uses it and does not research the exchange calendar. No rule, class, sizing,
+  risk limit, horizon, grading or hypothesis changes.

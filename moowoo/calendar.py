@@ -6,6 +6,8 @@ from zoneinfo import ZoneInfo
 NEW_YORK = ZoneInfo("America/New_York")
 FINAL_DAY = date(2026, 11, 27)
 TRADING_DAYS = frozenset(date(2026, 11, day) for day in (17, 18, 19, 20, 23, 24, 25, 27))
+# Fri 14 Nov 2026 was a full NYSE session; it supplies the first window day's completed bars.
+COMPLETED_BEFORE_WINDOW = frozenset({date(2026, 11, 14)})
 
 
 def local_time(now):
@@ -28,6 +30,15 @@ def session_date(value):
 
 def is_trading_day(day):
     return session_date(day) in TRADING_DAYS
+
+
+def previous_session(day):
+    """Last completed regular session before day, from the frozen calendar only."""
+    day = session_date(day)
+    earlier = [d for d in TRADING_DAYS | COMPLETED_BEFORE_WINDOW if d < day]
+    if not earlier:
+        raise ValueError("no known session before " + day.isoformat())
+    return max(earlier)
 
 
 def session_open(day):
