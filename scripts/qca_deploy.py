@@ -159,7 +159,9 @@ def build_payloads(settings=None, root=ROOT, *, executor_approval="ask"):
             "trigger_policy": {"type": "cron", "expression": expression, "timezone": timezone},
             "stop_at": "2026-11-28T06:00:00+08:00",
             "execution": {"session_mode": "new_session", "max_concurrent_runs": 1,
-                          "max_attempts": 1, "timeout_ms": 1800000},
+                          # Morning screens, debates and trades in one session; keep it
+                          # inside the 45-minute lease so a timeout never strands the lock.
+                          "max_attempts": 1, "timeout_ms": 2400000 if key == "morning" else 1500000},
             "sinks": [{"type": "im_channel", "channel_pairing_id": "${SLACK_CHANNEL_PAIRING_ID}"}]
                      if slack and settings.get("SLACK_CHANNEL_PAIRING_ID") else [],
             "metadata": {"window_start": "2026-11-17", "window_end": "2026-11-27",

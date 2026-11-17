@@ -43,7 +43,7 @@
           "session_mode": "new_session",
           "max_concurrent_runs": 1,
           "max_attempts": 1,
-          "timeout_ms": 1800000
+          "timeout_ms": 2400000
         },
         "sinks": [],
         "metadata": {
@@ -84,7 +84,7 @@
           "session_mode": "new_session",
           "max_concurrent_runs": 1,
           "max_attempts": 1,
-          "timeout_ms": 1800000
+          "timeout_ms": 1500000
         },
         "sinks": [],
         "metadata": {
@@ -125,7 +125,7 @@
           "session_mode": "new_session",
           "max_concurrent_runs": 1,
           "max_attempts": 1,
-          "timeout_ms": 1800000
+          "timeout_ms": 1500000
         },
         "sinks": [],
         "metadata": {
@@ -166,7 +166,7 @@
           "session_mode": "new_session",
           "max_concurrent_runs": 1,
           "max_attempts": 1,
-          "timeout_ms": 1800000
+          "timeout_ms": 1500000
         },
         "sinks": [],
         "metadata": {
@@ -207,7 +207,7 @@
           "session_mode": "new_session",
           "max_concurrent_runs": 1,
           "max_attempts": 1,
-          "timeout_ms": 1800000
+          "timeout_ms": 1500000
         },
         "sinks": [],
         "metadata": {
