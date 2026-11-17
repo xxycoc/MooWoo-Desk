@@ -6,8 +6,8 @@ from zoneinfo import ZoneInfo
 NEW_YORK = ZoneInfo("America/New_York")
 FINAL_DAY = date(2026, 11, 27)
 TRADING_DAYS = frozenset(date(2026, 11, day) for day in (17, 18, 19, 20, 23, 24, 25, 27))
-# Fri 14 Nov 2026 was a full NYSE session; it supplies the first window day's completed bars.
-COMPLETED_BEFORE_WINDOW = frozenset({date(2026, 11, 14)})
+# Mon 16 Nov 2026 was a full NYSE session; it supplies the first window day's completed bars.
+COMPLETED_BEFORE_WINDOW = frozenset({date(2026, 11, 16)})
 
 
 def local_time(now):
@@ -32,6 +32,11 @@ def is_trading_day(day):
     return session_date(day) in TRADING_DAYS
 
 
+def _known_session(day):
+    # Hours exist for completed pre-window sessions too (news cutoffs); runs stay window-only.
+    return is_trading_day(day) or session_date(day) in COMPLETED_BEFORE_WINDOW
+
+
 def previous_session(day):
     """Last completed regular session before day, from the frozen calendar only."""
     day = session_date(day)
@@ -43,12 +48,12 @@ def previous_session(day):
 
 def session_open(day):
     day = session_date(day)
-    return datetime.combine(day, time(9, 30), NEW_YORK) if is_trading_day(day) else None
+    return datetime.combine(day, time(9, 30), NEW_YORK) if _known_session(day) else None
 
 
 def session_close(day):
     day = session_date(day)
-    return datetime.combine(day, time(13 if day == FINAL_DAY else 16), NEW_YORK) if is_trading_day(day) else None
+    return datetime.combine(day, time(13 if day == FINAL_DAY else 16), NEW_YORK) if _known_session(day) else None
 
 
 def is_regular_hours(now):
@@ -58,7 +63,7 @@ def is_regular_hours(now):
 
 def minutes_since_open(now):
     now = local_time(now)
-    opened = session_open(now)
+    opened = session_open(now) if is_trading_day(now) else None
     return (now - opened).total_seconds() / 60 if opened else None
 
 
