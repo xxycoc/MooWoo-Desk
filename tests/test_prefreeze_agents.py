@@ -159,4 +159,3 @@ def test_debate_ingestion_cli(case, tmp_path):
     with pytest.raises(ValidationError, match="identity"):
         rating_to_event(rating(case, "manager"), brief["newsCutoff"], transcriptRef="stub", credits=0,
                         setupScore=0, quick_output=quick)
-

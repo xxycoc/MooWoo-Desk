@@ -198,4 +198,3 @@ def test_grade_score_cli_and_cached_bars(tmp_path):
     result = json.loads(destination.read_text())
     assert result["H1"]["count"] == 1 and result["H3"]["verdict"] == "met"
     assert result["H2"]["unavailable"] and result["seed"] == 20261117 and result["resamples"] == 2000
-

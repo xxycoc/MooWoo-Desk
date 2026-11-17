@@ -73,4 +73,3 @@ def test_cancel_order_id_mismatch_does_not_release(context):
         record({ticket.decisionId: ticket}, [receipt], log)
     assert not any(event.get("action") == "cancel" and event.get("accepted") for event in log.read())
     assert state.pendingTickets
-
