@@ -129,7 +129,7 @@ def _finite_nonnegative(value):
 
 
 def rating_to_event(obj, cutoff, *, transcriptRef, credits, setupScore, second_opinion=False,
-                    bull_output=None, bear_output=None, quick_output=None):
+                    bull_output=None, bear_output=None, quick_output=None, creditsMissingReason=None):
     """Return EventLog rating payload; pass decisionId separately to append.
 
     Runtime supplies actual transcript/credit data and code-computed setup score.
@@ -151,8 +151,12 @@ def rating_to_event(obj, cutoff, *, transcriptRef, credits, setupScore, second_o
                  and quick["tier"] == "quick", "second opinion identity or tier mismatch")
         rating["quickSecondOpinion"] = {key: quick[key] for key in ("class", "confidence")}
     _text(transcriptRef, "transcriptRef")
-    _require(_finite_nonnegative(credits),
-             "credits must be finite and nonnegative")
+    if credits is None:
+        _text(creditsMissingReason, "creditsMissingReason")
+        rating["creditsMissingReason"] = creditsMissingReason
+    else:
+        _require(_finite_nonnegative(credits), "credits must be finite and nonnegative")
+        _require(creditsMissingReason is None, "measured credits cannot have a missing reason")
     _require(type(setupScore) is int and 0 <= setupScore <= 5, "setupScore must be integer 0..5")
     _require(type(second_opinion) is bool, "second_opinion must be bool")
     rating.pop("decisionId")
@@ -162,7 +166,8 @@ def rating_to_event(obj, cutoff, *, transcriptRef, credits, setupScore, second_o
 
 
 def log_rating(log, obj, cutoff, *, decision_id, ticker, transcriptRef, credits, setupScore,
-               second_opinion=False, bull_output=None, bear_output=None, quick_output=None):
+               second_opinion=False, bull_output=None, bear_output=None, quick_output=None,
+               creditsMissingReason=None):
     """Single-writer ingestion: reject to a ticker halt with disposition=skip.
 
     Identity comes from the screened mover, never from untrusted model output.
@@ -172,7 +177,8 @@ def log_rating(log, obj, cutoff, *, decision_id, ticker, transcriptRef, credits,
     try:
         payload = rating_to_event(obj, cutoff, transcriptRef=transcriptRef, credits=credits,
                                   setupScore=setupScore, second_opinion=second_opinion,
-                                  bull_output=bull_output, bear_output=bear_output, quick_output=quick_output)
+                                  bull_output=bull_output, bear_output=bear_output,
+                                  creditsMissingReason=creditsMissingReason)
         _require(obj["decisionId"] == decision_id and obj["ticker"] == ticker,
                  "rating differs from screened decision")
     except ValidationError as exc:
@@ -182,4 +188,25 @@ def log_rating(log, obj, cutoff, *, decision_id, ticker, transcriptRef, credits,
                             "transcriptRef": transcriptRef if isinstance(transcriptRef, str) else ""},
                    decisionId=decision_id)
         return None
-    return log.append("rating", payload, decisionId=decision_id)
+    quick_payload = None
+    quick_error = None
+    if quick_output is not None:
+        try:
+            quick = parse_rating(quick_output) if isinstance(quick_output, str) else quick_output
+            quick_payload = rating_to_event(quick, cutoff, transcriptRef=transcriptRef,
+                credits=None, setupScore=setupScore, second_opinion=True,
+                creditsMissingReason="Separate quick credit usage was not supplied.")
+            _require(quick["decisionId"] == decision_id and quick["ticker"] == ticker
+                     and quick["tier"] == "quick", "second opinion identity or tier mismatch")
+            payload["quickSecondOpinion"] = {key: quick[key] for key in ("class", "confidence")}
+        except ValidationError as exc:
+            quick_payload = None
+            quick_error = str(exc)
+    event = log.append("rating", payload, decisionId=decision_id)
+    if quick_payload is not None:
+        log.append("rating", quick_payload, decisionId=decision_id)
+    elif quick_error:
+        log.append("halt", dict(ticker=ticker, scope="ticker", reason=quick_error,
+            disposition="skip", stage="rating_validation", secondOpinion=True,
+            transcriptRef=transcriptRef), decisionId=decision_id)
+    return event

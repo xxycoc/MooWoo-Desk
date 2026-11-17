@@ -133,6 +133,10 @@ def validate_event(event: dict) -> None:
         value = event[field]
         if kind == "outcome":
             continue
+        if kind == "rating" and field == "credits" and value is None:
+            _string(event.get("creditsMissingReason"), "creditsMissingReason")
+            _require(bool(event["creditsMissingReason"].strip()), "creditsMissingReason must be nonempty")
+            continue
         if field in number_fields:
             _number(value, field)
         elif field in list_fields:
@@ -159,6 +163,9 @@ def validate_event(event: dict) -> None:
     elif kind == "rating":
         from .rating_schema import validate_debate
         validate_debate(event)
+        if event["credits"] is not None:
+            _require(event["credits"] >= 0, "credits must be nonnegative")
+            _require(event.get("creditsMissingReason") is None, "measured credits cannot have a missing reason")
         _enum(event["class"], ("explained_up", "explained_down", "unexplained_up", "unexplained_down"), "class")
         _enum(event["tier"], ("debate", "quick"), "tier")
         _require(0 <= event["confidence"] <= 1, "confidence must be between 0 and 1")
