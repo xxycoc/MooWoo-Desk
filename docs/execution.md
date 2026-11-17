@@ -25,7 +25,8 @@ No synthetic fixture establishes compatibility with real order responses.
    cannot attribute simultaneous unreconciled fills from other run logs; they halt
    on that difference instead of treating it as cash or an unexplained holding.
    Give emitted cancel arguments to the executor for approval. Cancellation is
-   NOT assumed: collect new status/snapshots and reconcile again after cancelling.
+   NOT assumed: record a successful cancel receipt, collect fresh snapshots,
+   and reconcile again after cancelling.
 8. The independent auditor consumes the reconstructed books, verified JSONL and
    cancellation results, then writes its report. No report delivery is claimed here.
 
@@ -90,16 +91,17 @@ prepare output. Do not commit receipts because `args` contains the account ID.
 ```json
 [{"decisionId":"2026-11-17-us:AAA","attempt":1,
   "args":{"acc_id":"synthetic-paper-account","market":100,"symbol":"US.AAA",
-          "order_type":1,"order_side":1,"qty":50,"price":100,
-          "order_trade_time_type":0,"text":"2026-11-17-us:AAA"},
-  "status":"placed","response":{"order_id":"synthetic-order-1","status":"SUBMITTED"}}]
+          "order_type":1,"order_side":1,"qty":"50","price":"100.00",
+          "order_trade_time_type":1,"text":"2026-11-17-us:AAA"},
+  "status":"placed","response":{"ret_code":0,"ret_msg":"success","data":{"order_id":"3164623"}}}]
 ```
 
-The adapter includes `order_trade_time_type=0` explicitly. Confirm that enum's
-broker session semantics before real use; the known tool schema lists 0/1/2 but
-does not establish their meanings. All tickets remain limit orders. Every request
+The adapter sends `order_trade_time_type=1` (intraday only), as preregistered.
+The schema defines 0 as not set and 2 as including pre/after-hours.
+All tickets remain limit orders. Every request
 field, missing field or extra field is verified; mismatches halt immediately.
-Optional broker-echoed `args`, when supplied, must also match exactly.
+Qty and price compare numerically using Decimal; all other arguments compare
+exactly, including type. Optional broker-echoed `args` follow the same checks.
 Never infer a fill from placement acceptance.
 
 Failures use `status` of `rejected`, `failed`, `timeout` or `approval_expired`
@@ -115,38 +117,89 @@ Prepared-but-unacknowledged attempts cannot be prepared again. A lost stdout
 handoff therefore needs explicit history/approval resolution, not blind replay.
 The `mcp_timeout` drill exercises this policy without submitting or reserving orders.
 
-## Field mappings
+## Field mappings and evidence (17 November 2026)
 
-Each tool has one table in `moowoo/broker_fields.py`. Missing required fields,
-invalid numbers, unknown status, foreign routing, duplicate rows or incomplete
-history pagination raise rather than guess. Optional fields may be absent.
+Missing required fields, invalid decimals, unknown sides, foreign account routing,
+duplicate order IDs and incomplete pagination fail closed. Unknown integer status
+codes do not determine fills or halt reconciliation. The two `real_sim_trade_*.json`
+captures use `<ORDINARY_PAPER_ACC>` and prove no competition-account eligibility.
 
-| Tool/table | Required broker fields | Optional fields | Evidence |
-| --- | --- | --- | --- |
-| `sim_trade_account_list` / `ACCOUNT_LIST` | `account_id`, `market_id`, `account_type`, `account_title` | `broker_id`, `intra_account_id` | Row names confirmed; root-list envelope provisional |
-| `sim_trade_cash_info` / `CASH_INFO` | `cash`, `equity` | `acc_id`, `market` | All provisional; root object |
-| `sim_trade_position_list` / `POSITION_LIST` | `symbol`, `qty`, `avg_cost`, `market_price` | `text` (entry decision), `acc_id`, `market` | All provisional; rows under `data` |
-| `sim_trade_history_order_list` / `ORDER_HISTORY` | `order_id`, `symbol`, `text`, `order_side`, `qty`, `price`, `filled_qty`, `avg_price`, `status` | `acc_id`, `market`; root `next_key` | All response fields provisional; rows under `data` |
-| `sim_trade_input_order` / `INPUT_ORDER` | `order_id` | `status`, `reason`, `args` | All response fields provisional; root object |
+### Confirmed
 
-History status strings `SUBMITTED`, `PARTIAL`, `FILLED`, `CANCELLED`, `REJECTED`,
-the `US.` response-symbol prefix, numeric side encoding and whole-share quantity
-semantics need real response confirmation. Nonempty `next_key` rejects an incomplete
-snapshot: the agent must combine all pages first. A zero-fill order still requires
-explicit `filled_qty=0`, `avg_price=0` and status. All `fixtures/broker/provisional_*.json`
-are synthetic examples, not captures. Cash is assumed to be total ledger cash,
-not buying power or cash net of pending reservations. Verify fee treatment and
-average-cost semantics before launch. Optional routing absent means Python cannot
-prove snapshot account provenance; the agent must retain its request context.
+- Placement request: `acc_id`, account `market=100`, `symbol="US.AAPL"`,
+  `order_type=1`, buy `order_side=1`, string `qty` and `price`,
+  `order_trade_time_type`, `text`. MooWoo emits integer quantity strings and
+  exactly two price decimals. The capture used session type **2**; MooWoo sends
+  **1**, so the sample is evidence, not a compliant ticket to replay.
+- Placement response: integer `ret_code`, string `ret_msg`, `data.order_id`.
+  Only ret_code 0 succeeds. Nonzero codes log ret_msg as placement failures and
+  never create `order_submitted`, even if an executor labels the receipt placed.
+- History request: `acc_id`, account `market=100`, microsecond `time_begin` and
+  `time_end`, `page_size`. Response: `ret_code`, `ret_msg`, `data.orders`, and
+  top-level `pagination.has_more` / `pagination.next_key`.
+- Required history row fields: `order_id`, `symbol`, `text`, `side`, `qty`,
+  `price`, `cum_qty`, `avg_fill_price`, `status`. Observed optional fields:
+  `market`, `create_time`, `update_time`, `order_trade_time_type`, `order_type`,
+  `time_in_force`. `aux_price` and `stock_name` are observed but unused.
+- Symbol is unprefixed `AAPL`; the adapter normalizes either `AAPL` or `US.AAPL`.
+  History `market=2` is internal and never compared to account market 100.
+  Decimal strings parse numerically; microsecond timestamp strings parse to
+  integer microseconds. Observed cum_qty="0" and avg_fill_price="0" are unfilled.
+- Status 2 has only the observed display label `accepted (observed)`. The map is
+  provisional. Fills derive solely from quantities: cum_qty=qty means full,
+  0<cum_qty<qty means partial, cum_qty=0 means unfilled. Status cannot prove cancellation.
+- Previously confirmed account row names: `account_id`, `market_id`, `account_type`,
+  `account_title`, `broker_id`, `intra_account_id`.
+
+### Still provisional
+
+- Account-list root-list envelope (`provisional_accounts.json`).
+- Cash root object: `cash`, `equity`, optional `acc_id`, `market`. Total-ledger-cash
+  meaning, reservation treatment and actual fee inclusion remain unverified.
+- Positions under `data`: `symbol`, `qty`, `avg_cost`, `market_price`, optional
+  entry `text`, `acc_id`, `market`; average-cost and strategy-identity semantics.
+- Filled/partial values and average-fill-price behavior, whole-share assumptions
+  beyond the one-share capture (`provisional_history_filled.json`), and fees.
+- Side 1 is observed buy; side 2 sell is the existing provisional mapping.
+  No response status/side/time_in_force enum is documented. No meaning is assigned
+  to time_in_force or unknown status codes.
+- Cancel response (`provisional_cancel.json`): synthetic `ret_code` and `ret_msg`.
+  No real cancel capture exists. Only a logged sim_trade_cancel_order ret_code 0
+  releases the unfilled remainder; already filled quantity and fees remain.
+- Optional history `acc_id` and placement echo `status`, `reason`, `args` are not
+  captured. Echo status never determines acceptance.
+- Multi-page continuation is not captured. The executor must verify the actual
+  continuation request schema and retain request context; no input parameter
+  name is invented from the response's next_key.
+
+`parse_history(first_response, fetch_page)` follows the exact `pagination.next_key`
+while `has_more` is true, validates each page and rejects repeated cursors.
+The offline CLI accepts `--history-pages pages.json`, an object keyed by requested
+next_key, with subsequent response envelopes as values. Missing pages halt.
+Terminal next_key="0" with has_more=false does not fetch another page. Python
+makes no network calls. Keep account, market and time range identical across
+requests. Missing optional routing means Python cannot prove account provenance.
+
+Recorded order_id is the primary identity, so arbitrary broker text does not
+replace the receipt's decisionId. Text decisionId is the fallback for history-backed
+strategy identity without a local submission. A current-run text match without a
+recorded submission fails closed until its receipt is recorded. Conflicting order
+IDs are not silently reassigned.
+
+Record cancellation through `execute_tickets.py record` with `decisionId`,
+`tool="sim_trade_cancel_order"`, exact `args` containing `acc_id`, `market`,
+`order_id`, and `response` containing `ret_code` and `ret_msg`. A matching logged
+submission is required. Failure logs do not release reservations. Reconcile fresh
+history, positions and cash afterwards; a broker status alone never releases them.
 
 ## Reconciliation and locking
 
 Order-status fills are cumulative. Apply only quantity/notional/fee deltas since
 `state.execution.fills[orderId]`. The USD 0.99 fee is charged once per filled order;
 sell levy is cumulative USD 0.000166 per sold share, capped at USD 8.30. No fill
-means no fee. Partial quantity leaves the remainder reserved until terminal status.
+means no fee. Partial quantity leaves the remainder reserved until logged cancellation succeeds.
 The competition's volume-times-20 rule can produce partial fills; code does not
-predict them. Only returned order status establishes the filled quantity.
+predict them. Only returned cumulative quantities establish fills. Zero fills emit no fill event.
 
 Independent books take quantity, average cost and cash from broker snapshots.
 Strategy fields carry over only on matching ticker and entry decision ID. When

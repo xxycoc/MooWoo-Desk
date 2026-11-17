@@ -1,4 +1,4 @@
-"""Prepare exact MCP arguments, or record executor-supplied JSON receipts."""
+"""Prepare MCP arguments or record receipts with ret_code and data.order_id."""
 
 import argparse
 

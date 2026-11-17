@@ -138,6 +138,23 @@ def record(tickets, responses, log):
     for response in responses:
         ticket = tickets[response["decisionId"]]
         events = decision_events(log, ticket.decisionId)
+        if response.get("tool") == "sim_trade_cancel_order":
+            account, market = account_context()
+            submitted = [event for event in events if event["type"] == "order_submitted"]
+            if not submitted:
+                raise ValueError("cancellation requires a recorded submission")
+            order_id = submitted[-1]["orderId"]
+            if response["args"] != dict(acc_id=account, market=market, order_id=order_id):
+                raise ValueError("cancellation argument mismatch")
+            receipt = response["response"]
+            if type(receipt.get("ret_code")) is not int or not isinstance(receipt.get("ret_msg"), str):
+                raise ValueError("cancellation requires ret_code and ret_msg")
+            action = "cancelled" if receipt["ret_code"] == 0 else "cancel_failed"
+            if not any(event.get("executionAction") == action and event.get("orderId") == order_id
+                       and event.get("retCode") == receipt["ret_code"] for event in events):
+                note(log, ticket, action, orderId=order_id, tool="sim_trade_cancel_order",
+                     retCode=receipt["ret_code"], reason=safe_reason(receipt["ret_msg"]))
+            continue
         attempts = [event for event in events if event.get("executionAction") == "prepared"]
         attempt = response["attempt"]
         if type(attempt) is not int or not 1 <= attempt <= 2 or attempt > len(attempts):
@@ -148,6 +165,12 @@ def record(tickets, responses, log):
         if not verification["ok"]:
             raise ValueError("placed argument mismatch: " + ", ".join(verification["mismatches"]))
         status = response["status"]
+        receipt = response.get("response")
+        if isinstance(receipt, dict) and type(receipt.get("ret_code")) is int and receipt["ret_code"] != 0:
+            if not isinstance(receipt.get("ret_msg"), str) or not receipt["ret_msg"].strip():
+                raise ValueError("failed placement requires ret_msg")
+            status = "rejected"
+            response = response | dict(reason=receipt["ret_msg"])
         if status == "placed":
             placed = parse_placement(response["response"])
             if "args" in placed and not verify_placed(ticket, placed["args"])["ok"]:
@@ -207,7 +230,7 @@ def reconcile(tickets, history, positions, cash, state, log):
     for order_id, submission in submissions.items():
         ticket = tickets[submission["decisionId"]]
         row = orders[order_id]
-        for name in ("ticker", "decisionId", "side", "qty", "limitPrice"):
+        for name in ("ticker", "side", "qty", "limitPrice"):
             if row[name] != getattr(ticket, name):
                 raise ValueError(f"order history mismatch: {name}")
         fill = reconcile_fill(ticket, row["filledQty"], row["avgPrice"], row["status"], at_session_close=True)
@@ -241,10 +264,14 @@ def reconcile(tickets, history, positions, cash, state, log):
         event = dict(ticker=ticket.ticker, orderId=order_id, filledQty=fill["filledQty"],
                      avgPrice=fill["avgPrice"], status=fill["status"], source="order_status",
                      brokerStatus=row["status"], fees=fill["fees"])
-        fill_events.append((ticket, event))
+        if fill["filledQty"]:
+            fill_events.append((ticket, event))
         expected.pendingTickets = [pending for pending in expected.pendingTickets
                                    if pending["decisionId"] != ticket.decisionId]
-        if not row["terminal"] and fill["remainingQty"]:
+        cancelled = any(event.get("executionAction") == "cancelled" and event.get("orderId") == order_id
+                        and event.get("tool") == "sim_trade_cancel_order" and event.get("retCode") == 0
+                        for event in decision_events(log, ticket.decisionId))
+        if not cancelled and fill["remainingQty"]:
             pending = ticket.to_dict() | dict(qty=fill["remainingQty"],
                 estFees=estimate_fees(ticket.side, ticket.qty)-fill["fees"], submitted=True)
             expected.pendingTickets.append(pending)
@@ -260,7 +287,8 @@ def reconcile(tickets, history, positions, cash, state, log):
     identities = {}
     for row in history:
         if row["side"] == "BUY" and row["filledQty"]:
-            identities.setdefault(row["ticker"], set()).add(row["decisionId"])
+            identity = submissions.get(row["orderId"], {}).get("decisionId", row["decisionId"])
+            identities.setdefault(row["ticker"], set()).add(identity)
     identities = {name: next(iter(values)) for name, values in identities.items() if len(values) == 1}
     differences = {}
     if abs(cash["cash"]-expected.cash) > 1:

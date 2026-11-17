@@ -1,0 +1,2 @@
+{"input": {"acc_id": "<ORDINARY_PAPER_ACC>", "market": 100, "symbol": "US.AAPL", "order_type": 1, "order_side": 1, "qty": "1", "price": "353.80", "order_trade_time_type": 2, "text": "Qoder: limit buy 1 @ ask"},
+ "response": {"ret_code":0,"ret_msg":"success","data":{"order_id":"3164623"}}}

@@ -315,7 +315,7 @@ def test_ticket_hash_and_adapter(ticket, monkeypatch):
     monkeypatch.setenv("MOOMOO_MARKET", "100")
     args = to_sim_order(ticket)
     assert args == dict(acc_id="123", market=100, symbol="US.AAA", order_type=1,
-                        order_side=1, qty=50, price=100., order_trade_time_type=0, text=ticket.decisionId)
+                        order_side=1, qty="50", price="100.00", order_trade_time_type=1, text=ticket.decisionId)
     assert verify_placed(ticket, args)["ok"]
     for key, value in dict(qty=51, price=101, order_side=2, symbol="US.BBB", acc_id="other").items():
         result = verify_placed(ticket, args | {key: value})

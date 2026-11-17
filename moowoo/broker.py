@@ -1,6 +1,7 @@
 """Offline, explicit-schema broker adapters and independent account books."""
 
 from copy import deepcopy
+from decimal import Decimal, InvalidOperation
 import os
 import re
 
@@ -23,9 +24,9 @@ def mapped(row, table):
 
 
 def rows(payload, table):
-    values = payload if table["rows"] is None else payload[table["rows"]]
+    values = payload if table["rows"] is None else payload.get(table["rows"])
     if not isinstance(values, list):
-        raise ValueError("broker rows must be a list; envelope mapping is provisional")
+        raise ValueError("missing or invalid required broker rows list")
     return [mapped(row, table) for row in values]
 
 
@@ -46,9 +47,9 @@ def routing(row):
 
 
 def ticker(symbol):
-    if not isinstance(symbol, str) or not symbol.startswith(fields.SYMBOL_PREFIX):
+    if not isinstance(symbol, str):
         raise ValueError("unrecognized broker symbol")
-    name = symbol[len(fields.SYMBOL_PREFIX):]
+    name = symbol.removeprefix(fields.SYMBOL_PREFIX)
     if not re.fullmatch(r"[A-Z0-9][A-Z0-9.\-]*", name):
         raise ValueError("invalid broker ticker")
     return name
@@ -89,10 +90,49 @@ def parse_positions(payload):
     return result
 
 
-def parse_history(payload):
-    if payload.get(fields.ORDER_HISTORY["nextKey"]):
-        raise ValueError("history incomplete: collect all pages before reconciliation")
-    result = rows(payload, fields.ORDER_HISTORY)
+def successful_data(payload):
+    if not isinstance(payload, dict) or type(payload.get("ret_code")) is not int:
+        raise ValueError("missing required broker field: ret_code")
+    if not isinstance(payload.get("ret_msg"), str):
+        raise ValueError("missing required broker field: ret_msg")
+    if payload["ret_code"] != 0:
+        raise ValueError(f"broker ret_code {payload['ret_code']}: {payload['ret_msg']}")
+    if not isinstance(payload.get("data"), dict):
+        raise ValueError("missing required broker field: data")
+    return payload["data"]
+
+
+def decimal_number(value, name, *, zero=False, whole=False):
+    try:
+        number = Decimal(str(value))
+    except InvalidOperation as exc:
+        raise ValueError(f"invalid broker decimal: {name}") from exc
+    if not number.is_finite() or number < 0 or (not zero and number == 0):
+        raise ValueError(f"invalid broker decimal: {name}")
+    if whole and number != number.to_integral_value():
+        raise ValueError(f"broker {name} requires whole shares")
+    converted = int(number) if whole else float(number)
+    positive(converted, name, zero=zero)
+    return converted
+
+
+def parse_history(payload, fetch_page=None):
+    result, cursors = [], set()
+    while True:
+        result.extend(rows(successful_data(payload), fields.ORDER_HISTORY))
+        pagination = payload.get("pagination")
+        if (not isinstance(pagination, dict) or type(pagination.get("has_more")) is not bool
+                or not isinstance(pagination.get("next_key"), str)):
+            raise ValueError("missing required broker pagination fields")
+        if not pagination["has_more"]:
+            break
+        cursor = pagination["next_key"]
+        if not cursor or cursor in cursors:
+            raise ValueError("invalid or repeated history cursor")
+        if fetch_page is None:
+            raise ValueError("history incomplete: collect all pages before reconciliation")
+        cursors.add(cursor)
+        payload = fetch_page(cursor)
     seen = set()
     for row in result:
         routing(row)
@@ -105,22 +145,28 @@ def parse_history(payload):
         if type(row["side"]) is not int or row["side"] not in fields.ORDER_SIDES:
             raise ValueError("unrecognized order side")
         row["side"] = fields.ORDER_SIDES[row["side"]]
-        if row["status"] not in fields.ORDER_STATUSES:
-            raise ValueError("unrecognized broker order status")
-        row["terminal"] = fields.ORDER_STATUSES[row["status"]] != "open"
+        if type(row["status"]) is not int:
+            raise ValueError("broker status must be an integer")
+        row["statusLabel"] = fields.ORDER_STATUS_LABELS_PROVISIONAL.get(row["status"], "unknown (provisional)")
         for name in ("qty", "limitPrice", "filledQty", "avgPrice"):
-            positive(row[name], name, zero=name in ("filledQty", "avgPrice"))
-        if row["filledQty"] > row["qty"] or (row["status"] == "FILLED" and row["filledQty"] != row["qty"]):
+            row[name] = decimal_number(row[name], name, zero=name in ("filledQty", "avgPrice"),
+                                       whole=name in ("qty", "filledQty"))
+        if row["filledQty"] > row["qty"] or (row["filledQty"] and not row["avgPrice"]):
             raise ValueError("inconsistent broker fill quantities")
+        row["fillState"] = "filled" if row["filledQty"] == row["qty"] else "partial" if row["filledQty"] else "unfilled"
+        row["terminal"] = row["fillState"] == "filled"
+        for name in ("createTime", "updateTime"):
+            if name in row:
+                if not isinstance(row[name], str) or not row[name].isdigit():
+                    raise ValueError("broker timestamps must be microsecond strings")
+                row[name] = int(row[name])
     return result
 
 
 def parse_placement(payload):
-    result = mapped(payload, fields.INPUT_ORDER)
+    result = mapped(successful_data(payload), fields.INPUT_ORDER)
     if not isinstance(result["orderId"], str) or not result["orderId"].strip():
         raise ValueError("placement orderId must be nonempty")
-    if result.get("status", "SUBMITTED") not in ("SUBMITTED", "PARTIAL", "FILLED"):
-        raise ValueError("placement was not accepted")
     return result
 
 

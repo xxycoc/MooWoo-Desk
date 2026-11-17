@@ -30,6 +30,10 @@ NOW = "2026-11-17T15:00:00Z"
 
 
 def fixture(name):
+    if name == "history":
+        name = "history_filled"
+    if name == "placement":
+        return json.loads((ROOT / "fixtures/broker/real_sim_trade_input_order.json").read_text())["response"]
     return json.loads((ROOT / f"fixtures/broker/provisional_{name}.json").read_text())
 
 
@@ -72,8 +76,8 @@ def submit(setup):
 
 def snapshots(qty, status=None):
     history, positions, cash = fixture("history"), fixture("positions"), fixture("cash")
-    history["data"][0].update(filled_qty=qty, avg_price=100 if qty else 0,
-                              status=status or ("FILLED" if qty == 50 else "PARTIAL" if qty else "SUBMITTED"))
+    history["data"]["orders"][0].update(cum_qty=str(qty), avg_fill_price="100" if qty else "0",
+                                       status=2 if status is None else status)
     positions["data"][0]["qty"] = qty
     cash.update(cash=100000-qty*100-(.99 if qty else 0), equity=100000-(.99 if qty else 0))
     return parse_history(history), parse_positions(positions), parse_cash(cash)
@@ -116,9 +120,9 @@ def test_broker_required_and_optional(monkeypatch):
     assert parse_cash(fixture("cash"))["cash"] == 94999.01
     for parser, name, field in ((parse_accounts, "accounts", "account_type"),
                                 (parse_positions, "positions", "qty"),
-                                (parse_history, "history", "filled_qty")):
+                                (parse_history, "history", "cum_qty")):
         payload = fixture(name)
-        row = payload[0] if name == "accounts" else payload["data"][0]
+        row = payload[0] if name == "accounts" else payload["data"]["orders"][0] if name == "history" else payload["data"][0]
         del row[field]
         with pytest.raises(ValueError, match="required"):
             parser(payload)
@@ -199,7 +203,7 @@ def test_reconcile_full_partial_unfilled_and_replay(setup, qty):
     assert bool(result["cancel"]) == (qty < 50)
     if qty < 50:
         assert result["cancel"][0]["remainingQty"] == 50-qty
-        assert result["cancel"][0]["args"]["order_id"] == "synthetic-order-1"
+        assert result["cancel"][0]["args"]["order_id"] == "3164623"
     count = len(log.read())
     replay, _ = reconcile({ticket.decisionId: ticket}, history, positions, cash, updated, log)
     assert replay.to_dict() == updated.to_dict() and len(log.read()) == count
@@ -238,8 +242,7 @@ def test_sell_partial_fee_deltas_and_replay(setup):
     record(tickets, [request | dict(status="placed", response=fixture("placement"))], log)
     for quantity in (20, 35, 50):
         history = fixture("history")
-        history["data"][0].update(order_side=2, filled_qty=quantity,
-            status="FILLED" if quantity == 50 else "PARTIAL")
+        history["data"]["orders"][0].update(side=2, cum_qty=str(quantity), status=2)
         positions = fixture("positions")
         positions["data"][0].update(qty=50-quantity, text="prior:AAA")
         cash = dict(cash=95000+quantity*100-estimate_fees("SELL", quantity),
@@ -272,12 +275,15 @@ def test_reconcile_counts_submissions_across_run_logs(setup):
 
 def test_cancelled_partial_has_no_cancel(setup):
     ticket, log, state = submit(setup)
-    updated, result = reconcile({ticket.decisionId: ticket}, *snapshots(20, "CANCELLED"), state, log)
+    record({ticket.decisionId: ticket}, [dict(decisionId=ticket.decisionId, tool="sim_trade_cancel_order",
+        args=dict(acc_id="synthetic-paper-account", market=100, order_id="3164623"),
+        response=fixture("cancel"))], log)
+    updated, result = reconcile({ticket.decisionId: ticket}, *snapshots(20), state, log)
     assert not result["cancel"] and not updated.pendingTickets
 
 
 def test_incomplete_history_fails():
-    payload = fixture("history") | dict(next_key="more")
+    payload = fixture("history") | dict(pagination=dict(has_more=True, next_key="more"))
     with pytest.raises(ValueError, match="incomplete"): parse_history(payload)
 
 
@@ -362,7 +368,8 @@ def test_execution_cli_pipeline(setup, tmp_path):
     state_path = save(tmp_path / "state.json", state.to_dict())
     args = [sys.executable, "scripts/reconcile.py", "--state", state_path]+suffix
     for name in ("history", "positions", "cash"):
-        args += ["--"+name, str(ROOT / f"fixtures/broker/provisional_{name}.json")]
+        fixture_name = "history_filled" if name == "history" else name
+        args += ["--"+name, str(ROOT / f"fixtures/broker/provisional_{fixture_name}.json")]
     process = subprocess.run(args, cwd=ROOT, capture_output=True, text=True)
     assert process.returncode == 0, process.stdout+process.stderr
     assert json.loads(Path(state_path).read_text())["cash"] == pytest.approx(94999.01)

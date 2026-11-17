@@ -10,7 +10,13 @@ from moowoo.portfolio import PortfolioState
 
 def run(args, log):
     tickets = load_tickets(read_json(args.tickets), log, frozen_config()["configHash"])
-    state, result = reconcile(tickets, parse_history(read_json(args.history)),
+    history = read_json(args.history)
+    pages = read_json(args.history_pages) if getattr(args, "history_pages", None) else {}
+    def fetch_page(cursor):
+        if cursor not in pages:
+            raise ValueError("history incomplete: missing page for next_key")
+        return pages[cursor]
+    state, result = reconcile(tickets, parse_history(history, fetch_page),
         parse_positions(read_json(args.positions)), parse_cash(read_json(args.cash)),
         PortfolioState.from_dict(read_json(args.state)), log)
     atomic_json(args.state, state.to_dict())
@@ -19,6 +25,7 @@ def run(args, log):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--history-pages", help="JSON object mapping requested next_key to its response")
     for name in ("history", "positions", "cash", "tickets", "state", "log"):
         parser.add_argument("--" + name, required=True)
     return command(parser.parse_args(), run, persist_halt=True)

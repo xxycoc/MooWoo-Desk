@@ -1,7 +1,7 @@
 """Canonical immutable order authorization and an offline Moomoo argument adapter."""
 
 from dataclasses import asdict, dataclass
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 import hashlib
 import os
 import re
@@ -94,15 +94,23 @@ def to_sim_order(ticket, acc_id=None, market=None, *, symbol_format="US.{ticker}
     ticket = OrderTicket(**ticket) if isinstance(ticket, dict) else OrderTicket(**ticket.to_dict())
     return dict(acc_id=account, market=configured_market, symbol=format_symbol(ticket.ticker, symbol_format),
                 order_type=1, order_side=1 if ticket.side == "BUY" else 2,
-                qty=ticket.qty, price=ticket.limitPrice, order_trade_time_type=0, text=ticket.decisionId)
+                qty=str(ticket.qty), price=f"{ticket.limitPrice:.2f}", order_trade_time_type=1, text=ticket.decisionId)
 
 
 def verify_placed(ticket, placed_args, *, symbol_format="US.{ticker}"):
     expected = to_sim_order(ticket, symbol_format=symbol_format)
     mismatches = {}
     for key in sorted(expected.keys() | placed_args.keys()):
-        if (key not in expected or key not in placed_args or expected[key] != placed_args[key]
-                or isinstance(placed_args.get(key), bool)):
+        matches = key in expected and key in placed_args
+        if matches and key in ("qty", "price"):
+            try:
+                observed = Decimal(str(placed_args[key]))
+                matches = observed.is_finite() and observed == Decimal(expected[key])
+            except InvalidOperation:
+                matches = False
+        elif matches:
+            matches = type(expected[key]) is type(placed_args[key]) and expected[key] == placed_args[key]
+        if not matches:
             mismatches[key] = dict(expected=expected.get(key), observed=placed_args.get(key),
                                    missing=key not in placed_args, unexpected=key not in expected)
     return dict(ok=not mismatches, mismatches=mismatches)
@@ -115,7 +123,7 @@ def reconcile_fill(ticket, filled_qty, avg_price, status, *, at_session_close=Fa
     if filled_qty > ticket.qty:
         raise ValueError("fill exceeds approved quantity")
     positive(avg_price, "avg_price", zero=filled_qty == 0)
-    if not isinstance(status, str) or not status.strip():
+    if not ((isinstance(status, str) and status.strip()) or type(status) is int):
         raise ValueError("status is required")
     if filled_qty and ((ticket.side == "BUY" and avg_price > ticket.limitPrice) or
                        (ticket.side == "SELL" and avg_price < ticket.limitPrice)):
