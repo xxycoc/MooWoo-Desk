@@ -77,6 +77,13 @@ Preserve agent transcripts alongside those inputs. Never invent data to satisfy 
 missing file. For an auditor, barsAsOf must be the session just closed. Morning
 and watcher planning use completed bars from before the current session.
 
+After baseline reconciliation, use `scripts/gather_inputs.py --kind morning|watch
+--inputs <returned-input-directory>` for completed bars, session facts and the
+morning screen/candidates. Collect the generated analyst quote request, then run
+`scripts/convert_quotes.py --inputs <returned-input-directory>` immediately before
+plan. See [the input handoff](handoff-16-inputs.md) for exact commands, raw quote
+formats, prompt replacement text and the offline no-order rehearsal.
+
 The watcher also requires preflight: the existing execution gate requires a
 matching `run_started` event in each run's log. This is an additional guard beyond
 the brief's morning-only preflight, retained rather than bypassing that gate.
