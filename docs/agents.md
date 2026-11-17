@@ -10,7 +10,7 @@ package contains eight agents despite the deployment brief saying seven.
 
 ```mermaid
 flowchart TD
-    Schedule[21:30 Singapore weekday schedule] --> C[coordinator]
+    Schedule[09:35 New York weekday schedule] --> C[coordinator]
     C --> Screen[code screener]
     Screen --> A[analyst per picked mover]
     A --> B[bull: ranks 1-5]
@@ -110,7 +110,7 @@ clock. Exactly-at-cutoff evidence is allowed; even one microsecond later is not.
 Undated, ambiguously timed or later-revised news is excluded and disclosed.
 Later quotes and financial snapshots cannot silently become historical evidence.
 
-21:30 SGT is 08:30 New York during this November window, before the 22:30 SGT open.
+The morning run starts at 09:35 New York (22:35 SGT), after the open and the first-five-minutes rule.
 The existing screener is a completed-daily-bar screener, not a premarket gap feed.
 Morning screening therefore uses the last completed US session. `screen.py`
 uses its `--asof` date for its log runId. Preserve that separate source log and
@@ -253,8 +253,8 @@ Docs were retrieved on 17 Nov 2026 (UTC). Sources:
 | Environment variables | Session/Template `environment_variables`, not an invented environment config field. Startup writes account-context.json; executor fails closed if it is absent. Qoder startup failures do not themselves abort a Session. |
 | Vault by name | Resolve exactly one active vault whose display_name is moomoo-mcp. Cloud Sessions use `vault_ids`; Forward Templates use `vaults: {vault_id: {enabled: true}}`. There is no invented vault_name request field. |
 | Schedules | Forward schedules require identity_id, template_id and environment_id. Builder therefore creates coordinator and auditor Templates with the Agent configuration copied into them; a Template does not accept a Cloud Agent ID as its execution definition. |
-| Morning | `trigger_policy={type: cron, expression: "30 21 * * 1-5", timezone: Asia/Singapore}`. |
-| Watcher | Three cron schedules in America/New_York: `30 9 * * 1-5`, `0,30 10-15 * * 1-5`, `0 16 * * 1-5`; together every 30 minutes 09:30-16:00. First trigger only checks/queues; no first-five-minute orders. |
+| Morning | `trigger_policy={type: cron, expression: "35 9 * * 1-5", timezone: America/New_York}`. |
+| Watcher | Two cron schedules in America/New_York: `0,30 10-15 * * 1-5`, `0 16 * * 1-5`; every 30 minutes 10:00-16:00. The 09:35 morning run covers the open. |
 | Audit delivery | New auditor Session daily at 16:10 New York, `sinks: [{type: im_channel, channel_pairing_id}]`. Pairing must belong to the auditor Template/Identity and point to Slack. Channel ID/credentials are not invented. Early-close days receive their daily report later at this fixed time. |
 | Trading window | Schedule API documents no creation-time start/end bound. Metadata window dates are labels, NOT enforcement. Code/calendar guards and prompt instructions must reject holidays, out-of-window sessions and post-early-close work. Archive schedules after the challenge. |
 | API references | `${...}` strings are local dry-run manifest placeholders, NOT Qoder API syntax. Apply resolves them before POST and fails on unresolved references. |

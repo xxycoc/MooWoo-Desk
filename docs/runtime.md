@@ -142,16 +142,14 @@ allowed to retain receipts when an already-started run crosses the close.
 Audit starts are accepted from actual close +10 minutes until close +45 minutes.
 This separates after-close reporting from regular-hours order eligibility.
 
-The requested morning cron is **21:30 SGT = 08:30 New York**. Under the requested
-regular-hours-only morning rule it always skips. A 45-minute lock also cannot
-span the 65 minutes from that cron until orders become eligible at 09:35. This
-implementation does not move the requested schedule or permit premarket work.
-The owner must resolve that conflict before expecting morning trades. A workable
-single-session time is 22:35 SGT; an alternative needs separate premarket
-preparation and post-open execution sessions with distinct leases.
+The morning cron is **09:35 New York (22:35 SGT)**, one single session after the
+first-five-minutes rule. The originally requested 21:30 SGT is 08:30 New York,
+premarket, which the regular-hours guard would always skip; the time was moved on
+17 November 2026 before any session ran. Screening uses completed prior-day bars,
+so nothing is lost by running after the open.
 
-The watcher uses three cron schedules for 09:30, every half hour 10:00–15:30, and
-16:00 New York. The calendar skips Thanksgiving and ticks at/after actual close.
+The watcher uses two cron schedules: every half hour 10:00–15:30 and 16:00 New
+York. The morning run covers the open; a watcher that meets its lock exits. The calendar skips Thanksgiving and ticks at/after actual close.
 The audit has a 16:10 weekday schedule plus a 13:10 27-November schedule; the
 calendar rejects the late 16:10 duplicate on 27 November. Every schedule has
 `max_concurrent_runs=1` and `stop_at=2026-11-28T06:00:00+08:00`; the global lock
@@ -223,8 +221,8 @@ append contradictory old instructions to the new sequence.
 > refresh broker snapshots, call `--phase reconcile`, then `--phase finish`.
 > Preserve and report unresolved cancellations. On any agent failure call
 > `--phase abort`; if persistence fails, retain the local copy and stop. Auditor
-> remains a separate Session. The requested 21:30 SGT cron is premarket and the
-> runner will skip it; do not override that result or wait under the lease for open.
+> remains a separate Session. If start reports skipped (closed day or outside
+> regular hours), do not override that result or wait under the lease.
 
 ### Watcher mode in coordinator
 

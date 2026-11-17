@@ -172,9 +172,10 @@ def build_payloads(settings=None, root=ROOT, *, executor_approval="ask"):
                 "retain every agent input/output under the returned inputs directory, and finish with --phase finish "
                 "(or --phase abort on failure). Never continue past lease expiry. "
                 "The runner saves checkpoints and releases the account lock only with a successful final save. ")
-    schedule("morning", "coordinator", "30 21 * * 1-5", "Asia/Singapore", instructions("morning"))
-    # Three cron expressions represent exactly 09:30, 10:00..15:30, 16:00 NY.
-    for suffix, cron in (("open", "30 9 * * 1-5"), ("regular", "0,30 10-15 * * 1-5"), ("close", "0 16 * * 1-5")):
+    # Morning runs after the first-5-minutes rule; screening uses completed prior-day bars.
+    schedule("morning", "coordinator", "35 9 * * 1-5", "America/New_York", instructions("morning"))
+    # 10:00..15:30 and 16:00 NY; the 09:35 morning run covers the open.
+    for suffix, cron in (("regular", "0,30 10-15 * * 1-5"), ("close", "0 16 * * 1-5")):
         schedule("watcher-" + suffix, "coordinator", cron, "America/New_York",
                  instructions("watch"))
     schedule("audit", "auditor", "10 16 * * 1-5", "America/New_York",
@@ -189,8 +190,7 @@ def build_payloads(settings=None, root=ROOT, *, executor_approval="ask"):
         "approvalDecisionRequired": executor_approval == "allow",
         "warnings": ([] if settings.get("SLACK_CHANNEL_PAIRING_ID") else
                      ["SLACK_CHANNEL_PAIRING_ID missing: audit schedules have no IM sink; delivery is disabled."]) +
-                    ["21:30 Asia/Singapore is 08:30 New York; strict regular-hours guard skips the morning run.",
-                     "stop_at and secret environment delivery payloads require live API validation before apply."],
+                    ["stop_at and secret environment delivery payloads require live API validation before apply."],
         "vault_lookup": {"method": "GET", "path": "/cloud/vaults?name=moomoo-mcp&limit=100",
                          "display_name": "moomoo-mcp"},
         "operations": operations,
@@ -201,7 +201,6 @@ def build_payloads(settings=None, root=ROOT, *, executor_approval="ask"):
             "Publish pinned revision only after authorized merge; setup fails without risk desk integration",
             "Commit preregistration prompt addendum before first order",
             "Verify ledger persistence, locking and secret environment delivery in the deployment environment",
-            "Resolve morning cron versus regular-hours-only requirement before expecting morning trades",
             "Verify Moomoo account response fields, official endpoint and full tool inventory",
             "Pair auditor Template and Identity to Slack; use that pairing ID for its sink",
             "Verify effective Forward Identity config does not override permissions or models",

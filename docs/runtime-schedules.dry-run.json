@@ -1,10 +1,9 @@
-{
+﻿{
   "promptVersion": "13bdccb6dce1347a5f76d7d7172c4c1c4b62978862de23e734cf0a4a1997f735",
   "executorApproval": "allow",
   "approvalDecisionRequired": true,
   "warnings": [
     "SLACK_CHANNEL_PAIRING_ID missing: audit schedules have no IM sink; delivery is disabled.",
-    "21:30 Asia/Singapore is 08:30 New York; strict regular-hours guard skips the morning run.",
     "stop_at and secret environment delivery payloads require live API validation before apply."
   ],
   "vault_lookup": {
@@ -36,48 +35,7 @@
         ],
         "trigger_policy": {
           "type": "cron",
-          "expression": "30 21 * * 1-5",
-          "timezone": "Asia/Singapore"
-        },
-        "stop_at": "2026-11-28T06:00:00+08:00",
-        "execution": {
-          "session_mode": "new_session",
-          "max_concurrent_runs": 1,
-          "max_attempts": 1,
-          "timeout_ms": 1800000
-        },
-        "sinks": [],
-        "metadata": {
-          "window_start": "2026-11-17",
-          "window_end": "2026-11-27",
-          "requires_exchange_calendar_guard": true
-        }
-      }
-    },
-    {
-      "key": "schedule.watcher-open",
-      "method": "POST",
-      "path": "/forward/schedules",
-      "body": {
-        "identity_id": "${IDENTITY_ID}",
-        "template_id": "${template.coordinator.id}",
-        "name": "moowoo-watcher-open",
-        "environment_id": "${environment.id}",
-        "environment_variables": {
-          "MOOMOO_ACCOUNT_ID": "${MOOMOO_ACCOUNT_ID}",
-          "MOOMOO_MARKET": "${MOOMOO_MARKET}",
-          "MOOMOO_CHALLENGE_TITLE": "${MOOMOO_CHALLENGE_TITLE}",
-          "GITHUB_LEDGER_TOKEN": "${secret.GITHUB_LEDGER_TOKEN}"
-        },
-        "initial_events": [
-          {
-            "type": "user.message",
-            "content": "From /data/workspace/MooWoo-Desk run python3 scripts/run_session.py --kind watch --phase start. If skipped or refused, stop this session without orders. Follow docs/runtime.md phase commands, retain every agent input/output under the returned inputs directory, and finish with --phase finish (or --phase abort on failure). Never continue past lease expiry. The runner saves checkpoints and releases the account lock only with a successful final save. "
-          }
-        ],
-        "trigger_policy": {
-          "type": "cron",
-          "expression": "30 9 * * 1-5",
+          "expression": "35 9 * * 1-5",
           "timezone": "America/New_York"
         },
         "stop_at": "2026-11-28T06:00:00+08:00",
@@ -281,7 +239,6 @@
     "Publish pinned revision only after authorized merge; setup fails without risk desk integration",
     "Commit preregistration prompt addendum before first order",
     "Verify ledger persistence, locking and secret environment delivery in the deployment environment",
-    "Resolve morning cron versus regular-hours-only requirement before expecting morning trades",
     "Verify Moomoo account response fields, official endpoint and full tool inventory",
     "Pair auditor Template and Identity to Slack; use that pairing ID for its sink",
     "Verify effective Forward Identity config does not override permissions or models"

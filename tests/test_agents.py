@@ -209,7 +209,7 @@ def test_deploy_offline(monkeypatch):
     roster = ops['agent.coordinator']['multiagent']['agents']
     assert len(roster) == 6
     assert all('auditor' not in r['id'] for r in roster)
-    assert ops['schedule.morning']['trigger_policy'] == {'type':'cron','expression':'30 21 * * 1-5','timezone':'Asia/Singapore'}
+    assert ops['schedule.morning']['trigger_policy'] == {'type':'cron','expression':'35 9 * * 1-5','timezone':'America/New_York'}
     assert ops['schedule.audit']['execution']['session_mode'] == 'new_session'
     assert ops['template.auditor']['vaults'] == {'${vault.moomoo-mcp.id}': {'enabled': True}}
     assert 'vault_ids' in result['session_example']
