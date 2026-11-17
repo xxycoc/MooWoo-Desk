@@ -259,3 +259,22 @@ Written on 17 November 2026 at about 23:10 Singapore, still before any order in 
   coordinator uses it and does not research the exchange calendar. No rule, class, sizing,
   risk limit, horizon, grading or hypothesis changes.
 - Correction, 23:17 Singapore: 14 November 2026 was a Saturday. The completed session before 17 November is Monday 16 November, and the calendar now records that date. The third rerun halted correctly when every stock lacked a bar for 14 November; it did not substitute a date.
+
+## 12. Addendum 2026-11-18: fixed handoffs between agents
+
+Written on 18 November 2026 at about 01:00 Singapore (17 November in New York), still before any order in the competition account.
+
+- promptVersion `b9fd4ebecb05338d173e55ddaf2a448af9cfe0ae6dcbb0f51ffc0c593d2744d7`, computed by
+  `scripts/hash_prompts.py`. It replaces `9742d80f...`.
+- Why: six runs on 17 November halted before any order. A read-only review of their saved evidence found one
+  cause behind most halts: procedures written as prose, so the coordinator improvised duties (asking the executor
+  to check the clock or write files, researching the calendar through news) and child agents refused them.
+- Change: the coordinator follows an exact command sequence (`session_info.py`, `gather_inputs.py`,
+  `ingest_ratings.py`, `convert_quotes.py`, `dispatch_check.py` before each order, and the `run_session.py`
+  phases). It is the only file writer and owns clock checks. Child agents never write files or check time.
+  The executor follows AUTONOMY-01 and returns receipts in the shape `record` expects. Unavailable model-cost
+  data is recorded as missing, never as zero.
+- Code fixes in the same change: log identity comes from events rather than filenames; positions accept
+  decimal strings; a lease can be renewed while unexpired, up to 120 minutes per run, and the morning session
+  timeout is 120 minutes. The 60-second price freshness rule is unchanged.
+- No class, sizing, risk limit, horizon, grading or hypothesis changes.
