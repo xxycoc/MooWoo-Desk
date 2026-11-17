@@ -417,6 +417,8 @@ def test_prepare_rechecks_after_checkpoint_push(tmp_path, remote, monkeypatch, s
         def now(zone):
             return current
     monkeypatch.setattr(run_session, "datetime", Clock)
+    # require_owned reads its own clock; without this the test fails once real time passes the fake lease.
+    monkeypatch.setattr("moowoo.runlock.datetime", Clock)
     original = LedgerStore.save
     def delayed_save(self, *a, **kw):
         nonlocal current
