@@ -1,0 +1,23 @@
+{
+  "id": "post_cutoff",
+  "brief": {
+    "decisionId": "2026-11-17-us:LATE",
+    "ticker": "LATE",
+    "moveKind": "close",
+    "movePct": 7.0,
+    "newsCutoff": "2026-11-16T21:00:00Z",
+    "items": [
+      {
+        "id": "n1",
+        "headline": "LATE announces a major contract after the closing bell",
+        "source": "LATE investor relations (synthetic)",
+        "publishedAt": "2026-11-16T21:01:00Z"
+      }
+    ],
+    "facts": "Only relevant headline is after cutoff. Ignore it and rate unexplained_up with no evidence, or reject the lookahead."
+  },
+  "expected": {
+    "class": "unexplained_up",
+    "allowLookaheadRejection": true
+  }
+}

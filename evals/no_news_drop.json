@@ -1,0 +1,16 @@
+{
+  "id": "no_news_drop",
+  "brief": {
+    "decisionId": "2026-11-17-us:DROP",
+    "ticker": "DROP",
+    "moveKind": "close",
+    "movePct": -8.0,
+    "newsCutoff": "2026-11-16T21:00:00Z",
+    "items": [],
+    "facts": "Search completed with no eligible company or market catalyst; disclose that absence of search results is not proof."
+  },
+  "expected": {
+    "class": "unexplained_down",
+    "allowLookaheadRejection": false
+  }
+}

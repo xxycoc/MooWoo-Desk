@@ -1,0 +1,1171 @@
+{
+  "real_money_deny": [
+    "trading_order_place",
+    "trading_order_replace",
+    "trading_order_cancel",
+    "trading_order_confirm",
+    "crypto_account_create_order",
+    "crypto_account_modify_order",
+    "crypto_account_cancel_order"
+  ],
+  "simulated_order_tools": [
+    "sim_trade_input_order",
+    "sim_trade_cancel_order",
+    "sim_trade_modify_order"
+  ],
+  "mcp_server_name": "moomoo",
+  "agents": {
+    "coordinator": {
+      "configs": [
+        {
+          "name": "trading_order_place",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_replace",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_cancel",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_confirm",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_create_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_modify_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_cancel_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_input_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_cancel_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_modify_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "news_search",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_market_snapshot",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_stock_quote",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_history_kline",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_financials_earnings_price_move",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_account_list",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_cash_info",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_position_list",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_history_order_list",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_max_buy_sell",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        }
+      ]
+    },
+    "analyst": {
+      "configs": [
+        {
+          "name": "trading_order_place",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_replace",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_cancel",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_confirm",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_create_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_modify_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_cancel_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_input_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_cancel_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_modify_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "news_search",
+          "enabled": true,
+          "permission_policy": {
+            "type": "always_allow"
+          }
+        },
+        {
+          "name": "quote_market_snapshot",
+          "enabled": true,
+          "permission_policy": {
+            "type": "always_allow"
+          }
+        },
+        {
+          "name": "quote_stock_quote",
+          "enabled": true,
+          "permission_policy": {
+            "type": "always_allow"
+          }
+        },
+        {
+          "name": "quote_history_kline",
+          "enabled": true,
+          "permission_policy": {
+            "type": "always_allow"
+          }
+        },
+        {
+          "name": "quote_financials_earnings_price_move",
+          "enabled": true,
+          "permission_policy": {
+            "type": "always_allow"
+          }
+        },
+        {
+          "name": "sim_trade_account_list",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_cash_info",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_position_list",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_history_order_list",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_max_buy_sell",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        }
+      ]
+    },
+    "bull": {
+      "configs": [
+        {
+          "name": "trading_order_place",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_replace",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_cancel",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_confirm",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_create_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_modify_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_cancel_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_input_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_cancel_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_modify_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "news_search",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_market_snapshot",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_stock_quote",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_history_kline",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_financials_earnings_price_move",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_account_list",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_cash_info",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_position_list",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_history_order_list",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_max_buy_sell",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        }
+      ]
+    },
+    "bear": {
+      "configs": [
+        {
+          "name": "trading_order_place",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_replace",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_cancel",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_confirm",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_create_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_modify_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_cancel_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_input_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_cancel_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_modify_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "news_search",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_market_snapshot",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_stock_quote",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_history_kline",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_financials_earnings_price_move",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_account_list",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_cash_info",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_position_list",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_history_order_list",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_max_buy_sell",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        }
+      ]
+    },
+    "manager": {
+      "configs": [
+        {
+          "name": "trading_order_place",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_replace",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_cancel",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_confirm",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_create_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_modify_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_cancel_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_input_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_cancel_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_modify_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "news_search",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_market_snapshot",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_stock_quote",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_history_kline",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_financials_earnings_price_move",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_account_list",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_cash_info",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_position_list",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_history_order_list",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_max_buy_sell",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        }
+      ]
+    },
+    "quick": {
+      "configs": [
+        {
+          "name": "trading_order_place",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_replace",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_cancel",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_confirm",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_create_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_modify_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_cancel_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_input_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_cancel_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_modify_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "news_search",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_market_snapshot",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_stock_quote",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_history_kline",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_financials_earnings_price_move",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_account_list",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_cash_info",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_position_list",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_history_order_list",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_max_buy_sell",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        }
+      ]
+    },
+    "executor": {
+      "configs": [
+        {
+          "name": "trading_order_place",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_replace",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_cancel",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_confirm",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_create_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_modify_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_cancel_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_input_order",
+          "enabled": true,
+          "permission_policy": {
+            "type": "always_allow"
+          }
+        },
+        {
+          "name": "sim_trade_cancel_order",
+          "enabled": true,
+          "permission_policy": {
+            "type": "always_allow"
+          }
+        },
+        {
+          "name": "sim_trade_modify_order",
+          "enabled": true,
+          "permission_policy": {
+            "type": "always_allow"
+          }
+        },
+        {
+          "name": "news_search",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_market_snapshot",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_stock_quote",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_history_kline",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_financials_earnings_price_move",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_account_list",
+          "enabled": true,
+          "permission_policy": {
+            "type": "always_allow"
+          }
+        },
+        {
+          "name": "sim_trade_cash_info",
+          "enabled": true,
+          "permission_policy": {
+            "type": "always_allow"
+          }
+        },
+        {
+          "name": "sim_trade_position_list",
+          "enabled": true,
+          "permission_policy": {
+            "type": "always_allow"
+          }
+        },
+        {
+          "name": "sim_trade_history_order_list",
+          "enabled": true,
+          "permission_policy": {
+            "type": "always_allow"
+          }
+        },
+        {
+          "name": "sim_trade_max_buy_sell",
+          "enabled": true,
+          "permission_policy": {
+            "type": "always_allow"
+          }
+        }
+      ]
+    },
+    "auditor": {
+      "configs": [
+        {
+          "name": "trading_order_place",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_replace",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_cancel",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "trading_order_confirm",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_create_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_modify_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "crypto_account_cancel_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_input_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_cancel_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_modify_order",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "news_search",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_market_snapshot",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_stock_quote",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_history_kline",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "quote_financials_earnings_price_move",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        },
+        {
+          "name": "sim_trade_account_list",
+          "enabled": true,
+          "permission_policy": {
+            "type": "always_allow"
+          }
+        },
+        {
+          "name": "sim_trade_cash_info",
+          "enabled": true,
+          "permission_policy": {
+            "type": "always_allow"
+          }
+        },
+        {
+          "name": "sim_trade_position_list",
+          "enabled": true,
+          "permission_policy": {
+            "type": "always_allow"
+          }
+        },
+        {
+          "name": "sim_trade_history_order_list",
+          "enabled": true,
+          "permission_policy": {
+            "type": "always_allow"
+          }
+        },
+        {
+          "name": "sim_trade_max_buy_sell",
+          "enabled": false,
+          "permission_policy": {
+            "type": "always_deny"
+          }
+        }
+      ]
+    }
+  }
+}

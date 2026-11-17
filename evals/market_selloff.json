@@ -1,0 +1,23 @@
+{
+  "id": "market_selloff",
+  "brief": {
+    "decisionId": "2026-11-17-us:MKT",
+    "ticker": "MKT",
+    "moveKind": "close",
+    "movePct": -10.0,
+    "newsCutoff": "2026-11-16T21:00:00Z",
+    "items": [
+      {
+        "id": "n1",
+        "headline": "Broad US equity selloff as bond yields rise",
+        "source": "Synthetic market wire",
+        "publishedAt": "2026-11-16T19:00:00Z"
+      }
+    ],
+    "facts": "SPY -3%, stock -10%; no stock-specific news. Broad selling alone does not explain the residual abnormal move."
+  },
+  "expected": {
+    "class": "unexplained_down",
+    "allowLookaheadRejection": false
+  }
+}

@@ -1,0 +1,223 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/xxycoc/MooWoo-Desk/schemas/rating.schema.json",
+  "title": "MooWoo rating",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "decisionId",
+    "ticker",
+    "reason",
+    "wrongIf",
+    "model",
+    "promptVersion",
+    "class",
+    "confidence",
+    "tier",
+    "newsCutoff",
+    "evidence",
+    "expectedMove"
+  ],
+  "properties": {
+    "decisionId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ticker": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 600
+    },
+    "wrongIf": {
+      "type": "string",
+      "minLength": 1
+    },
+    "model": {
+      "type": "string",
+      "minLength": 1
+    },
+    "promptVersion": {
+      "type": "string",
+      "minLength": 1
+    },
+    "class": {
+      "enum": [
+        "explained_up",
+        "explained_down",
+        "unexplained_up",
+        "unexplained_down"
+      ]
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "tier": {
+      "enum": [
+        "debate",
+        "quick"
+      ]
+    },
+    "newsCutoff": {
+      "type": "string",
+      "minLength": 1,
+      "format": "date-time",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$"
+    },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "headline",
+          "source",
+          "publishedAt"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "headline": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1
+          },
+          "publishedAt": {
+            "type": "string",
+            "minLength": 1,
+            "format": "date-time",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?Z$"
+          }
+        }
+      }
+    },
+    "expectedMove": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "direction",
+        "horizon"
+      ],
+      "properties": {
+        "direction": {
+          "enum": [
+            "up",
+            "down"
+          ]
+        },
+        "horizon": {
+          "type": "integer",
+          "enum": [
+            3,
+            5
+          ]
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "class": {
+            "const": "explained_up"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "expectedMove": {
+            "properties": {
+              "direction": {
+                "const": "up"
+              },
+              "horizon": {
+                "const": 5
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "class": {
+            "const": "explained_down"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "expectedMove": {
+            "properties": {
+              "direction": {
+                "const": "down"
+              },
+              "horizon": {
+                "const": 5
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "class": {
+            "const": "unexplained_up"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "expectedMove": {
+            "properties": {
+              "direction": {
+                "const": "down"
+              },
+              "horizon": {
+                "const": 3
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "class": {
+            "const": "unexplained_down"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "expectedMove": {
+            "properties": {
+              "direction": {
+                "const": "up"
+              },
+              "horizon": {
+                "const": 3
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "id": "earnings_beat",
+  "brief": {
+    "decisionId": "2026-11-17-us:BEAT",
+    "ticker": "BEAT",
+    "moveKind": "close",
+    "movePct": 9.5,
+    "newsCutoff": "2026-11-16T21:00:00Z",
+    "items": [
+      {
+        "id": "n1",
+        "headline": "BEAT beats earnings estimates and raises full-year guidance",
+        "source": "BEAT investor relations (synthetic)",
+        "publishedAt": "2026-11-16T20:00:00Z"
+      }
+    ],
+    "facts": "Company reports revenue and EPS above consensus, raises guidance; residual move +9.5%."
+  },
+  "expected": {
+    "class": "explained_up",
+    "allowLookaheadRejection": false
+  }
+}
