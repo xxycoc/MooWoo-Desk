@@ -8,7 +8,7 @@ import sys
 
 import pytest
 
-from moowoo.broker import parse_history, parse_placement
+from moowoo.broker import parse_history, parse_placement, parse_positions
 from moowoo.execution import prepare, record, reconcile
 from moowoo.fees import estimate_fees
 from moowoo.ledger import EventLog
@@ -18,6 +18,30 @@ from moowoo.tickets import OrderTicket, to_sim_order, verify_placed
 
 ROOT = Path(__file__).resolve().parents[1]
 RUN = "2026-11-17-us"
+
+
+def test_positions_wrapped_string_numbers(monkeypatch):
+    monkeypatch.setenv("MOOMOO_ACCOUNT_ID", "synthetic-paper-account")
+    monkeypatch.setenv("MOOMOO_MARKET", "100")
+    reply = dict(ret_code=0, ret_msg="success", data=dict(positions=[dict(
+        symbol="US.AAPL", qty="10", avg_cost="190.5", market_price="191.2",
+        acc_id="synthetic-paper-account", market=100)]))
+    position = parse_positions(reply)[0]
+    assert position["ticker"] == "AAPL"
+    assert position["qty"] == 10 and type(position["qty"]) is int
+    assert position["avgCost"] == 190.5 and position["marketPrice"] == 191.2
+    assert reply["data"]["positions"][0]["qty"] == "10"
+
+
+@pytest.mark.parametrize("field,value", [("qty", "1.5"), ("qty", "-1"), ("qty", "NaN"),
+    ("avg_cost", "Infinity"), ("market_price", "0"), ("qty", True)])
+def test_positions_invalid_numeric_fields(field, value, monkeypatch):
+    monkeypatch.setenv("MOOMOO_ACCOUNT_ID", "synthetic-paper-account")
+    monkeypatch.setenv("MOOMOO_MARKET", "100")
+    row = dict(symbol="US.AAPL", qty="10", avg_cost="190.5", market_price="191.2")
+    row[field] = value
+    with pytest.raises(ValueError):
+        parse_positions(dict(ret_code=0, ret_msg="success", data=dict(positions=[row])))
 
 
 def sample(name):

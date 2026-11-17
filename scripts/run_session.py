@@ -12,12 +12,13 @@ import _common  # noqa: F401
 from moowoo import calendar, config
 from moowoo.ledger import EventLog
 from moowoo.persistence import LedgerError, LedgerStore, REMOTE
-from moowoo.runlock import acquire, require_owned
+from moowoo.runlock import acquire, renew, require_owned
+from moowoo.runtime_logs import existing_log, index_logs
 from plan_session import atomic_json, read_json
 
 ROOT = Path(__file__).resolve().parents[1]
 PHASES = ("start", "preflight", "plan", "prepare", "record", "reconcile",
-          "grade_calls", "score_hypotheses", "finish", "abort")
+          "grade_calls", "score_hypotheses", "finish", "abort", "renew")
 
 
 def validate_dispatch(manifest, now):
@@ -78,6 +79,11 @@ def run(args, now=None):
     if context["kind"] != args.kind:
         raise ValueError("kind differs from the acquired run")
     holder, run_id = context["holder"], context["runId"]
+    if args.phase == "renew":
+        lock = renew(store, holder, injected_now)
+        context["expiresAt"] = lock["expiresAt"]
+        atomic_json(control, context)
+        return context | dict(renewed=True)
     log = EventLog(root / f"logs/{run_id}.jsonl", runId=run_id)
     if args.phase == "abort":
         log.append("reflection_note", dict(prompt="Session runner", text="Session aborted; retained all evidence", skipped=True))
@@ -152,8 +158,10 @@ def run(args, now=None):
                                        "--out", root / "hypotheses/latest.json")
     elif args.phase == "finish":
         summaries = {}
-        for source in sorted((root / "logs").glob("*.jsonl")):
-            events = EventLog(source, runId=source.stem).read()
+        logs = index_logs(existing_log(source) for source in sorted((root / "logs").glob("*.jsonl")))
+        for source_log in logs.values():
+            source = source_log.path
+            events = source_log.read()
             summaries[source.relative_to(root).as_posix()] = dict(count=len(events), hash=events[-1]["hash"] if events else None)
         atomic_json(root / f"handoffs/{run_id}.json", dict(runId=run_id, kind=args.kind, logs=summaries,
                     tickets=[p.relative_to(root).as_posix() for p in sorted((root / "tickets").glob("*.json"))], inputs=inputs.relative_to(root).as_posix()))
@@ -191,7 +199,7 @@ def main():
         # Ledger errors are deliberately free of git output; no broker payloads are echoed.
         from persist_ledger import redact_error
         recovery = "local copy retained; run --phase abort to persist evidence when ownership permits"
-        if not isinstance(exc, LedgerError):
+        if args.phase != "renew" and not isinstance(exc, LedgerError):
             try:
                 args.phase = "abort"
                 run(args)

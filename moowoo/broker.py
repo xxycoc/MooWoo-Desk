@@ -107,7 +107,7 @@ def parse_positions(payload):
             raise ValueError("duplicate broker position")
         seen.add(row["ticker"])
         for name in ("qty", "avgCost", "marketPrice"):
-            positive(row[name], name, zero=name == "qty")
+            row[name] = decimal_number(row[name], name, zero=name == "qty", whole=name == "qty")
     return result
 
 

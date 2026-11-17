@@ -6,12 +6,14 @@ from pathlib import Path
 import _common
 from moowoo.execution import halt, safe_reason
 from moowoo.ledger import EventLog
+from moowoo.runtime_logs import existing_log
 from moowoo.portfolio import PortfolioState
 from plan_session import atomic_json, frozen_config, read_json
 
 
-def command(args, operation, *, persist_halt=False):
-    log = EventLog(args.log, runId=Path(args.log).stem)
+def command(args, operation, *, persist_halt=False, preserved_identity=False):
+    path = Path(args.log)
+    log = existing_log(path) if preserved_identity and path.exists() else EventLog(path, runId=path.stem)
     with log.locked():
         try:
             result = operation(args, log)

@@ -42,6 +42,39 @@ Lease expiry is not permission for an old executor to continue: finish each
 broker call before expiry and recheck before any further calls. Git cannot fence
 an already-running external MCP request.
 
+Renew before the current lease expires with:
+
+```text
+python3 scripts/run_session.py --kind morning --phase renew --dir runtime
+```
+
+Use the acquired kind (`morning`, `watch`, or `audit`). Renewal checkpoints the
+lock without releasing it or changing the phase. Expiry becomes 45 minutes from
+renewal, capped at 120 minutes from acquisition. Expired or replaced leases are
+never renewed. Morning cloud sessions have a 120-minute timeout; watch and audit
+remain at 25 minutes. The longer timeout does not renew a lease automatically.
+
+Immediately before each prepared order tool call, run:
+
+```text
+python3 scripts/dispatch_check.py --kind morning --decision-id <id> --dir runtime
+python3 scripts/dispatch_check.py --kind watch --decision-id <id> --dir runtime
+```
+
+Use the matching session kind. A successful check returns `ok`, `decisionId`,
+and the exact saved `args`; failure returns `ok: false` and `reason` with a
+nonzero exit. It checks remote ownership, the prepared attempt and receipt,
+the calendar, and only that ticket's frozen 60-second freshness window. It
+neither prepares another attempt nor calls the broker. Successful output carries
+the account identifier: forward it privately, never into public logs. A check
+cannot fence a delayed external broker call or consume the attempt; receipt
+recording and no-repeat executor discipline still apply.
+
+Preserved log identities come from verified events, not filenames. Multiple
+files claiming one identity are rejected rather than silently combined. Logs
+are never renamed or rewritten to repair an identity mismatch. Empty logs have
+no event identity and must be investigated rather than guessed from their names.
+
 ## Phase commands and files
 
 Start with one command:

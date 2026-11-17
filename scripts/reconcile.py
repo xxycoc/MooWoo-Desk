@@ -7,15 +7,14 @@ from _execution import atomic_json, command, frozen_config, read_json
 from moowoo.broker import parse_cash, parse_history, parse_positions
 from moowoo.execution import load_tickets, reconcile
 from moowoo.portfolio import PortfolioState
-from moowoo.ledger import EventLog
+from moowoo.runtime_logs import existing_log, index_logs
 
 
 class RuntimeLogs:
     """Read all durable runs; route fill appends to the original decision's log."""
 
     def __init__(self, logs, current):
-        self.logs = {log.runId: log for log in logs}
-        self.logs[current.runId] = current
+        self.logs = index_logs([*logs, current])
         self.current, self.runId = current, current.runId
 
     def read(self):
@@ -30,9 +29,9 @@ def run(args, log):
     config_hash = frozen_config()["configHash"]
     if getattr(args, "runtime", None):
         root = Path(args.runtime)
-        logs = [log if path.resolve() == log.path.resolve() else EventLog(path, runId=path.stem)
+        logs = [log if path.resolve() == log.path.resolve() else existing_log(path)
                 for path in sorted((root / "logs").glob("*.jsonl"))]
-        by_run = {source.runId: source for source in logs}
+        by_run = index_logs(logs)
         tickets = {}
         for path in sorted((root / "tickets").glob("*.json")):
             manifest = read_json(path)
@@ -70,7 +69,7 @@ def main():
     source.add_argument("--runtime", help="reconcile all immutable manifests and original run logs")
     for name in ("history", "positions", "cash", "state", "log"):
         parser.add_argument("--" + name, required=True)
-    return command(parser.parse_args(), run, persist_halt=True)
+    return command(parser.parse_args(), run, persist_halt=True, preserved_identity=True)
 
 
 if __name__ == "__main__":

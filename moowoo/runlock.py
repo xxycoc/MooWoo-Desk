@@ -8,6 +8,9 @@ from .calendar import local_time, utc_stamp
 from .ledger import EventLog
 from .persistence import LedgerError
 
+LEASE_MINUTES = 45
+MAX_LEASE_MINUTES = 120
+
 
 def acquire(store, kind, now=None, holder=None):
     now = local_time(now or datetime.now(timezone.utc))
@@ -19,7 +22,7 @@ def acquire(store, kind, now=None, holder=None):
     if old and local_time(old["expiresAt"]) > now:
         raise LedgerError("account run lock is held; skip this overlapping session")
     lock = dict(holder=holder or uuid.uuid4().hex, kind=kind, startedAt=now.isoformat(),
-                expiresAt=(now + timedelta(minutes=45)).isoformat())
+                expiresAt=(now + timedelta(minutes=LEASE_MINUTES)).isoformat())
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(lock) + "\n", encoding="utf-8")
     if old:
@@ -30,6 +33,35 @@ def acquire(store, kind, now=None, holder=None):
         # Never rebase a lock acquisition: a second winner would violate exclusivity.
         raise LedgerError("run lock acquisition lost a race or push failed; do not run; local copy retained")
     return lock
+
+
+def renew(store, holder, now=None):
+    lock = require_owned(store, holder, now)
+    current = local_time(now or datetime.now(timezone.utc))
+    if current < local_time(lock["startedAt"]):
+        raise LedgerError("run lease acquisition is in the future")
+    deadline = local_time(lock["startedAt"]) + timedelta(minutes=MAX_LEASE_MINUTES)
+    if current >= deadline:
+        raise LedgerError("run lease reached its total duration cap")
+    renewed = lock | dict(expiresAt=min(current + timedelta(minutes=LEASE_MINUTES), deadline).isoformat())
+    path = store.directory / "locks/run.lock"
+    pending = json.dumps(renewed) + "\n"
+    path.write_text(pending, encoding="utf-8")
+
+    def check_renewal():
+        current = local_time(now or datetime.now(timezone.utc))
+        remote = store.remote_lock()
+        if not remote or remote.get("holder") != holder or local_time(remote["expiresAt"]) <= current:
+            raise LedgerError("run lease expired or ownership lost before renewal save")
+        if remote.get("startedAt") != lock["startedAt"] or current >= deadline:
+            raise LedgerError("run lease acquisition changed or total duration cap reached")
+    try:
+        store.save("Renew account run lock", holder, release=False, before_push=check_renewal)
+    except (LedgerError, ValueError, OSError):
+        if path.read_text(encoding="utf-8") == pending:
+            path.write_text(json.dumps(lock) + "\n", encoding="utf-8")
+        raise
+    return renewed
 
 
 def require_owned(store, holder, now=None):

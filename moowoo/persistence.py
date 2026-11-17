@@ -6,7 +6,8 @@ import os
 from pathlib import Path
 import subprocess
 
-from .ledger import EventLog, verify
+from .ledger import verify
+from .runtime_logs import existing_log, index_logs
 
 # Private repo: raw receipts and tickets carry the account ID; the source repo is public.
 REMOTE = "https://github.com/xxycoc/MooWoo-Ledger"
@@ -63,13 +64,17 @@ class LedgerStore:
             result = verify(path)
             if not result.ok:
                 raise LedgerError(f"broken event chain in {path.relative_to(self.directory)} at seq {result.bad_seq}; save refused")
+        try:
+            index_logs(existing_log(path) for path in (self.directory / "logs").glob("*.jsonl"))
+        except ValueError as exc:
+            raise LedgerError(str(exc)) from exc
         for path in (self.directory / "handoffs").glob("*.json"):
             handoff = json.loads(path.read_text(encoding="utf-8"))
             for name, checkpoint in handoff["logs"].items():
                 source = (self.directory / name).resolve()
                 if not source.is_relative_to(self.directory / "logs"):
                     raise LedgerError("handoff log escapes runtime logs")
-                events = EventLog(source, runId=source.stem).read()
+                events = existing_log(source).read()
                 count = checkpoint["count"]
                 if len(events) < count or (count and events[count - 1]["hash"] != checkpoint["hash"]):
                     raise LedgerError("handoff terminal checkpoint does not match preserved log prefix")
@@ -130,7 +135,7 @@ class LedgerStore:
         elif self.git("rev-parse", "--verify", "HEAD", check=False).returncode:
             self.git("commit", "--allow-empty", "-m", message)
 
-    def save(self, message, holder=None, *, release=True):
+    def save(self, message, holder=None, *, release=True, before_push=None):
         self.assert_repository()
         self.verify_logs()
         exists = self.fetch()
@@ -159,6 +164,8 @@ class LedgerStore:
                 if result.returncode:
                     raise LedgerError("ledger rebase conflict; stopped without force push; resolve local copy manually")
             self.verify_logs()
+            if before_push is not None:
+                before_push()
             result = self.git("push", self.remote, "HEAD:refs/heads/ledger", check=False)
             if result.returncode == 0:
                 return dict(saved=True, unlocked=bool(holder and release), commit=self.git("rev-parse", "HEAD").stdout.strip())

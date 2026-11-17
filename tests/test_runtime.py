@@ -264,6 +264,8 @@ def test_dry_schedule_payload_and_autonomy(monkeypatch):
     assert any("no IM sink" in warning for warning in manifest["warnings"])
     for body in schedules:
         assert body["execution"]["max_concurrent_runs"] == 1
+        minutes = 120 if body["name"] == "moowoo-morning" else 25
+        assert body["execution"]["timeout_ms"] == minutes * 60 * 1000
         assert body["stop_at"] == "2026-11-28T06:00:00+08:00"
         assert "scripts/run_session.py --kind" in body["initial_events"][0]["content"]
         assert body["sinks"] == []
