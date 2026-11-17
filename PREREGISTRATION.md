@@ -208,3 +208,26 @@ the first live order. Anything else is a deviation and will be reported as one.
 Price-action checklist ideas came from the Trade with Stan course notes. They
 are logged, not used for sizing. The debate structure was inspired by
 TradingAgents (Xiao et al., 2024). No code from either source is used.
+
+## 9. Addendum 2026-11-17: prompts frozen before the first order
+
+Written on 17 November 2026, before any order in the competition account.
+
+- promptVersion `e96f044a0a4fae7692deac96757da0bd7a601429e686738eefb93db76a280ec0`: SHA-256 of `agents/*/system.md`, `schemas/rating.schema.json`
+  and `agents/permissions.json`, computed by `scripts/hash_prompts.py` at commit `baa8acc`.
+  Every `run_started` event must carry this value; the preflight guard refuses orders otherwise.
+- Changes since the prompts were first written: the quick classifier's reason is limited
+  to 3 sentences and 400 characters, after one evaluation answer ran to 750; the
+  coordinator and auditor follow the numbered `scripts/run_session.py` phases. Classes,
+  sizing, risk limits, horizons, grading and hypotheses H1 to H3 are unchanged.
+- Schedule: the morning run is 09:35 New York (22:35 Singapore), after the
+  first-five-minutes rule. The first plan said 21:30 Singapore, which is premarket in New York; the
+  regular-hours guard would have skipped it. Watchers run every 30 minutes from 10:00
+  to 16:00 New York; the audit runs 10 minutes after each close. Orders are regular
+  hours only, although the challenge allows 04:00 to 20:00 New York.
+- AUTONOMY-01 (`config/rule-ledger.jsonl`): the executor places paper orders without
+  per-order human approval from the first session. Controls stay in code: risk desk,
+  preflight guard, ticket verification halt, real-money tools disabled with no trade scope,
+  drawdown tiers, daily loss halt and kill switch.
+- Evidence: the raw hash-chained ledger lives in a private repository during the window,
+  so live positions cannot be copied, and is published in full after 27 November.

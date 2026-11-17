@@ -424,7 +424,7 @@ def test_prepare_rechecks_after_checkpoint_push(tmp_path, remote, monkeypatch, s
 
 
 @pytest.mark.parametrize("kind", ["morning", "watch"])
-def test_runner_real_preflight_refuses_missing_prompt_addendum(tmp_path, remote, monkeypatch, kind):
+def test_runner_real_preflight_accepts_registered_prompts(tmp_path, remote, monkeypatch, kind):
     from moowoo.portfolio import PortfolioState
     from test_execution import fixture
     monkeypatch.setenv("MOOMOO_ACCOUNT_ID", "synthetic-paper-account")
@@ -433,11 +433,16 @@ def test_runner_real_preflight_refuses_missing_prompt_addendum(tmp_path, remote,
     context = run_session.run(args, NOW)
     Path(context["state"]).write_text(PortfolioState(cash=100000).to_json())
     (Path(context["inputs"]) / "accounts.json").write_text(json.dumps(fixture("accounts")))
+    # The real 2026-11-17 addendum is now committed: real preflight must accept it.
+    from moowoo.execution import registered_prompt
+    registered = registered_prompt((ROOT / "PREREGISTRATION.md").read_text(encoding="utf-8"))
     args.phase = "preflight"
-    with pytest.raises(ValueError, match="preflight.py failed"):
-        run_session.run(args, NOW)
+    result = run_session.run(args, NOW)
+    assert result["runId"] == context["runId"]
     events = EventLog(context["log"], runId=context["runId"]).read()
-    assert any(e["type"] == "halt" and "prompts not pre-registered" in e["reason"] for e in events)
+    starts = [e for e in events if e["type"] == "run_started"]
+    assert starts and starts[-1]["promptVersion"] == registered
+    assert not any(e["type"] == "halt" for e in events)
     assert not list((Path(args.dir) / "tickets").glob("*.json"))
     args.phase = "abort"
     assert run_session.run(args, NOW)["unlocked"]

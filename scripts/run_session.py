@@ -173,7 +173,8 @@ def run(args, now=None):
         # Git transport may cross the close or ticket freshness limit while saving.
         validate_dispatch(manifest, injected_now or datetime.now(timezone.utc))
     atomic_json(control, context)
-    return dict(phase=next_phase, runId=run_id, **result)
+    # Phase scripts may echo runId; the runner's own value is authoritative.
+    return {**result, "phase": next_phase, "runId": run_id}
 
 
 def main():
