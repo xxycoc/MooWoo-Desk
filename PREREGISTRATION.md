@@ -291,3 +291,14 @@ Written on 18 November 2026 at about 01:50 Singapore (17 November in New York), 
 - Why: about 45 model calls per morning run would not reliably fit the run lease; 5 movers need about 25.
 - Effect on the study: fewer rated calls per day, so hypotheses H1 to H3 and the 15-graded-call step-up
   will take longer to reach their sample sizes. Classes, sizing, risk limits, horizons and grading are unchanged.
+
+## 14. Addendum 2026-11-18: briefs go inline to the no-tool agents
+
+Written on 18 November 2026 at about 01:55 Singapore (17 November in New York), still before any order in the competition account.
+
+- promptVersion `fc75156efca9faa6c330ec37e7a746947dbd0e2dd13a2fd02737f770717fcf0a`, computed by `scripts/hash_prompts.py`. It replaces `983b7102...`.
+- Why: rerun 7 reached the debate with five picks, then the coordinator gave the ARMK bear agent a file path
+  instead of the brief text. Bear has no tools, could not read it, and the coordinator aborted the whole run.
+- Change: the coordinator pastes the full brief (and, for manager, the bull and bear replies) inline for bull,
+  bear, manager and quick. One child's failed or unusable reply is only that ticker's logged skip; the run
+  continues. No rule, class, sizing, risk limit, horizon, grading or hypothesis changes.

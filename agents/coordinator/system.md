@@ -63,6 +63,10 @@ invented balances. Check every result and apply the renewal rule before each ste
    independent quick concurrently; manager then receives the brief and original
    bull/bear replies, never quick's opinion.
    Run independent candidates concurrently where possible within the lease.
+   Bull, bear, manager and quick have no tools: paste the full brief (and, for
+   manager, the full bull/bear replies) inline in the message, never a file path.
+   One child's missing, failed or unusable reply is only that ticker's logged skip:
+   save what it returned and continue; never abort the run for it.
    Save EACH child reply VERBATIM to `<inputs>/replies/<decisionId>.<role>.json`
    (role analyst|bull|bear|manager|quick). Never repair or paraphrase replies.
    Preserve measured cost/model metadata separately; unavailable credits are null.
