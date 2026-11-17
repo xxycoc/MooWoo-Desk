@@ -90,6 +90,70 @@ the brief's morning-only preflight, retained rather than bypassing that gate.
 The current checkout has no dated promptVersion addendum in PREREGISTRATION.md;
 real morning/watch preflight therefore refuses orders until the owner records it.
 
+## Batch rating handoff
+
+After morning gather and child replies, before plan, run:
+
+```text
+python3 scripts/ingest_ratings.py --inputs runtime/inputs/<runId>
+```
+
+The input directory must be named `<runId>` under `inputs/`. Files are trusted
+runtime inputs or verbatim child replies; never rewrite replies to make them pass.
+
+| Path relative to `<inputs>` | Contract |
+| --- | --- |
+| `session.json` | Required gather output; `runId`, `kind: "morning"`, `barsAsOf` |
+| `candidates.json` | Required gather output, array of at most fifteen picked movers in rank order; each has `rank`, `decisionId`, `ticker`, trusted `newsCutoff`, `barsAsOf`, `promptVersion`, `primaryAgent`, `quickSecondOpinionRequired`. The stored candidate `setupScore` is not trusted; ingestion recomputes it. |
+| `bars.json` | Required gather output, completed daily OHLCV bars keyed by ticker; each accepted ticker needs bars through `session.barsAsOf` |
+| `replies/<decisionId>.analyst.json` | Required for every candidate; original brief with matching identity/cutoff and `items` containing id, headline, source, UTC publishedAt and summary. Empty items are allowed. |
+| `replies/<decisionId>.bull.json`, `.bear.json` | Required for ranks 1–5; exact debate objects with `decisionId`, `stance`, `argument` (at most 150 words), `itemIds` referencing eligible brief items |
+| `replies/<decisionId>.manager.json` | Required primary for ranks 1–5, `tier: "debate"`, validated against the candidate cutoff and promptVersion |
+| `replies/<decisionId>.quick.json` | Required primary for ranks 6–15, `tier: "quick"`. Expected for ranks 1–5 as a separately validated second opinion; missing/invalid quick logs its own skip and cannot reject a valid manager primary. |
+| `ratings.json` | Generated atomically; only accepted primaries in picked order, or `[]`. Never hand-write this file. |
+
+`decisionId` is exactly `<runId>:<ticker>`; filenames preserve the colon. These
+are ordinary Linux files in the cloud. On Windows/NTFS a colon denotes an alternate
+data stream, so use Linux for durable transcript storage/transfer; ordinary Windows
+directory listings and copy tools may omit those streams. No filename substitution
+or reply-content normalization is performed by ingestion.
+
+The rating object retains `decisionId`, `ticker`, `class`, `confidence`, `tier`,
+`reason`, `evidence`, `newsCutoff`, `expectedMove`, `wrongIf`, `model`, and
+`promptVersion`, plus validated optional display summaries and the integer
+`setupScore` from `setup_score(bars)["total"]`. The JSON array is directly usable
+as `scripts/plan_session.py --ratings <inputs>/ratings.json`. No event envelopes,
+credits, skip records or second-opinion rows enter this array. Bull/bear summaries
+are display metadata; they never overwrite the manager class or confidence.
+
+Ingestion appends through the existing locked `EventLog` at
+`<inputs>/../../logs/<runId>.jsonl`. Each decision has one terminal primary outcome
+and, for ranks 1–5, one independent second-opinion outcome. Missing/malformed
+replies, bad candidate metadata or unusable ticker bars become ticker `halt`
+events with `disposition: "skip"`, `stage: "rating_validation"` and the appropriate
+`secondOpinion` flag. A partial batch still exits successfully and reports accepted
+and skipped primary counts. Invalid run-level files, unsafe/duplicate ticker
+identities, corrupt logs or I/O failures fail the command.
+
+The same writer lock spans replay, append and export. Reruns reuse logged outcomes,
+including skips, and rebuild the export without duplicate events. An interruption
+after one append is recoverable on rerun; a torn/corrupt log fails closed. Do not
+edit candidates or retry corrected replies within a terminal decision; retain the
+evidence and use a new run. This command is local ingestion only; it does not
+acquire a remote lease, save runtime, call agents or authorize execution.
+
+Batch events use `credits: null` and
+`creditsMissingReason: "Live child agents expose no cost meter."`; unknown cost
+is never represented as zero. The single-rating CLI supports `--credits null
+--credits-missing-reason "<reason>"`; measured numeric `--credits` still works.
+Null requires a nonempty reason, and measured credits cannot carry a missing
+reason. The SQLite decisions projection stores nullable credits and the reason;
+rebuild it from the log to update an older disposable projection. The frozen
+rating schema and promptVersion inputs are unchanged.
+When the single-rating CLI also receives `--quick-output`, that separate event
+records unknown quick cost with its own reason; it never duplicates the primary's
+measured credits.
+
 Morning and watcher sequence (substitute `watch` for `morning` as appropriate):
 
 ```text

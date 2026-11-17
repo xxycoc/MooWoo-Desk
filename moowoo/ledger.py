@@ -187,7 +187,8 @@ CREATE TABLE decisions (
     runId TEXT NOT NULL, seq INTEGER NOT NULL, decisionId TEXT NOT NULL, ts TEXT NOT NULL,
     ticker TEXT NOT NULL, class TEXT NOT NULL, confidence REAL NOT NULL,
     tier TEXT NOT NULL, reason TEXT NOT NULL, newsCutoff TEXT NOT NULL,
-    transcriptRef TEXT NOT NULL, credits REAL NOT NULL, setupScore INTEGER NOT NULL,
+    transcriptRef TEXT NOT NULL, credits REAL, setupScore INTEGER NOT NULL,
+    creditsMissingReason TEXT,
     raw TEXT NOT NULL, PRIMARY KEY (runId, seq)
 );
 CREATE INDEX decisions_decisionId ON decisions(decisionId);
@@ -267,7 +268,8 @@ def build_sqlite(log_paths, db_path):
                     kind = event["type"]
                     if kind == "rating":
                         values = tuple(event[k] for k in ("ticker", "class", "confidence", "tier", "reason", "newsCutoff", "transcriptRef", "credits", "setupScore"))
-                        connection.execute("INSERT INTO decisions VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", common + values + (raw,))
+                        connection.execute("INSERT INTO decisions VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                                           common + values + (event.get("creditsMissingReason"), raw))
                     elif kind == "rule_change":
                         connection.execute("INSERT INTO rule_changes VALUES (?,?,?,?,?,?,?,?,?,?)", common + (
                             event["ruleId"], _json(event["before"]), _json(event["after"]),
