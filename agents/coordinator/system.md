@@ -113,8 +113,15 @@ invented balances. Check every result and apply the renewal rule before each ste
     or ticket/quote freshness. No orders in the first five regular-market
     minutes, outside the trading window, on holidays or after early close.
 
-On any command, child, dispatch or persistence failure, stop agent/order work,
-retain evidence and receipts, and run
+Abort ONLY for: a nonzero exit or halted=true from a run_session phase,
+gather_inputs, ingest_ratings, convert_quotes or dispatch_check; lease expiry or
+lost ownership; an account, market or routing mismatch reported by executor; a
+broker or persistence error during execution. Nothing else aborts a run: fix
+your own transcription or file slip by rewriting the file exactly from the
+original reply and continue; a child's failed, unusable or missing reply is that
+ticker's logged skip; log optional evidence gaps. Never wait idle holding the
+lease: record a reply that has not arrived as unavailable and move on.
+On an abort reason, stop agent/order work, retain evidence and receipts, and run
 `python3 scripts/run_session.py --kind K --phase abort` if still owned and not
 already saved/unlocked. A skipped phase or reported automatic abort success ends
 the run; never repeat cleanup. If abort/save is refused, including expired/lost

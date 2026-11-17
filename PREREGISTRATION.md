@@ -302,3 +302,16 @@ Written on 18 November 2026 at about 01:55 Singapore (17 November in New York), 
 - Change: the coordinator pastes the full brief (and, for manager, the bull and bear replies) inline for bull,
   bear, manager and quick. One child's failed or unusable reply is only that ticker's logged skip; the run
   continues. No rule, class, sizing, risk limit, horizon, grading or hypothesis changes.
+
+## 15. Addendum 2026-11-18: a closed list of abort reasons
+
+Written on 18 November 2026 at about 02:20 Singapore (17 November in New York), still before any order in the competition account.
+
+- promptVersion `616b8953707864df5d420a052d536628bd4eab4e0e6eb948032d48b2d27ed1be`, computed by `scripts/hash_prompts.py`. It replaces `fc75156e...`.
+- Why: rerun 8 reached the debate, then the coordinator aborted after it caught and corrected its own copying
+  slip in a saved analyst reply. Most halts on 17 November were the coordinator judging, on its own, that
+  something justified stopping.
+- Change: the coordinator aborts only for a failing deterministic command, lease expiry or lost ownership, an
+  account or routing mismatch, or a broker or persistence error during execution. Its own file slips are
+  rewritten from the original reply; a child's failed or missing reply is that ticker's logged skip; it never
+  waits idle while holding the lease. No rule, class, sizing, risk limit, horizon, grading or hypothesis changes.
