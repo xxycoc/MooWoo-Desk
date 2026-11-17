@@ -374,9 +374,12 @@ def test_execution_cli_pipeline(setup, tmp_path):
     assert json.loads(Path(state_path).read_text())["cash"] == pytest.approx(94999.01)
 
 
-def test_actual_preflight_requires_addendum(tmp_path):
-    args = [sys.executable, "scripts/preflight.py", "--accounts", str(ROOT / "fixtures/broker/provisional_accounts.json"),
-            "--state", save(tmp_path / "state.json", PortfolioState(cash=100000).to_dict()),
-            "--log", str(tmp_path / f"{RUN}.jsonl")]
-    process = subprocess.run(args, cwd=ROOT, capture_output=True, text=True)
-    assert process.returncode == 2 and "prompts not pre-registered" in process.stdout
+def test_preregistration_requires_addendum_and_matches_current_prompts():
+    text = (ROOT / "PREREGISTRATION.md").read_text(encoding="utf-8")
+    # Without the dated addendum, prompts count as unregistered.
+    without = text.split("\n## 9. Addendum")[0]
+    with pytest.raises(ValueError, match="prompts not pre-registered"):
+        registered_prompt(without)
+    # The committed 2026-11-17 freeze must match the prompts actually deployed;
+    # editing a prompt without a new dated addendum fails here.
+    assert registered_prompt(text) == prompt_version()
