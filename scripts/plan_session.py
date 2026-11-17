@@ -13,6 +13,8 @@ import _common  # noqa: F401
 import pandas as pd
 
 from moowoo import config as C
+from moowoo import calendar
+from moowoo.rules import AUTONOMY_CHANGE
 from moowoo.core import propose_core
 from moowoo.desk_data import daily_frame, instant
 from moowoo.events import canonical_bytes
@@ -52,7 +54,7 @@ def frozen_config():
     expected_addendum = dict(date="2026-11-17", ruleId="FEES-01", before=None,
         after=dict(FEE_PER_ORDER=.99, FEE_PER_SHARE_SOLD=.000166, FEE_SELL_CAP=8.30, MIN_ENTRY_NOTIONAL=2000),
         reason="competition rules section 8 fees; addendum before first trade", effectiveFrom="first session")
-    if additions != [expected_addendum]:
+    if additions != [expected_addendum, AUTONOMY_CHANGE]:
         raise ValueError("unrecognized rule addendum")
     expected = frozen["config"] | expected_addendum["after"]
     if calculated != frozen["configHash"] or canonical_bytes(actual) != canonical_bytes(expected):
@@ -90,12 +92,17 @@ def plan(args):
 
 
 def _plan(args, log):
+    snapshot = read_json(args.quotes)
+    now = calendar.local_time(snapshot["now"])
+    skipped = calendar.skip(log, now, "morning") or calendar.skip_first_minutes(log, now, C.NO_ORDERS_FIRST_MINUTES)
+    if skipped:
+        return skipped
     frozen = frozen_config()
     state = PortfolioState.from_dict(read_json(args.state))
-    snapshot = read_json(args.quotes)
-    now, opened, closed = (instant(snapshot[key]) for key in ("now", "regularOpen", "regularClose"))
+    snapshot["now"] = calendar.utc_stamp(now)
+    opened, closed = calendar.session_open(now), calendar.session_close(now)
     session = snapshot["sessionDate"]
-    if opened >= closed or opened.date().isoformat() != session or closed.date().isoformat() != session:
+    if now.date().isoformat() != session:
         raise ValueError("invalid regular-session schedule")
     pd.Timestamp(args.bars_asof)
     if args.bars_asof > session or (args.bars_asof == session and now < closed):
@@ -113,8 +120,8 @@ def _plan(args, log):
     quotes = snapshot["quotes"]
     prices = {ticker: quote["last"] for ticker, quote in quotes.items() if "last" in quote}
     market = dict(now=snapshot["now"], sessionDate=session, prices=prices, bars=bars,
-                  quotes=quotes, minutesSinceOpen=(now-opened).total_seconds()/60,
-                  isRegularSession=opened <= now <= closed)
+                  quotes=quotes, minutesSinceOpen=calendar.minutes_since_open(now),
+                  isRegularSession=calendar.is_regular_hours(now))
     tickets = {}
     if log.path.exists():
         for line in log.path.read_text(encoding="utf-8").splitlines():

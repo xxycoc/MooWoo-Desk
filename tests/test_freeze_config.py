@@ -88,5 +88,6 @@ def test_preregistration_matches_frozen_artifact():
     for key, value in namespace.items():
         if not key.startswith("_"):
             assert getattr(config, key) == value
-    additions = json.loads((ROOT / "config/rule-ledger.jsonl").read_text())["after"]
+    additions = next(json.loads(line)["after"] for line in (ROOT / "config/rule-ledger.jsonl").read_text().splitlines()
+                     if json.loads(line)["ruleId"] == "FEES-01")
     assert {k: v for k, v in vars(config).items() if not k.startswith("_") and k not in namespace} == additions

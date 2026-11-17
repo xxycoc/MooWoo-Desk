@@ -10,5 +10,6 @@ ledger/*.sqlite
 build/
 dist/
 .cache/
+runtime/
 deploy/settings.local.json
 deploy/receipts.local.json

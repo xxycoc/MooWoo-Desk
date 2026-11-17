@@ -209,7 +209,7 @@ def test_deploy_offline(monkeypatch):
     roster = ops['agent.coordinator']['multiagent']['agents']
     assert len(roster) == 6
     assert all('auditor' not in r['id'] for r in roster)
-    assert ops['schedule.morning']['trigger_policy'] == {'type':'cron','expression':'30 21 * * 1-5','timezone':'Asia/Singapore'}
+    assert ops['schedule.morning']['trigger_policy'] == {'type':'cron','expression':'35 9 * * 1-5','timezone':'America/New_York'}
     assert ops['schedule.audit']['execution']['session_mode'] == 'new_session'
     assert ops['template.auditor']['vaults'] == {'${vault.moomoo-mcp.id}': {'enabled': True}}
     assert 'vault_ids' in result['session_example']
@@ -258,11 +258,13 @@ def test_apply_payload_resolution_with_mock_api(tmp_path):
         calls.append((path, body))
         return {'id': f'resource_{len(calls)}', 'version':1}
     receipt_path = tmp_path/'receipts.jsonl'
-    receipts = apply_payloads(build_payloads(settings), settings, 'fake-token', request=fake, receipt_path=receipt_path)
+    receipts = apply_payloads(build_payloads(settings), settings, 'fake-token', request=fake, receipt_path=receipt_path,
+                              ledger_token='fake-ledger-token')
     assert len(receipts) == len(calls) == 11
     receipts = apply_payloads(build_payloads(settings), settings, 'fake-token', request=fake,
-                              stage='schedules', prior=load_receipts(receipt_path), receipt_path=receipt_path)
-    assert len(receipts) == len(calls) == 16
+                              stage='schedules', prior=load_receipts(receipt_path), receipt_path=receipt_path,
+                              ledger_token='fake-ledger-token')
+    assert len(receipts) == len(calls) == 17
     assert next(b for p,b in calls if p=='/forward/templates')['vaults'] == {'vault_test':{'enabled':True}}
 
 
