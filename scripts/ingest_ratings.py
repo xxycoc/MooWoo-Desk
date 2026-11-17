@@ -21,6 +21,18 @@ def require(condition, message):
         raise ValidationError(message)
 
 
+AGENTS = Path(__file__).resolve().parents[1] / "agents"
+
+
+def with_configured_model(obj, path):
+    # Agents cannot see their own deployment model id and reply model=null (17 Nov rerun 12).
+    # Provenance then comes from the deployed agent definition, never from a guess.
+    if isinstance(obj, dict) and obj.get("model") is None:
+        role = Path(path).name.rsplit(".", 2)[-2]
+        obj["model"] = json.loads((AGENTS / role / "agent.json").read_text(encoding="utf-8"))["model"]
+    return obj
+
+
 def read_reply(path):
     try:
         return parse_rating(path.read_text(encoding="utf-8"))
@@ -81,7 +93,8 @@ def ingest_candidate(log, inputs, candidate, bars, session, second_opinion, rank
         require(ticker in bars, "missing, invalid or stale candidate bars")
         score = setup_score(bars[ticker])["total"]
         arguments = brief_and_arguments(inputs, candidate, debate)
-        rating = validate_rating(read_reply(inputs / reference), candidate["newsCutoff"])
+        rating = validate_rating(with_configured_model(read_reply(inputs / reference), reference),
+                                 candidate["newsCutoff"])
         require(rating["decisionId"] == decision and rating["ticker"] == ticker,
                 "rating differs from screened decision")
         require(rating["tier"] == ("debate" if debate else "quick"), "rating tier contradicts role")
