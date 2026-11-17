@@ -11,6 +11,7 @@ import tempfile
 import _common  # Sets the repository import path for direct script execution.
 from moowoo.events import canonical_bytes
 from moowoo.ledger import EventLog
+from moowoo.outcomes import grade_rating
 
 
 def generate_fixture(out, seed=7, game_out=None):
@@ -52,12 +53,14 @@ def generate_fixture(out, seed=7, game_out=None):
             ], picked=["AAPL", "NVDA"]))
 
             def rating(ticker, tier, klass, score):
-                emit("rating", {"ticker": ticker, "class": klass, "confidence": round(rng.uniform(0.58, 0.83), 3),
+                return emit("rating", {"ticker": ticker, "class": klass, "confidence": round(rng.uniform(0.58, 0.83), 3),
                      "tier": tier, "reason": "Fictional fixture: volume supports the move; news evidence remains limited.",
                      "newsCutoff": f"2026-11-{day}T14:29:00Z", "transcriptRef": f"fixture://{run}/{ticker}",
                      "credits": 3 if tier == "debate" else 1, "setupScore": score})
 
-            rating("AAPL", "debate", "explained_up", 4)
+            sample_rating = rating("AAPL", "debate", "explained_up", 4)
+            missing_outcome = grade_rating(sample_rating, {}, "2026-11-27")
+            emit("outcome", missing_outcome)
             rating("NVDA", "quick", "unexplained_up", 3)
             if day == 18:
                 rating("KO", "quick", "unexplained_down", 2)

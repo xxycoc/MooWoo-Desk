@@ -15,6 +15,9 @@ REQUIRED_FIELDS = {
     "run_started": ("universe", "equity", "cash", "tier", "trdEnv", "configHash", "promptVersion"),
     "screen": ("candidates", "picked"),
     "rating": ("ticker", "class", "confidence", "tier", "reason", "newsCutoff", "transcriptRef", "credits", "setupScore"),
+    "outcome": ("ticker", "class", "confidence", "horizonSessions", "entryTs", "entryPrice",
+                "exitTs", "exitPrice", "stockReturn", "spyReturn", "excess", "right", "graded",
+                "sourceRunId", "ratingHash", "ratingTs", "newsCutoff", "forecastDirection", "secondOpinion"),
     "shadow": ("book", "ticker", "side", "notional", "price"),
     "core_rebalance": ("etf", "targetWeight", "actualWeight", "qty", "side"),
     "order_intent": ("ticker", "sleeve", "side", "qty", "limitPrice", "notional", "sizing", "stop"),
@@ -108,13 +111,15 @@ def validate_event(event: dict) -> None:
     missing = set(REQUIRED_FIELDS[kind]) - event.keys()
     _require(not missing, f"{kind}: missing fields: {', '.join(sorted(missing))}")
     decision = event["decisionId"]
+    decision_run = event.get("sourceRunId") if kind == "outcome" else event["runId"]
+    _require(isinstance(decision_run, str) and bool(decision_run), "invalid source run")
     _require(decision is None or (isinstance(decision, str) and
-             decision.startswith(event["runId"] + ":") and
-             bool(decision[len(event["runId"]) + 1:])), "decisionId must be null or runId:TICKER")
+             decision.startswith(decision_run + ":") and
+             bool(decision[len(decision_run) + 1:])), "decisionId must be null or runId:TICKER")
     ticker = event.get("ticker", event.get("etf"))
     if ticker is not None:
         _require(isinstance(ticker, str) and bool(ticker), "ticker/etf must be a nonempty string")
-        _require(decision == f"{event['runId']}:{ticker}", "decisionId must match runId:TICKER")
+        _require(decision == f"{decision_run}:{ticker}", "decisionId must match runId:TICKER")
 
     number_fields = {
         "equity", "cash", "confidence", "credits", "notional", "price", "targetWeight", "actualWeight",
@@ -126,6 +131,8 @@ def validate_event(event: dict) -> None:
     arbitrary_fields = {"before", "after", "expected", "observed"}
     for field in REQUIRED_FIELDS[kind]:
         value = event[field]
+        if kind == "outcome":
+            continue
         if field in number_fields:
             _number(value, field)
         elif field in list_fields:
@@ -150,13 +157,58 @@ def validate_event(event: dict) -> None:
             for field in ("movePct", "z", "rvol"):
                 _number(item[field], f"candidate.{field}")
     elif kind == "rating":
+        from .rating_schema import validate_debate
+        validate_debate(event)
         _enum(event["class"], ("explained_up", "explained_down", "unexplained_up", "unexplained_down"), "class")
         _enum(event["tier"], ("debate", "quick"), "tier")
         _require(0 <= event["confidence"] <= 1, "confidence must be between 0 and 1")
         _require(event["setupScore"] <= 5, "setupScore must be between 0 and 5")
         _utc(event["newsCutoff"], "newsCutoff")
+    elif kind == "outcome":
+        from .rating_schema import CLASSES
+        _require(isinstance(event["ticker"], str) and bool(event["ticker"]), "outcome ticker required")
+        _enum(event["class"], CLASSES, "class")
+        _number(event["confidence"], "confidence")
+        _require(0 <= event["confidence"] <= 1, "invalid outcome confidence")
+        explained = event["class"].startswith("explained_")
+        direction = event["class"].rsplit("_", 1)[1]
+        forecast = direction if explained else ("up" if direction == "down" else "down")
+        _require(event["forecastDirection"] == forecast, "outcome forecast contradicts class")
+        _require(type(event["horizonSessions"]) is int and event["horizonSessions"] == (5 if explained else 3),
+                 "outcome horizon contradicts class")
+        _require(isinstance(event["ratingHash"], str) and re.fullmatch(r"[0-9a-f]{64}", event["ratingHash"]) is not None,
+                 "invalid ratingHash")
+        for field in ("ratingTs", "newsCutoff"):
+            _utc(event[field], field)
+        for field in ("graded", "right", "secondOpinion"):
+            _require(type(event[field]) is bool, f"{field} must be bool")
+        for field in ("entryTs", "exitTs"):
+            if event[field] is not None:
+                _utc(event[field], field)
+            else:
+                _require(not event["graded"], f"graded {field} required")
+        for field in ("entryPrice", "exitPrice", "stockReturn", "spyReturn", "excess"):
+            if event[field] is not None:
+                _number(event[field], field)
+                if field.endswith("Price"):
+                    _require(event[field] > 0, f"{field} must be positive")
+            else:
+                _require(not event["graded"], f"graded {field} required")
+        if event["graded"]:
+            _require(datetime.fromisoformat(event["ratingTs"].replace("Z", "+00:00"))
+                     < datetime.fromisoformat(event["entryTs"].replace("Z", "+00:00"))
+                     < datetime.fromisoformat(event["exitTs"].replace("Z", "+00:00")), "invalid outcome chronology")
+            _require(math.isclose(event["stockReturn"], event["exitPrice"] / event["entryPrice"] - 1,
+                                  abs_tol=1e-12), "outcome stock return mismatch")
+            _require(math.isclose(event["excess"], event["stockReturn"] - event["spyReturn"], abs_tol=1e-12),
+                     "outcome excess mismatch")
+            _require(event["right"] == (event["excess"] > 0 if forecast == "up" else event["excess"] < 0),
+                     "outcome right mismatch")
+        else:
+            _require(isinstance(event.get("reason"), str) and bool(event["reason"].strip()), "ungraded reason required")
+            _require(event["right"] is False, "ungraded right must be false")
     elif kind == "shadow":
-        _enum(event["book"], ("follow", "fade", "equal_weight"), "book")
+        _enum(event["book"], ("llm", "follow", "fade", "equal_weight"), "book")
     elif kind == "order_intent":
         _enum(event["sleeve"], ("core", "satellite"), "sleeve")
     elif kind == "risk_verdict":

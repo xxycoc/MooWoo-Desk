@@ -1,0 +1,4 @@
+{"cash_input": {"acc_id": "<ORDINARY_PAPER_ACC>"},
+ "cash_response": {"ret_code":0,"ret_msg":"success","data":{"balance":"999645.21","hold":"354.79","long_mv":"0","max_power_long":"1999644.22","mv":"0","realized_profit":null,"short_mv":"0","total_asset":"1000000","unrealized_profit":null}},
+ "positions_input": {"acc_id": "<ORDINARY_PAPER_ACC>", "market": 100},
+ "positions_response": {"ret_code":0,"ret_msg":"success","data":{"positions":[]}}}

@@ -267,7 +267,7 @@ def test_apply_payload_resolution_with_mock_api(tmp_path):
 
 
 def test_evals_and_diff(tmp_path, good):
-    assert evaluate(tmp_path)['passed'] == 0
+    assert evaluate(tmp_path, mode='single')['passed'] == 0
     for path in (ROOT/'evals').glob('*.json'):
         case = json.loads(path.read_text())
         brief = case['brief']
@@ -279,7 +279,7 @@ def test_evals_and_diff(tmp_path, good):
         rating['expectedMove'] = {'direction': move if explained else ('up' if move=='down' else 'down'), 'horizon':5 if explained else 3}
         rating['evidence'] = brief['items']  # last case deliberately triggers lookahead rejection
         (tmp_path/(case['id']+'.json')).write_text(json.dumps(rating))
-    result = evaluate(tmp_path)
+    result = evaluate(tmp_path, mode='single')
     assert result['passed'] == 4
     assert result['cases']['post_cutoff']['rejected'].startswith('lookahead:')
     assert compare(result, result) == ''
@@ -291,7 +291,7 @@ def test_evals_and_diff(tmp_path, good):
     rating['class'] = 'explained_down'
     rating['expectedMove'] = {'direction':'down','horizon':5}
     bad.write_text(json.dumps(rating))
-    assert evaluate(tmp_path)['passed'] == 3
+    assert evaluate(tmp_path, mode='single')['passed'] == 3
 
 
 def test_schema_accepts_valid_and_rejects_structural_errors(good):

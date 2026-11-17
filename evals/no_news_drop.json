@@ -1,5 +1,6 @@
 {
   "id": "no_news_drop",
+  "chains": {"debate": ["bull", "bear", "manager"], "quick": ["quick"]},
   "brief": {
     "decisionId": "2026-11-17-us:DROP",
     "ticker": "DROP",

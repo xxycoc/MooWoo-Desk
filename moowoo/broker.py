@@ -2,6 +2,7 @@
 
 from copy import deepcopy
 from decimal import Decimal, InvalidOperation
+import math
 import os
 import re
 
@@ -69,7 +70,23 @@ def parse_accounts(payload):
 
 
 def parse_cash(payload):
-    result = mapped(payload, fields.CASH_INFO)
+    if "ret_code" in payload:
+        data = successful_data(payload)
+        result = mapped(data, fields.CASH_INFO)
+        for name in ("cash", "equity", "reserved"):
+            result[name] = decimal_number(result[name], name, zero=True)
+        for target, source in (("realizedProfit", "realized_profit"), ("unrealizedProfit", "unrealized_profit")):
+            value = data.get(source)
+            try:
+                number = float(Decimal(str(value))) if value is not None else 0.0
+            except (ValueError, InvalidOperation) as exc:
+                raise ValueError(f"invalid broker {source}") from exc
+            if not math.isfinite(number):
+                raise ValueError(f"invalid broker {source}")
+            result[target] = number
+    else:
+        result = mapped(payload, dict(required=dict(cash="cash", equity="equity"),
+                                      optional=dict(accountId="acc_id", market="market")))
     routing(result)
     for name in ("cash", "equity"):
         positive(result[name], name, zero=True)
@@ -77,7 +94,8 @@ def parse_cash(payload):
 
 
 def parse_positions(payload):
-    result = rows(payload, fields.POSITION_LIST)
+    data = successful_data(payload) if "ret_code" in payload else {"positions": payload.get("data")}
+    result = rows(data, fields.POSITION_LIST)
     seen = set()
     for row in result:
         routing(row)
@@ -119,8 +137,11 @@ def decimal_number(value, name, *, zero=False, whole=False):
 def parse_history(payload, fetch_page=None):
     result, cursors = [], set()
     while True:
-        result.extend(rows(successful_data(payload), fields.ORDER_HISTORY))
-        pagination = payload.get("pagination")
+        data = successful_data(payload)
+        result.extend(rows(data, fields.ORDER_HISTORY))
+        pagination = data.get("pagination", payload.get("pagination"))
+        if "pagination" in data and "pagination" in payload and data["pagination"] != payload["pagination"]:
+            raise ValueError("conflicting broker pagination")
         if (not isinstance(pagination, dict) or type(pagination.get("has_more")) is not bool
                 or not isinstance(pagination.get("next_key"), str)):
             raise ValueError("missing required broker pagination fields")
@@ -176,7 +197,7 @@ def snapshot_to_state(positions, cash, previous, *, decisions=None):
     If position text is absent, the caller must supply history-backed identities.
     """
     snapshot = previous.to_dict()
-    snapshot.update(cash=cash["cash"], positions={})
+    snapshot.update(cash=cash["cash"], brokerReserved=cash.get("reserved", 0), positions={})
     decisions = decisions or {}
     for row in positions:
         if not row["qty"]:

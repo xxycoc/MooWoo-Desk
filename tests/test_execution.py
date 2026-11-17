@@ -127,8 +127,7 @@ def test_broker_required_and_optional(monkeypatch):
         with pytest.raises(ValueError, match="required"):
             parser(payload)
     with pytest.raises(ValueError): parse_cash({"cash": 5})
-    changed = fixture("cash")
-    changed["settled_cash"] = changed.pop("cash")
+    changed = {"ret_code": 0, "ret_msg": "success", "data": {"settled_cash": 94999.01, "total_asset": 99999.01, "hold": 0}}
     monkeypatch.setitem(broker_fields.CASH_INFO["required"], "cash", "settled_cash")
     assert parse_cash(changed)["cash"] == 94999.01
 

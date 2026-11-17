@@ -1,5 +1,6 @@
 {
   "id": "earnings_beat",
+  "chains": {"debate": ["bull", "bear", "manager"], "quick": ["quick"]},
   "brief": {
     "decisionId": "2026-11-17-us:BEAT",
     "ticker": "BEAT",

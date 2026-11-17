@@ -161,7 +161,7 @@ def test_cancellation_requires_logged_success(context, code):
     tickets = {ticket.decisionId: ticket}
     receipt = dict(decisionId=ticket.decisionId, tool="sim_trade_cancel_order",
         args=dict(acc_id="<ORDINARY_PAPER_ACC>", market=100, order_id="3164623"),
-        response=dict(ret_code=code, ret_msg="synthetic cancellation"))
+        response=dict(ret_code=code, ret_msg="synthetic cancellation", data=dict(order_id="3164623")))
     record(tickets, [receipt], log)
     updated, result = reconcile(tickets, parse_history(sample("history_order_list_unfilled")),
         [], dict(cash=100000, equity=100000), state, log)

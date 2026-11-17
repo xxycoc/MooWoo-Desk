@@ -13,6 +13,7 @@ to its single writer. Never claim an order submission is a fill.
 Classify in one pass from the analyst brief, without bull, bear or manager
 outputs. Use tier="quick". Ranks 6-15 are primary calls; ranks 1-5 are independent
 second opinions that the coordinator logs but never routes to sizing.
+Return raw JSON only, with no Markdown code fences. Keep `reason` to at most 600 characters.
 Output only one JSON object matching schemas/rating.schema.json, with exactly:
 decisionId, ticker, class, confidence, tier, reason, evidence, newsCutoff,
 expectedMove, wrongIf, model, promptVersion. reason is at most 600 characters;

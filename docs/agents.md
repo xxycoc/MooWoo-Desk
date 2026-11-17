@@ -155,30 +155,48 @@ via sim_trade_account_list, integer account_type=2, title and US market before a
 batch. Missing or mismatched fields halt without an order. We have not fetched the
 remaining Moomoo response schemas. Confirmed account fields are `account_id`,
 `account_type`, `market_id`, and `account_title`; US market is integer `100`.
-Other response fields remain provisional in `moowoo/broker_fields.py` and must
-be checked against real responses. The prompt fails closed on
+Cash, empty-position envelopes, placement/cancellation and history fields are
+confirmed by scrubbed ordinary-paper captures in `fixtures/broker/`; see
+`docs/execution.md` for the remaining provisional row fields. The prompt fails closed on
 unknown shape. Account values and exact ticket args are never edited by the model.
 All cancels/modifications need their own code-approved tickets. No blind retries.
 
 ## Evaluation and prompt freeze
 
-Four synthetic, fixed cases live under `evals/`: earnings beat/raised guidance,
-news-free drop, market-only selloff and a post-cutoff headline. Collect actual
-Qoder manager/quick outputs as `<case-id>.json` in a separate directory. Pass the
-brief with the actual model name, tier and computed promptVersion. Do not fabricate
-model output or treat generated test fixtures as measured model quality.
+Four fixed cases live under `evals/`: earnings beat/raised guidance, news-free
+drop, market-only selloff and a post-cutoff headline. Each case declares two chains:
+analyst brief -> bull and bear independently -> manager, and brief -> quick.
+The supplied analyst brief is the fixed input, not another model call. Neither
+helper calls Qoder or any model. Stub tests prove wiring, not model quality.
 
-```powershell
-.venv/Scripts/python scripts/run_evals.py --outputs .cache/qoder-evals --report .cache/evals/latest.json
-```
+`scripts/qca_evals.py prepare --out .cache/eval-requests` writes system/user
+messages for bull, bear and quick with runtime model and promptVersion. Store
+unaltered responses in `<raw>/<case-id>/bull.txt`, `bear.txt`, `quick.txt`.
+Run prepare again with `--outputs <raw>` to include manager's request containing
+both validated arguments and the same brief. Quick output never enters manager's
+request. Save manager's raw response as `manager.txt` beside the others.
+All commands use `.venv/Scripts/python` locally and `python3` in Linux cloud.
 
-The runner calls no model. It checks every output, expected class, identity and
-evidence membership, and diffs full outputs against the previous report. By
-default it reads the old `--report` before replacing it; `--previous` selects
-another baseline. Missing/malformed output fails, not skips. For the late-news
-case only a lookahead-specific rejection or unexplained_up with eligible evidence
-passes. A random validation error does not pass that case. All four must pass for
-exit status 0. Run separately for manager and quick directories to compare tiers.
+`scripts/qca_evals.py collect --outputs <raw> --out .cache/qoder-evals` collects
+all four transcripts and their exact requests. Run
+`scripts/run_evals.py --outputs .cache/qoder-evals --report .cache/evals/latest.json`.
+The default chain mode checks messages, argument identity/citations, model/hash,
+tier, classification, evidence membership and cutoff for both manager and quick.
+All four cases must pass both paths for exit status 0. Missing/malformed output
+fails rather than disappearing. Only the late-news case accepts a specific
+lookahead rejection; arbitrary validation failures never count as passes.
+`--mode single` retains historical single-output smoke-result inspection.
+`--previous` selects a comparison report; otherwise the old report is read before
+replacement and full output differences are retained.
+
+Manager and quick must return raw JSON with no Markdown fences and a reason of
+at most 600 characters. Ingestion tolerates exactly one complete JSON fence and
+logs a warning when stripping it; prose, multiple blocks and malformed JSON fail.
+After manager has decided, ingestion accepts `--bull-output` / `--bear-output`
+JSON files and records their argument text, truncated to 600 characters each.
+`--quick-output` adds only its class/confidence as `quickSecondOpinion`, without
+changing manager's decision. Log the quick rating separately with
+`--second-opinion` for provenance and keep it out of risk and H1-H3 denominators.
 
 ```powershell
 .venv/Scripts/python scripts/hash_prompts.py
@@ -192,6 +210,11 @@ array of `{path, content}` records using the same encoding, then SHA-256. Paths
 and JSON framing prevent ambiguous file-boundary concatenations. Agent models and
 cloud IDs are recorded separately in the deployment snapshot and AGENTS.md;
 this requested prompt hash does not cover all agent.json fields.
+
+On every redeploy, bump `REPO_REVISION` to the reviewed, merged main commit SHA.
+It must remain an exact 40-character SHA, never a floating branch. Regenerate
+payloads from that same revision so the setup prompt-hash check agrees. No cloud
+setup, API call or redeployment is implied by offline payload tests.
 
 The preregistration addendum is deliberately NOT appended here. The owner must
 commit the exact computed hash as a dated addendum before the first live paper
@@ -226,7 +249,7 @@ Docs were retrieved on 17 Nov 2026 (UTC). Sources:
 | Agent system field | API `system` contains prompt text. Local `metadata.system_prompt_path` is our provenance field, not an API path loader. Builder reads system.md into system. |
 | Child roster | `multiagent: {type: coordinator, agents: [{type: agent, id, version: 1}]}`. Newly created child versions are pinned at 1; no latest aliases. Auditor is separate. |
 | MCP | `mcp_servers: [{name, type: url, url}]`, `mcp_toolset.mcp_server_name`, `configs[].permission_policy.type`. Official URL is an operator binding. |
-| Environment | `config.type=cloud`, `packages`, `setup_script`, `startup_script`. Setup clones public repo, checks out a supplied commit SHA, installs editable package with --no-deps and verifies risk-script presence and prompt hash. Linux cloud packages provide dependencies; local Windows NumPy/pandas were never installed/upgraded. |
+| Environment | `config.type=cloud`, `packages`, `setup_script`, `startup_script`. Setup clones the repository, checks out pinned `REPO_REVISION`, installs `python3 -m pip install -e '.[dev]'`, runs `python3 -m pytest -q` once with a loud failure/exit, then verifies risk-script presence and prompt hash. Dependencies install on Linux only; no local NumPy/pandas changes. |
 | Environment variables | Session/Template `environment_variables`, not an invented environment config field. Startup writes account-context.json; executor fails closed if it is absent. Qoder startup failures do not themselves abort a Session. |
 | Vault by name | Resolve exactly one active vault whose display_name is moomoo-mcp. Cloud Sessions use `vault_ids`; Forward Templates use `vaults: {vault_id: {enabled: true}}`. There is no invented vault_name request field. |
 | Schedules | Forward schedules require identity_id, template_id and environment_id. Builder therefore creates coordinator and auditor Templates with the Agent configuration copied into them; a Template does not accept a Cloud Agent ID as its execution definition. |

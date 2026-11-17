@@ -2,6 +2,8 @@
 
 from copy import deepcopy
 from datetime import datetime
+import json
+import logging
 import math
 import re
 
@@ -10,6 +12,45 @@ from .events import ValidationError
 CLASSES = ("explained_up", "explained_down", "unexplained_up", "unexplained_down")
 FIELDS = {"decisionId", "ticker", "class", "confidence", "tier", "reason", "evidence",
           "newsCutoff", "expectedMove", "wrongIf", "model", "promptVersion"}
+OPTIONAL_FIELDS = {"bullSummary", "bearSummary", "quickSecondOpinion"}
+
+
+def parse_rating(text):
+    """Decode JSON, tolerating only a single complete fenced JSON block."""
+    _require(isinstance(text, str), "output must be text")
+    match = re.fullmatch(r"\s*```(?:json)?[ \t]*\r?\n(.*?)\r?\n```\s*", text, re.DOTALL)
+    if match:
+        text = match[1]
+        logging.getLogger(__name__).warning("Stripped single JSON code fence from rating output")
+
+    def pairs(items):
+        result = {}
+        for key, value in items:
+            if key in result:
+                raise ValueError("duplicate JSON key")
+            result[key] = value
+        return result
+
+    def constant(value):
+        raise ValueError("non-JSON numeric constant")
+
+    try:
+        return json.loads(text, object_pairs_hook=pairs, parse_constant=constant)
+    except (ValueError, TypeError) as exc:
+        raise ValidationError("malformed output JSON") from exc
+
+
+def validate_debate(obj):
+    for field in ("bullSummary", "bearSummary"):
+        if field in obj:
+            _text(obj[field], field)
+            _require(len(obj[field]) <= 600, f"{field} exceeds 600 characters")
+    if "quickSecondOpinion" in obj:
+        opinion = obj["quickSecondOpinion"]
+        _object(opinion, {"class", "confidence"}, "quickSecondOpinion")
+        _require(opinion["class"] in CLASSES, "invalid quickSecondOpinion class")
+        _require(type(opinion["confidence"]) in (int, float) and
+                 0 <= opinion["confidence"] <= 1, "invalid quickSecondOpinion confidence")
 
 
 def _require(ok, message):
@@ -42,7 +83,9 @@ def validate_rating(obj, cutoff):
     A valid result is returned as a detached dictionary. Directions describe the
     preregistered forecast, not an instruction to buy or short.
     """
-    _object(obj, FIELDS, "rating")
+    _require(type(obj) is dict and FIELDS <= obj.keys() and
+             not obj.keys() - FIELDS - OPTIONAL_FIELDS, "rating has missing or unknown fields")
+    validate_debate(obj)
     for field in ("decisionId", "ticker", "reason", "wrongIf", "model", "promptVersion"):
         _text(obj[field], field)
     _require(obj["decisionId"].endswith(":" + obj["ticker"]) and
@@ -85,13 +128,28 @@ def _finite_nonnegative(value):
         return False
 
 
-def rating_to_event(obj, cutoff, *, transcriptRef, credits, setupScore, second_opinion=False):
+def rating_to_event(obj, cutoff, *, transcriptRef, credits, setupScore, second_opinion=False,
+                    bull_output=None, bear_output=None, quick_output=None):
     """Return EventLog rating payload; pass decisionId separately to append.
 
     Runtime supplies actual transcript/credit data and code-computed setup score.
     Never fabricate defaults for missing event-contract fields.
     """
     rating = validate_rating(obj, cutoff)
+    for field, output in (("bullSummary", bull_output), ("bearSummary", bear_output)):
+        if output is not None:
+            argument = parse_rating(output) if isinstance(output, str) else output
+            _require(isinstance(argument, dict), "debate output must be an object")
+            _require(argument.get("decisionId") == rating["decisionId"]
+                     and argument.get("stance") == field.removesuffix("Summary"),
+                     "debate output identity or stance mismatch")
+            _text(argument.get("argument"), field)
+            rating[field] = argument["argument"].strip()[:600]
+    if quick_output is not None:
+        quick = validate_rating(quick_output, cutoff)
+        _require(quick["decisionId"] == rating["decisionId"] and quick["ticker"] == rating["ticker"]
+                 and quick["tier"] == "quick", "second opinion identity or tier mismatch")
+        rating["quickSecondOpinion"] = {key: quick[key] for key in ("class", "confidence")}
     _text(transcriptRef, "transcriptRef")
     _require(_finite_nonnegative(credits),
              "credits must be finite and nonnegative")
@@ -104,7 +162,7 @@ def rating_to_event(obj, cutoff, *, transcriptRef, credits, setupScore, second_o
 
 
 def log_rating(log, obj, cutoff, *, decision_id, ticker, transcriptRef, credits, setupScore,
-               second_opinion=False):
+               second_opinion=False, bull_output=None, bear_output=None, quick_output=None):
     """Single-writer ingestion: reject to a ticker halt with disposition=skip.
 
     Identity comes from the screened mover, never from untrusted model output.
@@ -113,7 +171,8 @@ def log_rating(log, obj, cutoff, *, decision_id, ticker, transcriptRef, credits,
     _require(decision_id == f"{log.runId}:{ticker}", "trusted decision identity mismatch")
     try:
         payload = rating_to_event(obj, cutoff, transcriptRef=transcriptRef, credits=credits,
-                                  setupScore=setupScore, second_opinion=second_opinion)
+                                  setupScore=setupScore, second_opinion=second_opinion,
+                                  bull_output=bull_output, bear_output=bear_output, quick_output=quick_output)
         _require(obj["decisionId"] == decision_id and obj["ticker"] == ticker,
                  "rating differs from screened decision")
     except ValidationError as exc:

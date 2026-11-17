@@ -149,6 +149,8 @@ def record(tickets, responses, log):
             receipt = response["response"]
             if type(receipt.get("ret_code")) is not int or not isinstance(receipt.get("ret_msg"), str):
                 raise ValueError("cancellation requires ret_code and ret_msg")
+            if receipt["ret_code"] == 0 and parse_placement(receipt)["orderId"] != order_id:
+                raise ValueError("cancellation response order ID mismatch")
             action = "cancelled" if receipt["ret_code"] == 0 else "cancel_failed"
             if not any(event.get("executionAction") == action and event.get("orderId") == order_id
                        and event.get("retCode") == receipt["ret_code"] for event in events):
@@ -212,6 +214,8 @@ def record(tickets, responses, log):
 
 def reconcile(tickets, history, positions, cash, state, log):
     expected = PortfolioState.from_dict(state.to_dict())
+    expected.cash += expected.brokerReserved
+    expected.brokerReserved = 0
     checkpoints = expected.execution.setdefault("fills", {})
     submissions = {event["orderId"]: event for event in log.read()
                    if event["type"] == "order_submitted" and not event["drill"]}
@@ -291,8 +295,9 @@ def reconcile(tickets, history, positions, cash, state, log):
             identities.setdefault(row["ticker"], set()).add(identity)
     identities = {name: next(iter(values)) for name, values in identities.items() if len(values) == 1}
     differences = {}
-    if abs(cash["cash"]-expected.cash) > 1:
-        differences["cash"] = dict(expected=expected.cash, observed=cash["cash"])
+    observed_cash = cash["cash"] + cash.get("reserved", 0)
+    if abs(observed_cash-expected.cash) > 1:
+        differences["cash"] = dict(expected=expected.cash, observed=observed_cash)
     observed_positions = {row["ticker"]: row for row in positions if row["qty"]}
     for name in expected.positions.keys() | observed_positions.keys():
         wanted = expected.positions.get(name, {})

@@ -90,7 +90,8 @@ def build_payloads(settings=None, root=ROOT, *, executor_approval="ask"):
         "git clone https://github.com/xxycoc/MooWoo-Desk /data/workspace/MooWoo-Desk",
         "cd /data/workspace/MooWoo-Desk",
         "git checkout --detach ${REPO_REVISION}",
-        "python3 -m pip install --no-deps -e .",
+        "python3 -m pip install -e '.[dev]'",
+        "python3 -m pytest -q || { echo 'Cloud setup failed: pytest failed' >&2; exit 1; }",
         "test -f scripts/plan_session.py",
         f'test "$(python3 scripts/hash_prompts.py)" = "promptVersion={version}"',
     ])

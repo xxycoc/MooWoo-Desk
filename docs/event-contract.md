@@ -13,7 +13,7 @@ Core code uses the Python standard library only; no network or broker code exist
 | `seq` | integer | Starts at 1 in each file; increments by 1 without gaps. |
 | `ts` | string | ISO 8601 UTC ending in `Z`. |
 | `decisionId` | string or null | `runId:TICKER` for a ticker or ETF; otherwise null or an explicit run-prefixed decision ID. |
-| `type` | string | One of the 16 types below. |
+| `type` | string | One of the 17 types below. |
 | `drill` | boolean | Synthetic drill marker. A `drill` event requires `true`. Consumers must never route marked events to a broker. |
 | `prevHash` | string | Previous event's stored `hash`, or 64 zero characters for seq 1. |
 | `hash` | string | Lowercase SHA-256 hex digest of this event excluding its own `hash` field. |
@@ -31,7 +31,8 @@ Every `trdEnv` key, including those in extensions or nested objects, must equal
 | `run_started` | `universe`: string list; `equity`, `cash`: numbers; `tier`, `configHash`, `promptVersion`: strings; `trdEnv`: `SIMULATE`. |
 | `screen` | `candidates`: list of objects with `ticker` (string), `movePct`, `z`, `rvol` (numbers), `earnings` (JSON value); `picked`: string list. |
 | `rating` | `ticker`: string; `class`: `explained_up`, `explained_down`, `unexplained_up`, or `unexplained_down`; `confidence`: number 0–1; `tier`: `debate` or `quick`; `reason`, `transcriptRef`: strings; `newsCutoff`: UTC ISO 8601 with Z; `credits`: number; `setupScore`: integer 0–5. |
-| `shadow` | `book`: `follow`, `fade`, or `equal_weight`; `ticker`, `side`: strings; `notional`, `price`: numbers. |
+| `outcome` | `ticker`, `class`, `confidence`, `horizonSessions`, `entryTs`, `entryPrice`, `exitTs`, `exitPrice`, `stockReturn`, `spyReturn`, `excess`, `right`, `graded`; source/provenance fields specified below. `reason` required when ungraded. |
+| `shadow` | `book`: `llm`, `follow`, `fade`, or `equal_weight`; `ticker`, `side`: strings; `notional`, `price`: numbers. H2 completed-book extension specified below. |
 | `core_rebalance` | `etf`, `side`: strings; `targetWeight`, `actualWeight`, `qty`: numbers. |
 | `order_intent` | `ticker`, `side`: strings; `sleeve`: `core` or `satellite`; `qty`, `limitPrice`, `notional`, `stop`: numbers; `sizing`: object. |
 | `risk_verdict` | `ticker`: string; `verdict`: `approve`, `resize`, or `veto`; `rules`: string list; `firedRule`: string or null; `qtyAfter`: number. |
@@ -49,6 +50,86 @@ Unspecified business rules (such as side vocabulary, risk budgets, earnings
 representation, and tier-transition thresholds) belong to later consumers.
 Fixtures use `BUY`/`SELL`, fractional weights (0.10 = 10%), and percentage-point
 returns (1.5 = 1.5%). They depict long entries and exits, never short orders.
+
+## Rating debate metadata
+
+Optional `bullSummary` and `bearSummary` are nonempty strings of at most 600
+characters. Ingestion extracts and truncates `argument` from each original
+bull/bear JSON output after checking its decisionId and stance. Optional
+`quickSecondOpinion` contains exactly `class` and numeric `confidence` in [0,1].
+It is attached only after the independent manager decision, not included in that
+decision's input. The separate quick rating keeps `secondOpinion=true` and is
+excluded from primary H1-H3 scoring. Invalid metadata fails ingestion.
+
+## Outcome grading and hypothesis scoring
+
+`outcome` links to a prelogged rating by required `ratingHash`, `sourceRunId`,
+`ratingTs`, `newsCutoff`, `forecastDirection`, and boolean `secondOpinion`.
+Its common `decisionId` is the original `sourceRunId:TICKER`, even when the
+outcome writer uses a different runId/file. `ts` is the grading-write time.
+`class` and `confidence` copy the rating, not an after-the-fact prediction.
+`horizonSessions` is 5 for explained continuation or 3 for unexplained reversal.
+`entryTs` is the next regular-session open strictly after the decision timestamp;
+`exitTs` is the horizon close or final valuation close, whichever comes first.
+`observedSessions` and `truncated` disclose a shortened final window. The frozen
+window uses Nov 17-20, 23-25 and 27; Nov 26 is closed, and Nov 27 closes at 18:00Z.
+The NYSE 2026 calendar and regular hours were checked on Nov 17, 2026:
+`https://www.nyse.com/trade/hours-calendars`. This is an experiment-specific
+calendar, not a general trading-calendar service.
+
+`stockReturn`, `spyReturn` and `excess` use fractions (0.01 = 1%), unlike older
+daily-report percentage-point fields. Returns run from each instrument's matched
+entry open to exit close; excess = stockReturn - spyReturn. `right` and `graded`
+are booleans. Right means strictly positive excess for an up forecast or strictly
+negative excess for a down forecast; zero is wrong. No price-based trade filters
+remove ratings from this forecast ledger. Missing/invalid stock or SPY prices
+produce `graded=false`, `right=false`, null unavailable price/return fields and
+a nonempty `reason`. Missing entry opportunities are likewise recorded, never
+dropped. Pending horizons are left pending, not scored as losses.
+
+Run locally with `.venv/Scripts/python` (`python3` in the Linux cloud):
+
+- `scripts/grade_calls.py --logs ledger/*.jsonl --bars-asof 2026-11-27 --bars .cache/desk/bars.json --log ledger/outcomes.jsonl`
+- `scripts/score_hypotheses.py --logs ledger/*.jsonl --out .cache/desk/hypotheses.json`
+
+Both commands are offline. Bars map ticker to daily `date/open/close` rows,
+or use the existing cached `bars` table-JSON wrapper; a directory of ticker-named
+JSON files is also accepted. `--bars-asof` attests that that session is completed,
+not that an intraday partial close is safe. Only entry/exit session prices are
+used, and no exit after the as-of session is graded. The locked writer uses the
+source rating hash for idempotence. Identical ungraded reasons are not repeated;
+new evidence may append a graded resolution, but never a second terminal grade.
+Read every source and outcome log together. Hash-chain conflicts and duplicate
+terminal grades are rejected; overlapping copies of the same events deduplicate.
+
+Dashboard JSON contains `H1` (95% Wilson interval and verdict), `H2` (paired
+mean-excess differences and verdict), `H3` (Brier point estimate/interval and
+0.25 target verdict), plus counts and explicit missing reasons. H2/H3 use 2,000
+whole-entry-session bootstrap resamples, seed 20261117, retaining all decisions
+in a sampled cluster and interpolated 2.5/97.5 percentiles. Drill and second-opinion
+ratings never enter primary denominators. Ungraded primary calls stay in the
+missing list. A single session yields a degenerate bootstrap, not strong evidence.
+
+### H2 completed decision books
+
+H2 must use trade books with frozen exits/costs, not substitute H1 horizon returns.
+The scorer reads a completed `shadow` event per decision/book (`llm`, `follow`,
+`fade`) with `completed=true`, `sleeve=satellite`, `entryTs`, `exitTs`,
+`qty`, `entryPrice`, `exitPrice`, matched-window `spyReturn`, and
+`exitRule=drift|bounce`. Keep the ordinary required shadow fields too. Execution
+or deterministic book replay must supply these final observations; this scorer
+neither replays stops nor generates fictitious shadow trades. Existing entry-only
+shadow records are insufficient and appear as unavailable, forcing can't tell yet.
+
+Follow buys rises with drift rules; fade buys drops with bounce rules; LLM buys
+only explained rises or unexplained drops. Core records are rejected. Filled
+records use the shared frozen round-trip fee function. Cash allocations require
+`skipped=true`, `qty=0`, a nonempty skip/veto `reason` and the matched SPY
+window; their stock return is zero, so excess is minus SPY. Veto reasons and
+unavailable books remain in the JSON. Paired comparisons require all three books
+for a decision and retain common entry opportunities. Support requires both lower
+bounds above zero; rejection requires either upper bound below zero; otherwise
+can't tell yet. Incomplete book evidence never authorizes an H2 win.
 
 ## Canonical encoding and integrity
 
@@ -94,7 +175,8 @@ build_sqlite([log.path], "ledger/ledger.sqlite")
 `append(type, payload, decisionId=None, drill=False, ts=None)` supplies the common
 fields and returns the full event. Payloads may not override common fields.
 Ticker and ETF payloads automatically get `runId:TICKER`; explicitly supplied
-IDs must match. `runId` comes from the filename, an explicit constructor argument,
+IDs must match, except outcomes preserve the source rating identity as specified
+above. `runId` comes from the filename, an explicit constructor argument,
 or the first event of an existing nonstandard filename. Explicit IDs must match
 existing contents. Default timestamps use current UTC; fixture timestamps never do.
 

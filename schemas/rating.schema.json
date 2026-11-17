@@ -19,6 +19,16 @@
     "expectedMove"
   ],
   "properties": {
+    "bullSummary": {"type": "string", "minLength": 1, "maxLength": 600},
+    "bearSummary": {"type": "string", "minLength": 1, "maxLength": 600},
+    "quickSecondOpinion": {
+      "type": "object", "additionalProperties": false,
+      "required": ["class", "confidence"],
+      "properties": {
+        "class": {"enum": ["explained_up", "explained_down", "unexplained_up", "unexplained_down"]},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1}
+      }
+    },
     "decisionId": {
       "type": "string",
       "minLength": 1

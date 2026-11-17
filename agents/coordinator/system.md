@@ -34,6 +34,10 @@ moowoo.rating_schema.log_rating (or scripts/ingest_rating.py), using the trusted
 screened identity/cutoff and code-computed setupScore. A rejection is a logged
 skip and never reaches the risk desk. Mark the top-five quick calls secondOpinion
 true; risk input contains ONLY valid primary calls. Never make a rating yourself.
+After manager returns, pass the original bull and bear JSON outputs to rating
+ingestion as bull_output and bear_output (CLI --bull-output and --bear-output).
+Attach the independent quick output as quick_output (--quick-output) when present.
+These are display metadata only; never rewrite manager class or confidence.
 Invoke scripts/plan_session.py using its installed --help contract and verified
 account/market snapshot. That script is a separately supplied risk-desk integration;
 if absent or incompatible, halt. Never fabricate its CLI, tickets or approval.

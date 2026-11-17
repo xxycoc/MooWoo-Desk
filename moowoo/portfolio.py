@@ -36,9 +36,11 @@ class PortfolioState:
     pendingTickets: list = field(default_factory=list)
     restartReasons: list = field(default_factory=list)
     execution: dict = field(default_factory=dict)
+    brokerReserved: float = 0.0
 
     def __post_init__(self):
         positive(self.cash, "cash", zero=True)
+        positive(self.brokerReserved, "brokerReserved", zero=True)
         positive(self.sessionStartEquity, "sessionStartEquity")
         positive(self.peakEquity, "peakEquity")
         if self.tier not in ("normal", "reduced", "exits_only", "kill"):
@@ -71,7 +73,7 @@ class PortfolioState:
         return canonical_bytes(self.to_dict()).decode("utf-8")
 
     def equity(self, prices):
-        return self.cash + sum(position["qty"] * positive(prices[ticker], ticker)
+        return self.cash + self.brokerReserved + sum(position["qty"] * positive(prices[ticker], ticker)
                                for ticker, position in self.positions.items())
 
     def exposure(self, prices, sleeve=None, ticker=None):
@@ -87,8 +89,8 @@ class PortfolioState:
 
     @property
     def reservedCash(self):
-        return sum(ticket["qty"] * ticket["limitPrice"] + ticket["estFees"] for ticket in self.pendingTickets
-                   if ticket["side"] == "BUY")
+        return max(0, sum(ticket["qty"] * ticket["limitPrice"] + ticket["estFees"] for ticket in self.pendingTickets
+                          if ticket["side"] == "BUY") - self.brokerReserved)
 
     def reserve(self, ticket):
         payload = ticket.to_dict() if hasattr(ticket, "to_dict") else deepcopy(ticket)

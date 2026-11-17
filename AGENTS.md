@@ -97,6 +97,8 @@ cloud version, local revision and change summary. Do not fill pending with guess
 
 ### coordinator
 
+<!-- Changed at (UTC): 2026-11-17T06:55:00Z Agent ID: pending Cloud version: pending Local revision: build/12-prefreeze Change summary: Added debate-output ingestion instructions; local only, cloud not queried or changed. -->
+
 <!-- Retrieved at (UTC): 2026-11-17T04:27:36Z Agent ID: pending  Cloud version: pending  Local revision: agents-v1  Change summary: Created local coordinator prompt and policy from retrieved Qoder docs; no cloud Agent fetched. -->
 
 ### executor
@@ -105,8 +107,12 @@ cloud version, local revision and change summary. Do not fill pending with guess
 
 ### manager
 
+<!-- Changed at (UTC): 2026-11-17T06:55:00Z Agent ID: pending Cloud version: pending Local revision: build/12-prefreeze Change summary: Required raw JSON and a maximum 600-character reason; local only, cloud not queried or changed. -->
+
 <!-- Retrieved at (UTC): 2026-11-17T04:27:36Z Agent ID: pending  Cloud version: pending  Local revision: agents-v1  Change summary: Created local manager prompt and policy from retrieved Qoder docs; no cloud Agent fetched. -->
 
 ### quick
+
+<!-- Changed at (UTC): 2026-11-17T06:55:00Z Agent ID: pending Cloud version: pending Local revision: build/12-prefreeze Change summary: Required raw JSON and a maximum 600-character reason; local only, cloud not queried or changed. -->
 
 <!-- Retrieved at (UTC): 2026-11-17T04:27:36Z Agent ID: pending  Cloud version: pending  Local revision: agents-v1  Change summary: Created local quick prompt and policy from retrieved Qoder docs; no cloud Agent fetched. -->

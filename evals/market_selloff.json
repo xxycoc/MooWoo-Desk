@@ -1,5 +1,6 @@
 {
   "id": "market_selloff",
+  "chains": {"debate": ["bull", "bear", "manager"], "quick": ["quick"]},
   "brief": {
     "decisionId": "2026-11-17-us:MKT",
     "ticker": "MKT",
@@ -14,7 +15,7 @@
         "publishedAt": "2026-11-16T19:00:00Z"
       }
     ],
-    "facts": "SPY -3%, stock -10%; no stock-specific news. Broad selling alone does not explain the residual abnormal move."
+    "facts": "SPY -3%, stock -10%; no stock-specific news found."
   },
   "expected": {
     "class": "unexplained_down",

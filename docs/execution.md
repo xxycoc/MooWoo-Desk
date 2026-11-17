@@ -136,7 +136,8 @@ captures use `<ORDINARY_PAPER_ACC>` and prove no competition-account eligibility
   never create `order_submitted`, even if an executor labels the receipt placed.
 - History request: `acc_id`, account `market=100`, microsecond `time_begin` and
   `time_end`, `page_size`. Response: `ret_code`, `ret_msg`, `data.orders`, and
-  top-level `pagination.has_more` / `pagination.next_key`.
+  `pagination.has_more` / `pagination.next_key` either inside `data` or beside it.
+  If both appear they must agree. Multi-page requests still require verification.
 - Required history row fields: `order_id`, `symbol`, `text`, `side`, `qty`,
   `price`, `cum_qty`, `avg_fill_price`, `status`. Observed optional fields:
   `market`, `create_time`, `update_time`, `order_trade_time_type`, `order_type`,
@@ -145,27 +146,41 @@ captures use `<ORDINARY_PAPER_ACC>` and prove no competition-account eligibility
   History `market=2` is internal and never compared to account market 100.
   Decimal strings parse numerically; microsecond timestamp strings parse to
   integer microseconds. Observed cum_qty="0" and avg_fill_price="0" are unfilled.
-- Status 2 has only the observed display label `accepted (observed)`. The map is
-  provisional. Fills derive solely from quantities: cum_qty=qty means full,
+- Status 2 is labelled `accepted/resting (observed)`; status 5 was observed after
+  cancellation and is labelled `cancelled (observed)`. These are display labels
+  only. Fills derive solely from quantities: cum_qty=qty means full,
   0<cum_qty<qty means partial, cum_qty=0 means unfilled. Status cannot prove cancellation.
 - Previously confirmed account row names: `account_id`, `market_id`, `account_type`,
   `account_title`, `broker_id`, `intra_account_id`.
 
+- Cancel success is `{"ret_code":0,"ret_msg":"success","data":{"order_id":"..."}}`.
+  The returned order ID must match the recorded submission and exact cancel args.
+  A logged successful cancellation releases only the unfilled remainder.
+- Cash response has `ret_code`, `ret_msg`, and object `data`. `balance` is free
+  cash; `hold` is reserved cash including open-order fees; `total_asset` is equity.
+  `long_mv`, `mv`, `short_mv` are observed market-value fields. Null
+  `realized_profit` / `unrealized_profit` become zero. `max_power_long` is margin
+  buying power, NOT cash or equity, and is never used by sizing or risk.
+- Positions response has `data.positions` (observed empty list). The new scrubbed
+  captures are `real_sim_trade_cancel_and_history.json` and
+  `real_sim_trade_cash_and_positions.json`. These ordinary-paper probes do not
+  prove competition-account behavior or nonempty position row semantics.
+
 ### Still provisional
 
 - Account-list root-list envelope (`provisional_accounts.json`).
-- Cash root object: `cash`, `equity`, optional `acc_id`, `market`. Total-ledger-cash
-  meaning, reservation treatment and actual fee inclusion remain unverified.
-- Positions under `data`: `symbol`, `qty`, `avg_cost`, `market_price`, optional
-  entry `text`, `acc_id`, `market`; average-cost and strategy-identity semantics.
+- Legacy offline fixtures retain normalized root `cash`/`equity` and a positions
+  list under `data`; these are not claims about live envelopes.
+- Nonempty rows under `data.positions`: `symbol`, `qty`, `avg_cost`,
+  `market_price`, optional entry `text`, `acc_id`, `market` remain provisional,
+  including average-cost and strategy-identity semantics.
 - Filled/partial values and average-fill-price behavior, whole-share assumptions
   beyond the one-share capture (`provisional_history_filled.json`), and fees.
 - Side 1 is observed buy; side 2 sell is the existing provisional mapping.
   No response status/side/time_in_force enum is documented. No meaning is assigned
   to time_in_force or unknown status codes.
-- Cancel response (`provisional_cancel.json`): synthetic `ret_code` and `ret_msg`.
-  No real cancel capture exists. Only a logged sim_trade_cancel_order ret_code 0
-  releases the unfilled remainder; already filled quantity and fees remain.
+- `provisional_cancel.json` is still synthetic but now follows the observed
+  cancellation envelope. Already filled quantity and fees remain after cancel.
 - Optional history `acc_id` and placement echo `status`, `reason`, `args` are not
   captured. Echo status never determines acceptance.
 - Multi-page continuation is not captured. The executor must verify the actual
@@ -188,8 +203,9 @@ IDs are not silently reassigned.
 
 Record cancellation through `execute_tickets.py record` with `decisionId`,
 `tool="sim_trade_cancel_order"`, exact `args` containing `acc_id`, `market`,
-`order_id`, and `response` containing `ret_code` and `ret_msg`. A matching logged
-submission is required. Failure logs do not release reservations. Reconcile fresh
+`order_id`, and `response` containing `ret_code`, `ret_msg`, and a matching
+`data.order_id`. A matching logged submission is required. Failure logs do not
+release reservations. Reconcile fresh
 history, positions and cash afterwards; a broker status alone never releases them.
 
 ## Reconciliation and locking
@@ -207,7 +223,11 @@ position text is absent, a unique matching filled-buy decision in history is req
 Multiple buy identities for the same ticker are ambiguous, not resolved by row order. Unknown
 strategy identity fails closed. Quantity must match exactly; aggregate position
 cost and cash each tolerate USD 1 after fees. Broker equity must also agree with
-cash plus marked positions within USD 1. Unexplained differences latch a halt and
+free cash plus broker-reserved cash plus marked positions within USD 1.
+`PortfolioState.cash` stays free cash; `brokerReserved` tracks hold. Pending-ticket
+reservations subtract only the portion not already withheld by the broker, so
+funds are neither double-reserved nor turned into margin buying power.
+Unexplained differences latch a halt and
 retain expected books/checkpoints, not overwrite them with unexplained holdings.
 
 Events are appended before atomically replacing state. Replaying after a crash

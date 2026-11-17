@@ -1,5 +1,6 @@
 {
   "id": "post_cutoff",
+  "chains": {"debate": ["bull", "bear", "manager"], "quick": ["quick"]},
   "brief": {
     "decisionId": "2026-11-17-us:LATE",
     "ticker": "LATE",
@@ -14,7 +15,7 @@
         "publishedAt": "2026-11-16T21:01:00Z"
       }
     ],
-    "facts": "Only relevant headline is after cutoff. Ignore it and rate unexplained_up with no evidence, or reject the lookahead."
+    "facts": "The sole relevant headline was published one minute after the regular-session close."
   },
   "expected": {
     "class": "unexplained_up",
