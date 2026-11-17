@@ -1,0 +1,8 @@
+{
+  "files": [
+    "2026-11-17-us.jsonl",
+    "2026-11-18-us.jsonl",
+    "2026-11-19-us.jsonl"
+  ],
+  "note": "Fictional seed-7 fixtures copied from ../fixtures. Later stages add verified run logs here. Order is chronological; seq restarts in every file."
+}
