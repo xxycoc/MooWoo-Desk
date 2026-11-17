@@ -231,3 +231,18 @@ Written on 17 November 2026, before any order in the competition account.
   drawdown tiers, daily loss halt and kill switch.
 - Evidence: the raw hash-chained ledger lives in a private repository during the window,
   so live positions cannot be copied, and is published in full after 27 November.
+
+## 10. Addendum 2026-11-17: clock duty moves to the coordinator
+
+Written on 17 November 2026 at about 23:00 Singapore, still before any order in the competition account.
+
+- promptVersion `7ee7873b161e09e7c38c7398ed19a6ed8e171d6b747231beca1d64d694a09a12`, computed by
+  `scripts/hash_prompts.py` from the same files as Addendum 9. It replaces `e96f044a...`.
+- Why: both runs on 17 November halted before preflight with no broker orders. The scheduled
+  09:35 New York run stopped on a parser bug (wrapped account list, fixed in `4719f43`). A manual
+  rerun, logged as off-schedule in its session message, stopped because the coordinator asked the
+  executor to verify the clock, and the executor has no clock tool.
+- Change: the coordinator checks the time with `date -u` before each external call and states the
+  verified UTC time when it delegates; the executor no longer halts only because it cannot read a
+  clock. The runner still enforces the lease (`require_owned`) and ticket freshness in code.
+  Classes, sizing, risk limits, horizons, grading and hypotheses H1 to H3 are unchanged.

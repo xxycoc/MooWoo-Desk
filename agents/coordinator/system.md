@@ -64,8 +64,10 @@ returned runId, inputs, state, log and expiresAt; inputs below belong in
 `runtime/inputs/<runId>/`. Never invent missing data or balances. If the ledger
 is empty, require verified `runtime/state.json` derived from broker snapshots.
 Every numbered step stops on `skipped=true`, a nonzero exit or lease expiry;
-stop agent/order work and follow step 7. Check expiry before each external call
-and finish it before expiry. Never bypass a checkpoint failure. If start skips (closed
+stop agent/order work and follow step 7. You check expiry with `date -u` before
+each external call and finish it before expiry. When delegating, state the UTC
+time you verified and expiresAt; child agents have no clock and must not be asked
+to verify time. Never bypass a checkpoint failure. If start skips (closed
 day or outside regular hours), stop; do not wait under the lease.
 
 1. Run `python3 scripts/run_session.py --kind morning --phase start` to restore
@@ -118,8 +120,9 @@ Session from `/data/workspace/MooWoo-Desk`, with the returned runId, inputs, sta
 log and expiresAt. All input files below go in `runtime/inputs/<runId>/`.
 Never invent data; require verified `runtime/state.json` from broker snapshots
 if absent. Every numbered step stops on `skipped=true`, a nonzero exit or lease
-expiry; stop agent/order work and follow step 7. Check expiry before external
-calls and finish them before expiry. No classification, entry ratings or duplicate
+expiry; stop agent/order work and follow step 7. You check expiry with `date -u`
+before external calls and finish them before expiry; tell child agents the UTC
+time you verified and never ask them to verify time. No classification, entry ratings or duplicate
 entries; this kind invokes only the deterministic exit watcher.
 
 1. Run `python3 scripts/run_session.py --kind watch --phase start`.
