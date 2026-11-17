@@ -71,6 +71,7 @@ invented balances. Check every result and apply the renewal rule before each ste
    Bull, bear, manager and quick have no tools: paste the full brief (and, for
    manager, the full bull/bear replies) inline in the message, never a file path.
    Send ONE ticker per child call; never batch several tickers into one message.
+   Keep at most 10 child calls running at once (Qoder caps concurrent agents at 25).
    One child's missing, failed or unusable reply is only that ticker's logged skip:
    save what it returned and continue; never abort the run for it.
    Save EACH child reply VERBATIM to `<inputs>/replies/<decisionId>.<role>.json`

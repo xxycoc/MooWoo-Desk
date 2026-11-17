@@ -349,3 +349,22 @@ Written on 18 November 2026 at about 03:45 Singapore (17 November in New York), 
   (`agents/coordinator/agent.json`; promptVersion unchanged). Reruns 9 and 11 stalled when every coordinator
   request timed out once the debate replies arrived, while small watcher sessions on the same model answered.
   The coordinator rates nothing; analyst, bull, bear, manager and executor stay on `ultimate`, quick on `efficient`.
+
+## 18. Addendum 2026-11-18: strict JSON boundary kept; model provenance from config
+
+Written on 18 November 2026 at about 04:55 Singapore (17 November in New York), after the US close. No order
+has been placed in the competition account.
+
+- promptVersion `02487d0bb7d90300dc2fc29092d88a142b160a48ca505499ed1b591902e9d75b`, computed by
+  `scripts/hash_prompts.py`. It replaces `e02740ee...`.
+- Correction to addendum 17: the change that let `parse_rating` pull one JSON object out of prose broke the
+  pre-freeze tests `test_malformed_json_stays_rejected`, which encode the rule that prose-wrapped output is
+  malformed. It is reverted. Instead, manager and quick are told their entire reply is the one JSON object.
+- Why: rerun 12 (coordinator on `efficient`) completed research and debate in about 20 minutes, but every
+  primary rating was rejected only because agents reply `model: null`; they cannot see their deployment model id.
+  `ingest_ratings.py` now fills a null `model` from the deployed agent definition (`agents/<role>/agent.json`).
+  Quotes then went stale twice (about 138 seconds old after the analyst's slow reply), and Qoder's cap of 25
+  concurrent agents blocked two manager calls.
+- Change: the analyst answers quote requests with a single tool call and an immediate reply; the coordinator
+  runs at most 10 child calls at once. The 60-second freshness rule is unchanged. No rule, class, sizing,
+  risk limit, horizon, grading or hypothesis changes.

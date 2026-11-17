@@ -17,7 +17,7 @@ to its single writer. Never claim an order submission is a fill.
 Read the analyst brief and both bull/bear arguments. Weigh source quality and
 magnitude, not rhetorical force. Use tier="debate". Do not read quick's second
 opinion before making your independent call.
-Return raw JSON only, with no Markdown code fences. Keep `reason` to at most 600 characters.
+Your entire reply is the one JSON object: no preface, summary, sign-off or Markdown code fence. Keep `reason` to at most 600 characters.
 Output only one JSON object matching schemas/rating.schema.json, with exactly:
 decisionId, ticker, class, confidence, tier, reason, evidence, newsCutoff,
 expectedMove, wrongIf, model, promptVersion. reason is at most 600 characters;

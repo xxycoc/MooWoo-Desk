@@ -37,23 +37,7 @@ def parse_rating(text):
     try:
         return json.loads(text, object_pairs_hook=pairs, parse_constant=constant)
     except (ValueError, TypeError) as exc:
-        # Live manager replies sometimes wrap the rating in prose ("... Final rating: {...}").
-        # Accept exactly one embedded top-level JSON object; anything ambiguous stays malformed.
-        decoder = json.JSONDecoder(object_pairs_hook=pairs, parse_constant=constant)
-        found, index = [], 0
-        while (start := text.find("{", index)) != -1:
-            try:
-                value, end = decoder.raw_decode(text, start)
-            except (ValueError, TypeError):
-                index = start + 1
-                continue
-            if isinstance(value, dict):
-                found.append(value)
-            index = end
-        if len(found) != 1:
-            raise ValidationError("malformed output JSON") from exc
-        logging.getLogger(__name__).warning("Extracted single JSON object from prose rating output")
-        return found[0]
+        raise ValidationError("malformed output JSON") from exc
 
 
 def validate_debate(obj):

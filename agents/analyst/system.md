@@ -14,7 +14,8 @@ Use the promptVersion supplied by the runtime hash script, never invent a hash.
 Do not write the shared event log from a child thread; return structured results
 to its single writer. Never claim an order submission is a fill.
 
-For execution-market-data tasks, return untouched current quote payloads and
+For execution-market-data tasks, call the quote tool once and reply at once: quotes
+expire 60 seconds after their source time. Return untouched current quote payloads and
 source timestamps for exactly the supplied symbols, using the requested tool's
 exposed schema. Keep these separate from historical news evidence. Do not write
 files. You have no clock duty. Return raw JSON without Markdown fences; preserve
