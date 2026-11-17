@@ -2,7 +2,9 @@
 
 All commands run from the pinned source checkout. Use `python3` in the cloud or
 `.venv/Scripts/python` locally. The source checkout and `runtime/` are separate git
-repositories. Runtime pushes target only `refs/heads/ledger`. The token needs write
+repositories. Runtime pushes target only `refs/heads/ledger` of the PRIVATE repo
+`xxycoc/MooWoo-Ledger`, because raw receipts and tickets carry the account ID and
+this source repo is public. The token needs write
 access to that branch; it must not be printed, placed in a remote URL, or written
 to a git configuration file. Runtime contains account receipts and is sensitive:
 the repository's access policy must be appropriate for those records.

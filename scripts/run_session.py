@@ -35,7 +35,7 @@ def validate_dispatch(manifest, now):
 
 def invoke(script, *arguments):
     result = subprocess.run([sys.executable, str(ROOT / "scripts" / script), *map(str, arguments)],
-                            cwd=ROOT, capture_output=True, text=True)
+                            cwd=ROOT, stdin=subprocess.DEVNULL, capture_output=True, text=True)
     if result.returncode:
         from persist_ledger import redact_error
         if "--log" in arguments:

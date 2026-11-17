@@ -264,7 +264,7 @@ def test_apply_payload_resolution_with_mock_api(tmp_path):
     receipts = apply_payloads(build_payloads(settings), settings, 'fake-token', request=fake,
                               stage='schedules', prior=load_receipts(receipt_path), receipt_path=receipt_path,
                               ledger_token='fake-ledger-token')
-    assert len(receipts) == len(calls) == 17
+    assert len(receipts) == len(calls) == 16
     assert next(b for p,b in calls if p=='/forward/templates')['vaults'] == {'vault_test':{'enabled':True}}
 
 

@@ -8,7 +8,8 @@ import subprocess
 
 from .ledger import EventLog, verify
 
-REMOTE = "https://github.com/xxycoc/MooWoo-Desk"
+# Private repo: raw receipts and tickets carry the account ID; the source repo is public.
+REMOTE = "https://github.com/xxycoc/MooWoo-Ledger"
 
 
 class LedgerError(RuntimeError):
@@ -41,8 +42,9 @@ class LedgerStore:
             env[f"GIT_CONFIG_KEY_{index}"] = key
             env[f"GIT_CONFIG_VALUE_{index}"] = value
         try:
+            # stdin=DEVNULL: an inherited stdin handle can hang local fetches on Windows.
             result = subprocess.run(["git", "-C", str(self.directory), *args], env=env,
-                                    capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
+                                    stdin=subprocess.DEVNULL, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
         except (OSError, subprocess.TimeoutExpired):
             raise LedgerError("ledger git command failed or timed out; local copy retained") from None
         for secret in (token, auth):
