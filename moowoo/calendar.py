@@ -32,6 +32,11 @@ def is_trading_day(day):
     return session_date(day) in TRADING_DAYS
 
 
+def _known_session(day):
+    # Hours exist for completed pre-window sessions too (news cutoffs); runs stay window-only.
+    return is_trading_day(day) or session_date(day) in COMPLETED_BEFORE_WINDOW
+
+
 def previous_session(day):
     """Last completed regular session before day, from the frozen calendar only."""
     day = session_date(day)
@@ -43,12 +48,12 @@ def previous_session(day):
 
 def session_open(day):
     day = session_date(day)
-    return datetime.combine(day, time(9, 30), NEW_YORK) if is_trading_day(day) else None
+    return datetime.combine(day, time(9, 30), NEW_YORK) if _known_session(day) else None
 
 
 def session_close(day):
     day = session_date(day)
-    return datetime.combine(day, time(13 if day == FINAL_DAY else 16), NEW_YORK) if is_trading_day(day) else None
+    return datetime.combine(day, time(13 if day == FINAL_DAY else 16), NEW_YORK) if _known_session(day) else None
 
 
 def is_regular_hours(now):

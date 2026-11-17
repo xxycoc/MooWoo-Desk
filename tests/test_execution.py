@@ -399,3 +399,6 @@ def test_session_info_uses_frozen_calendar():
                          capture_output=True, text=True, check=True, stdin=subprocess.DEVNULL).stdout
     facts = _json.loads(out)
     assert facts["barsAsOf"] == "2026-11-16" and facts["regularHours"] and facts["minutesSinceOpen"] == 30
+    assert facts["barsAsOfOpen"] == "2026-11-16T14:30:00Z" and facts["barsAsOfClose"] == "2026-11-16T21:00:00Z"
+    from moowoo.calendar import is_regular_hours, run_allowed
+    assert not is_regular_hours("2026-11-16T15:00:00Z") and not run_allowed("morning", "2026-11-16T15:00:00Z")

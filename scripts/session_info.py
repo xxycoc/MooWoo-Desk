@@ -12,11 +12,15 @@ def info(now):
     now = calendar.local_time(now)
     day = now.date()
     opened, closed = calendar.session_open(day), calendar.session_close(day)
+    prior = calendar.previous_session(day)
     return dict(now=calendar.utc_stamp(now), sessionDate=day.isoformat(),
                 tradingDay=calendar.is_trading_day(day), regularHours=calendar.is_regular_hours(now),
                 open=opened and calendar.utc_stamp(opened), close=closed and calendar.utc_stamp(closed),
                 minutesSinceOpen=calendar.minutes_since_open(now), finalDay=calendar.is_final_day(now),
-                barsAsOf=calendar.previous_session(day).isoformat(),
+                barsAsOf=prior.isoformat(),
+                # News cutoffs for movers from the barsAsOf session: open for gaps, close for close moves.
+                barsAsOfOpen=calendar.utc_stamp(calendar.session_open(prior)),
+                barsAsOfClose=calendar.utc_stamp(calendar.session_close(prior)),
                 auditBarsAsOf=day.isoformat() if closed and now >= closed else None)
 
 
