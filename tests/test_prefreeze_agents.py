@@ -159,3 +159,21 @@ def test_debate_ingestion_cli(case, tmp_path):
     with pytest.raises(ValidationError, match="identity"):
         rating_to_event(rating(case, "manager"), brief["newsCutoff"], transcriptRef="stub", credits=0,
                         setupScore=0, quick_output=quick)
+
+
+@pytest.mark.parametrize("role", ["bull", "bear"])
+def test_argument_exact_keys_and_cutoff_boundary(case, role):
+    case["brief"]["items"] = [
+        {"id": "at", "publishedAt": case["brief"]["newsCutoff"]},
+        {"id": "later", "publishedAt": "2099-01-01T00:00:00Z"},
+    ]
+    valid = dict(decisionId=case["brief"]["decisionId"], stance=role,
+                 argument="Only eligible evidence supports this argument.", itemIds=["at"])
+    assert argument(case, role, json.dumps(valid)) == valid
+    for field in ("ticker", "newsCutoff", "model", "promptVersion"):
+        with pytest.raises(ValidationError, match=f"invalid {role} argument"):
+            argument(case, role, json.dumps({**valid, field: "extra provenance"}))
+    with pytest.raises(ValidationError, match=f"invalid {role} citations"):
+        argument(case, role, json.dumps({**valid, "itemIds": ["later"]}))
+    empty = {**valid, "argument": "No eligible evidence supports the thesis.", "itemIds": []}
+    assert argument(case, role, json.dumps(empty)) == empty

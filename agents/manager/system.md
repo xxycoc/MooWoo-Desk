@@ -20,6 +20,9 @@ expectedMove, wrongIf, model, promptVersion. reason is at most 600 characters;
 evidence is a list of {id, headline, source, publishedAt}, copied faithfully from
 the brief, with UTC timestamps ending in Z. Exclude items later than the trusted
 newsCutoff. Do not advance the cutoff to admit later news. Empty evidence is valid.
+Do not rely on post-cutoff items in your reasoning or classification, even when
+they appear in the brief or bull/bear arguments. Mention their exclusion only;
+never treat them as eligible evidence or copy them into evidence.
 class is explained_up, explained_down, unexplained_up or unexplained_down; the
 suffix describes the observed move, not the forecast. Explained requires a
 stock-specific catalyst that plausibly explains the magnitude of the residual

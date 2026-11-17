@@ -132,3 +132,22 @@ cloud version, local revision and change summary. Do not fill pending with guess
 <!-- Changed at (UTC): 2026-11-17T06:55:00Z Agent ID: pending Cloud version: pending Local revision: build/12-prefreeze Change summary: Required raw JSON and a maximum 600-character reason; local only, cloud not queried or changed. -->
 
 <!-- Retrieved at (UTC): 2026-11-17T04:27:36Z Agent ID: pending  Cloud version: pending  Local revision: agents-v1  Change summary: Created local quick prompt and policy from retrieved Qoder docs; no cloud Agent fetched. -->
+
+
+## Debate output contract (build/13b-debate-format)
+
+Bull and bear return raw JSON only, without Markdown fences, with exactly
+`decisionId`, `stance`, `argument`, and `itemIds`. No extra provenance fields:
+`ticker`, `newsCutoff`, `model`, and `promptVersion` remain input context.
+`argument` is at most 150 words. Citations must identify supplied brief items
+published at or before the trusted cutoff; exactly-at-cutoff items are eligible.
+Neither arguments nor manager reasoning may rely on later items, including later
+items present in the brief or another agent's output. Use empty citations when
+nothing qualifies. The strict collector is unchanged; regression tests cover
+both roles, extra keys, later citations, and valid boundary/empty citations.
+Embedded agent JSON prompts mirror the authoritative system.md files.
+
+Recompute `scripts/hash_prompts.py` after prompt changes. Redeploy only the
+pushed main SHA and verify existing resources by GET before read-only evals.
+Cloud results for this revision are recorded separately after actual execution;
+this contract change alone does not establish an eval pass or authorize orders.
