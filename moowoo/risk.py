@@ -4,6 +4,7 @@ from datetime import date
 import math
 
 from . import config as C
+from . import calendar
 from .desk_data import daily_frame, instant, regime_filter, returns
 from .portfolio import positive
 
@@ -111,13 +112,16 @@ def check(proposal, state, market):
 
     def final_day():
         session = date.fromisoformat(market["sessionDate"])
-        return C.NO_NEW_ENTRIES_ON_FINAL_DAY and session >= date.fromisoformat(C.FINAL_DAY)
+        return C.NO_NEW_ENTRIES_ON_FINAL_DAY and (session >= calendar.FINAL_DAY or calendar.is_final_day(market["now"]))
 
     def minutes():
         elapsed = market["minutesSinceOpen"]
         if not isinstance(elapsed, (int, float)) or not math.isfinite(elapsed):
             raise ValueError("minutesSinceOpen required")
-        return market.get("isRegularSession", True) is False or elapsed < C.NO_ORDERS_FIRST_MINUTES
+        actual = calendar.minutes_since_open(market["now"])
+        return (not calendar.is_regular_hours(market["now"]) or actual is None or
+                actual < C.NO_ORDERS_FIRST_MINUTES or market.get("isRegularSession", True) is False or
+                elapsed < C.NO_ORDERS_FIRST_MINUTES)
 
     checks = [
         ("kill_or_halted", lambda: state.halted or state.tier == "kill", "veto"),

@@ -6,6 +6,7 @@ from pathlib import Path
 from _execution import atomic_json, command, frozen_config, read_json
 from plan_session import ROOT, load_bars
 from moowoo import config as C
+from moowoo import calendar
 from moowoo.desk_data import instant
 from moowoo.execution import require_not_halted
 from moowoo.exits import propose_exits
@@ -15,17 +16,20 @@ from moowoo.tickets import OrderTicket
 
 
 def run(args, log):
+    snapshot = read_json(args.quotes)
+    now = calendar.local_time(snapshot["now"])
+    skipped = calendar.skip(log, now, "watch") or calendar.skip_first_minutes(log, now, C.NO_ORDERS_FIRST_MINUTES)
+    if skipped:
+        return skipped
     frozen = frozen_config()
     state = PortfolioState.from_dict(read_json(args.state))
     if state.halted and state.tier != "kill":
         raise ValueError("state halted; reconcile or explicitly restart before watching")
     require_not_halted(log.read())
-    snapshot = read_json(args.quotes)
-    session, now = snapshot["sessionDate"], instant(snapshot["now"])
-    opened, closed = instant(snapshot["regularOpen"]), instant(snapshot["regularClose"])
-    if not "2026-11-17" <= session <= C.FINAL_DAY or not opened <= now <= closed or opened >= closed:
-        raise ValueError("watch outside supplied competition regular session")
-    if opened.date().isoformat() != session or closed.date().isoformat() != session:
+    snapshot["now"] = calendar.utc_stamp(now)
+    session = snapshot["sessionDate"]
+    opened, closed = calendar.session_open(now), calendar.session_close(now)
+    if now.date().isoformat() != session:
         raise ValueError("invalid regular-session date")
     if args.bars_asof > session or (args.bars_asof == session and now < closed):
         raise ValueError("bars-asof includes incomplete session")
