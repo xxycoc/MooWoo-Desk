@@ -17,6 +17,8 @@ import urllib.parse
 import urllib.request
 
 from hash_prompts import prompt_version
+import _common  # noqa: F401
+from moowoo.rules import AUTONOMY_CHANGE
 
 ROOT = Path(__file__).resolve().parents[1]
 API = "https://api.qoder.com/api/v1"
@@ -67,7 +69,7 @@ def check_settings(settings, *, complete=False, stage="schedules"):
         raise ValueError("REPO_REVISION must be a pinned 40-character commit SHA")
     if settings.get("MOOMOO_MARKET", "100") != "100":
         raise ValueError("only US market is permitted")
-    required = SETTING_KEYS - ({"SLACK_CHANNEL_PAIRING_ID"} if stage == "resources" else set())
+    required = SETTING_KEYS - {"SLACK_CHANNEL_PAIRING_ID"}
     if complete and required - settings.keys():
         raise ValueError("apply requires all nonsecret settings, including verified MCP inventory")
 
@@ -139,6 +141,7 @@ def build_payloads(settings=None, root=ROOT, *, executor_approval="ask"):
 
     environment_variables = {k: "${" + k + "}" for k in
                              ("MOOMOO_ACCOUNT_ID", "MOOMOO_MARKET", "MOOMOO_CHALLENGE_TITLE")}
+    environment_variables["GITHUB_LEDGER_TOKEN"] = "${secret.GITHUB_LEDGER_TOKEN}"
     for role in ("coordinator", "auditor"):
         template = {k: deepcopy(v) for k, v in agents[role].items()
                     if k in {"name", "description", "model", "system", "tools", "skills", "mcp_servers", "multiagent", "metadata"}}
@@ -151,31 +154,43 @@ def build_payloads(settings=None, root=ROOT, *, executor_approval="ask"):
         add("schedule." + key, "/forward/schedules", {
             "identity_id": "${IDENTITY_ID}", "template_id": "${template." + role + ".id}",
             "name": "moowoo-" + key, "environment_id": "${environment.id}",
+            "environment_variables": environment_variables,
             "initial_events": [{"type": "user.message", "content": message}],
             "trigger_policy": {"type": "cron", "expression": expression, "timezone": timezone},
+            "stop_at": "2026-11-28T06:00:00+08:00",
             "execution": {"session_mode": "new_session", "max_concurrent_runs": 1,
                           "max_attempts": 1, "timeout_ms": 1800000},
-            "sinks": [{"type": "im_channel", "channel_pairing_id": "${SLACK_CHANNEL_PAIRING_ID}"}] if slack else [],
+            "sinks": [{"type": "im_channel", "channel_pairing_id": "${SLACK_CHANNEL_PAIRING_ID}"}]
+                     if slack and settings.get("SLACK_CHANNEL_PAIRING_ID") else [],
             "metadata": {"window_start": "2026-11-17", "window_end": "2026-11-27",
                          "requires_exchange_calendar_guard": True},
         })
 
-    guard = ("Require verified exchange calendar, durable single-writer state and committed prompt hash. "
-             "Do nothing outside 17-27 Nov 2026 or on non-trading days. ")
-    schedule("morning", "coordinator", "30 21 * * 1-5", "Asia/Singapore", guard + "Run the morning session.")
+    def instructions(kind):
+        return (f"From /data/workspace/MooWoo-Desk run python3 scripts/run_session.py --kind {kind} --phase start. "
+                "If skipped or refused, stop this session without orders. Follow docs/runtime.md phase commands, "
+                "retain every agent input/output under the returned inputs directory, and finish with --phase finish "
+                "(or --phase abort on failure). Never continue past lease expiry. "
+                "The runner saves checkpoints and releases the account lock only with a successful final save. ")
+    schedule("morning", "coordinator", "30 21 * * 1-5", "Asia/Singapore", instructions("morning"))
     # Three cron expressions represent exactly 09:30, 10:00..15:30, 16:00 NY.
     for suffix, cron in (("open", "30 9 * * 1-5"), ("regular", "0,30 10-15 * * 1-5"), ("close", "0 16 * * 1-5")):
         schedule("watcher-" + suffix, "coordinator", cron, "America/New_York",
-                 guard + "Watcher mode: reconcile and run the installed code risk watcher. "
-                 "No entries in first five minutes, no new entries on Nov 27. "
-                 "No action after an early close. Halt if deterministic watcher is missing.")
+                 instructions("watch"))
     schedule("audit", "auditor", "10 16 * * 1-5", "America/New_York",
-             guard + "Consume the persisted audit handoff in this separate Session; reconcile, report and ask reflections.", slack=True)
+             instructions("audit"), slack=True)
+    # A 16:10 cron cannot wake a session at 13:10; calendar rejects the late duplicate.
+    schedule("audit-early-close", "auditor", "10 13 27 11 *", "America/New_York",
+             instructions("audit"), slack=True)
 
     return resolve({
         "promptVersion": version,
         "executorApproval": executor_approval,
         "approvalDecisionRequired": executor_approval == "allow",
+        "warnings": ([] if settings.get("SLACK_CHANNEL_PAIRING_ID") else
+                     ["SLACK_CHANNEL_PAIRING_ID missing: audit schedules have no IM sink; delivery is disabled."]) +
+                    ["21:30 Asia/Singapore is 08:30 New York; strict regular-hours guard skips the morning run.",
+                     "stop_at and secret environment delivery payloads require live API validation before apply."],
         "vault_lookup": {"method": "GET", "path": "/cloud/vaults?name=moomoo-mcp&limit=100",
                          "display_name": "moomoo-mcp"},
         "operations": operations,
@@ -185,8 +200,8 @@ def build_payloads(settings=None, root=ROOT, *, executor_approval="ask"):
         "unresolved_runtime_requirements": [
             "Publish pinned revision only after authorized merge; setup fails without risk desk integration",
             "Commit preregistration prompt addendum before first order",
-            "Persist and restore event logs, checkpoints, ticket receipts and audit handoff",
-            "Provide cross-schedule locking and code watcher/session-calendar enforcement",
+            "Verify ledger persistence, locking and secret environment delivery in the deployment environment",
+            "Resolve morning cron versus regular-hours-only requirement before expecting morning trades",
             "Verify Moomoo account response fields, official endpoint and full tool inventory",
             "Pair auditor Template and Identity to Slack; use that pairing ID for its sink",
             "Verify effective Forward Identity config does not override permissions or models",
@@ -194,15 +209,34 @@ def build_payloads(settings=None, root=ROOT, *, executor_approval="ask"):
     }, settings)
 
 
-def load_pat(path):
+def load_secret(path, key):
     """Only --apply reads this file. Never expand shell expressions or echo it."""
     for line in Path(path).read_text(encoding="utf-8").splitlines():
-        key, sep, value = line.strip().partition("=")
-        if sep and key == "QODER_PAT":
+        name, sep, value = line.strip().partition("=")
+        if sep and name == key:
             value = value.strip().strip("\"'")
             if value:
                 return value
-    raise ValueError("QODER_PAT is missing from .env")
+    raise ValueError(f"{key} is missing from .env")
+
+
+def load_pat(path):
+    return load_secret(path, "QODER_PAT")
+
+
+def validate_approval(path):
+    """Config JSONL is a dated rule ledger, distinct from a hashed runtime EventLog."""
+    if Path(path).resolve() == (ROOT / "config/rule-ledger.jsonl").resolve():
+        rows = [json.loads(line) for line in Path(path).read_text(encoding="utf-8").splitlines()]
+        decisions = [row for row in rows if row.get("ruleId") == "AUTONOMY-01"]
+        if not decisions or decisions[-1] != AUTONOMY_CHANGE:
+            raise ValueError("latest AUTONOMY-01 entry must exactly match the authorized decision")
+    else:
+        from moowoo.ledger import EventLog
+        decisions = [event for event in EventLog(path).read() if event["type"] == "rule_change"
+                     and event["ruleId"] == "executor_approval" and not event["drill"]]
+        if not decisions or decisions[-1]["after"] != "allow":
+            raise ValueError("latest executor_approval decision must authorize allow")
 
 
 def api_request(method, path, token, body=None):
@@ -233,7 +267,7 @@ def load_receipts(path):
 
 
 def apply_payloads(manifest, settings, token, request=api_request, *, stage="resources", prior=None,
-                   receipt_path=None, update=False):
+                   receipt_path=None, update=False, ledger_token=None):
     if stage not in ("resources", "schedules"):
         raise ValueError("stage must be resources or schedules")
     if update and stage != "resources":
@@ -295,6 +329,10 @@ def apply_payloads(manifest, settings, token, request=api_request, *, stage="res
                     child["version"] = versions[child["id"]]
             if op["key"].startswith("agent."):
                 body["version"] = current[op["key"]]["version"]
+        if "${secret.GITHUB_LEDGER_TOKEN}" in json.dumps(body):
+            if not ledger_token:
+                raise ValueError("GITHUB_LEDGER_TOKEN required for session environment; never put it in settings JSON")
+            body = resolve(body, {"secret.GITHUB_LEDGER_TOKEN": ledger_token})
         if re.search(r"\$\{[A-Za-z0-9_.-]+\}", json.dumps(body)):
             raise ValueError(f"unresolved reference in {op['key']}")
         endpoint = op["path"] + "/" + bindings[op["key"] + ".id"] if update else op["path"]
@@ -337,29 +375,33 @@ def main():
     parser.add_argument("--update", action="store_true", help="update all recorded resources in place")
     parser.add_argument("--executor-approval", choices=("ask", "allow"), default="ask")
     parser.add_argument("--approval-log", type=Path, help="verified rule_change log required to apply allow")
-    parser.add_argument("--stage", choices=("resources", "schedules"), default="resources")
+    parser.add_argument("--stage", choices=("resources", "schedules", "executor"), default="resources",
+                        help="executor previews only the executor payload; apply uses resources or schedules")
     parser.add_argument("--receipts", type=Path, default=ROOT / ".cache/qca-deployment.jsonl")
     args = parser.parse_args()
+    if args.apply and args.stage == "executor":
+        parser.error("executor stage is dry run only; use the reviewed resources workflow to apply")
     if args.update and (not args.apply or args.stage != "resources"):
         parser.error("--update requires --apply --stage resources")
     settings = read_json(args.settings) if args.settings else {}
     manifest = build_payloads(settings, executor_approval=args.executor_approval)
+    if args.executor_approval == "allow" and args.approval_log:
+        validate_approval(args.approval_log)
+        manifest["approvalDecisionVerified"] = True
     if args.apply:
         if args.executor_approval == "allow":
-            import _common
-            from moowoo.ledger import EventLog
             if not args.approval_log:
                 parser.error("allow requires --approval-log with executor_approval rule_change")
-            decisions = [event for event in EventLog(args.approval_log).read()
-                         if event["type"] == "rule_change" and event["ruleId"] == "executor_approval"
-                         and not event["drill"]]
-            if not decisions or decisions[-1]["after"] != "allow":
-                parser.error("latest executor_approval decision must authorize allow")
         check_settings(settings, complete=True, stage=args.stage)
         prior = load_receipts(args.receipts) if args.receipts.exists() else None
         apply_payloads(manifest, settings, load_pat(ROOT / ".env"), stage=args.stage,
-                       prior=prior, receipt_path=args.receipts, update=args.update)
+                       prior=prior, receipt_path=args.receipts, update=args.update,
+                       ledger_token=load_secret(ROOT / ".env", "GITHUB_LEDGER_TOKEN"))
     else:
+        if args.stage == "schedules":
+            manifest["operations"] = [op for op in manifest["operations"] if op["key"].startswith("schedule.")]
+        elif args.stage == "executor":
+            manifest["operations"] = [op for op in manifest["operations"] if op["key"] == "agent.executor"]
         print(json.dumps(manifest, indent=2, allow_nan=False))
 
 
