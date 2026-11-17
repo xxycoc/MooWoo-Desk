@@ -278,3 +278,16 @@ Written on 18 November 2026 at about 01:00 Singapore (17 November in New York), 
   decimal strings; a lease can be renewed while unexpired, up to 120 minutes per run, and the morning session
   timeout is 120 minutes. The 60-second price freshness rule is unchanged.
 - No class, sizing, risk limit, horizon, grading or hypothesis changes.
+
+## 13. Addendum 2026-11-18: five movers a day (PICKS-01)
+
+Written on 18 November 2026 at about 01:50 Singapore (17 November in New York), still before any order in the competition account.
+
+- promptVersion `983b7102efeb0fe4907f1d55c6cf2107a2e320a3e5029ad814a30accb55adf50`, computed by
+  `scripts/hash_prompts.py`. It replaces `b9fd4ebe...`.
+- Decided by Siang Woo: the screen picks at most 5 movers a day instead of 15 (`PICK_COUNT`, rule
+  `PICKS-01` in `config/rule-ledger.jsonl`). Every pick gets the bull, bear and manager debate, and quick
+  gives an independent second opinion on each. The quick-only primary route for ranks 6 to 15 is gone.
+- Why: about 45 model calls per morning run would not reliably fit the run lease; 5 movers need about 25.
+- Effect on the study: fewer rated calls per day, so hypotheses H1 to H3 and the 15-graded-call step-up
+  will take longer to reach their sample sizes. Classes, sizing, risk limits, horizons and grading are unchanged.

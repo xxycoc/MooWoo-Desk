@@ -211,7 +211,7 @@ def test_top15_stale_prices_and_hash():
     tickers = [f"T{i:02}" for i in range(20)]
     result = screen({"passing": tickers}, frame.index[-1],
                     bars={t: frame for t in tickers}, earnings={}, mode="raw")
-    assert result["picked"] == tickers[:15]
+    assert result["picked"] == tickers[:5]  # PICKS-01
     stale = screen({"passing": ["A"]}, frame.index[-1], bars={"A": frame.iloc[:-1]}, earnings={})
     assert stale["skipped"]["A"] == "no bar on asof session"
     with pytest.raises(ValueError, match="hash"):

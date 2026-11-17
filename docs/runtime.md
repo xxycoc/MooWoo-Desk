@@ -143,7 +143,7 @@ runtime inputs or verbatim child replies; never rewrite replies to make them pas
 | Path relative to `<inputs>` | Contract |
 | --- | --- |
 | `session.json` | Required gather output; `runId`, `kind: "morning"`, `barsAsOf` |
-| `candidates.json` | Required gather output, array of at most fifteen picked movers in rank order; each has `rank`, `decisionId`, `ticker`, trusted `newsCutoff`, `barsAsOf`, `promptVersion`, `primaryAgent`, `quickSecondOpinionRequired`. The stored candidate `setupScore` is not trusted; ingestion recomputes it. |
+| `candidates.json` | Required gather output, array of at most `PICK_COUNT` (5) picked movers in rank order; each has `rank`, `decisionId`, `ticker`, trusted `newsCutoff`, `barsAsOf`, `promptVersion`, `primaryAgent`, `quickSecondOpinionRequired`. The stored candidate `setupScore` is not trusted; ingestion recomputes it. |
 | `bars.json` | Required gather output, completed daily OHLCV bars keyed by ticker; each accepted ticker needs bars through `session.barsAsOf` |
 | `replies/<decisionId>.analyst.json` | Required for every candidate; original brief with matching identity/cutoff and `items` containing id, headline, source, UTC publishedAt and summary. Empty items are allowed. |
 | `replies/<decisionId>.bull.json`, `.bear.json` | Required for ranks 1–5; exact debate objects with `decisionId`, `stance`, `argument` (at most 150 words), `itemIds` referencing eligible brief items |

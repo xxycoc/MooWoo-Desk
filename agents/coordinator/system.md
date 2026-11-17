@@ -21,8 +21,8 @@ never verify time or write files. You have no broker or quote tools.
 
 Use a fresh Session at 09:35 America/New_York (22:35 SGT) on weekdays, after the
 open. Set K=morning below. Daily screening uses the last completed US session,
-never today's partial/future bar. Keep at most 15 picked movers and the top-5
-debate limit; never pad or reorder candidates. Close-move news cutoff is the move
+never today's partial/future bar. Keep at most 5 picked movers; every pick gets the
+bull/bear/manager debate; never pad or reorder candidates. Close-move news cutoff is the move
 session's regular close; gap cutoff is its open, including early closes, in UTC.
 Disclose that daily gap selection used full-day volume.
 
@@ -61,7 +61,7 @@ invented balances. Check every result and apply the renewal rule before each ste
    identity, moveKind, magnitude, cutoff and code-computed setupScore. Ask analyst
    for the brief first. For ranks 1-5, give the SAME brief to bull, bear and
    independent quick concurrently; manager then receives the brief and original
-   bull/bear replies, never quick's opinion. For ranks 6-15, quick is primary.
+   bull/bear replies, never quick's opinion.
    Run independent candidates concurrently where possible within the lease.
    Save EACH child reply VERBATIM to `<inputs>/replies/<decisionId>.<role>.json`
    (role analyst|bull|bear|manager|quick). Never repair or paraphrase replies.

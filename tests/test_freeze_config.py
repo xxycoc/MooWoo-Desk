@@ -85,9 +85,10 @@ def test_preregistration_matches_frozen_artifact():
     )
     namespace = {}
     exec(committed_config, namespace)
+    from moowoo.rules import PICKS_CHANGE
     for key, value in namespace.items():
         if not key.startswith("_"):
-            assert getattr(config, key) == value
+            assert getattr(config, key) == PICKS_CHANGE["after"].get(key, value)
     additions = next(json.loads(line)["after"] for line in (ROOT / "config/rule-ledger.jsonl").read_text().splitlines()
                      if json.loads(line)["ruleId"] == "FEES-01")
     assert {k: v for k, v in vars(config).items() if not k.startswith("_") and k not in namespace} == additions

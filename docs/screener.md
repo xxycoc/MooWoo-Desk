@@ -100,7 +100,7 @@ first, then descending `abs(z) * min(rvol, 3)` (`RVOL_CAP`); ticker sorts ties.
 Earnings qualifies when its date equals either of the ticker's last two observed
 session dates (`EARNINGS_SESSIONS`); future earnings dates do not qualify. It is
 date-level attribution, not an intraday claim about when the release was known.
-The first 15 become `picked` (`PICK_COUNT`). Earnings lookup errors are reported.
+The first 5 become `picked` (`PICK_COUNT`; 15 until addendum 13). Earnings lookup errors are reported.
 
 ```powershell
 .venv\Scripts\python.exe scripts/screen.py --universe config/universe-2026-11-16.json --asof 2026-11-13 --log .cache/2026-11-13-us.jsonl
