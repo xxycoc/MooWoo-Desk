@@ -31,15 +31,21 @@ def quote_rows(payload):
         raise ValueError("missing quote response status")
     values = payload.get("data")
     if isinstance(values, dict):
-        keys = [key for key in ("quotes", "snapshots") if key in values]
+        # The live quote_market_snapshot tool returns data.snapshot_list (17 Nov rerun 10).
+        keys = [key for key in ("quotes", "snapshots", "snapshot_list") if key in values]
         values = values[keys[0]] if len(keys) == 1 else None
     if not isinstance(values, list) or any(not isinstance(row, dict) for row in values):
-        raise ValueError("expected data list, data.quotes or data.snapshots list")
+        raise ValueError("expected data list, data.quotes, data.snapshots or data.snapshot_list")
     return values
 
 
 def quote_time(row):
-    if "data_date" in row and "data_time" in row:
+    stamp = row.get("update_time")
+    if type(stamp) in (int, float) and not isinstance(stamp, bool):
+        # Live snapshots give update_time as Unix epoch milliseconds.
+        seconds = stamp / 1000 if stamp > 1e11 else stamp
+        return calendar.local_time(datetime.fromtimestamp(seconds, timezone.utc))
+    if row.get("data_date") and row.get("data_time"):
         # Moomoo/Futu US quote data_date/data_time are exchange-local wall time.
         value = datetime.fromisoformat(row["data_date"] + "T" + row["data_time"])
         if value.tzinfo is not None:

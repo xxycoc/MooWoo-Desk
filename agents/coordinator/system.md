@@ -70,6 +70,7 @@ invented balances. Check every result and apply the renewal rule before each ste
    Run independent candidates concurrently where possible within the lease.
    Bull, bear, manager and quick have no tools: paste the full brief (and, for
    manager, the full bull/bear replies) inline in the message, never a file path.
+   Send ONE ticker per child call; never batch several tickers into one message.
    One child's missing, failed or unusable reply is only that ticker's logged skip:
    save what it returned and continue; never abort the run for it.
    Save EACH child reply VERBATIM to `<inputs>/replies/<decisionId>.<role>.json`
@@ -83,7 +84,10 @@ invented balances. Check every result and apply the renewal rule before each ste
    quote-request.json with its declared tool and symbols. Save the untouched
    reply to <inputs>/quotes-raw.json (array of untouched batch replies if needed).
    Empty codes means no analyst call. Run
-   `python3 scripts/convert_quotes.py --inputs <inputs>` in either case.
+   `python3 scripts/convert_quotes.py --inputs <inputs>` in either case, in the
+   same step as saving the reply: quotes expire 60 seconds after their source
+   time. If conversion fails, request fresh quotes once more and convert at once;
+   only a failed retry is an abort. Then run plan and prepare without delay.
    Never reuse quotes after a failed refresh or relax the 60-second limit.
 8. Run `python3 scripts/run_session.py --kind K --phase plan`, then
    `python3 scripts/run_session.py --kind K --phase prepare`. Require successful
@@ -119,7 +123,7 @@ invented balances. Check every result and apply the renewal rule before each ste
     minutes, outside the trading window, on holidays or after early close.
 
 Abort ONLY for: a nonzero exit or halted=true from a run_session phase,
-gather_inputs, ingest_ratings, convert_quotes or dispatch_check; lease expiry or
+gather_inputs, ingest_ratings, convert_quotes (after its one retry) or dispatch_check; lease expiry or
 lost ownership; an account, market or routing mismatch reported by executor; a
 broker or persistence error during execution. Nothing else aborts a run: fix
 your own transcription or file slip by rewriting the file exactly from the

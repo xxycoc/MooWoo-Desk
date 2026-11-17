@@ -330,3 +330,18 @@ Written on 18 November 2026 at about 03:10 Singapore (17 November in New York), 
   only this run's JSON outputs, prints only what it needs, and saves files with shell heredocs. The scheduled
   start message no longer points to `docs/runtime.md`. No rule, class, sizing, risk limit, horizon, grading or
   hypothesis changes.
+
+## 17. Addendum 2026-11-18: one ticker per call, quotes converted on arrival
+
+Written on 18 November 2026 at about 03:45 Singapore (17 November in New York), still before any order in the competition account.
+
+- promptVersion `e02740ee9a77ba501ea840d456e3fd60b47cba72363ed88328deb0f75510d265`, computed by `scripts/hash_prompts.py`. It replaces `a09024d0...`.
+- Why: rerun 10 completed the debate and reached quotes, but every rating was skipped. The coordinator sent
+  all five tickers to bull in one message and the reply covered only TSN; the TSN manager wrapped its JSON in
+  prose. Then quote conversion refused the live reply, whose rows sit under `data.snapshot_list` with
+  `update_time` in epoch milliseconds, and the run aborted with no orders.
+- Change: one ticker per child call; quotes are converted in the same step as they are saved, with one fresh
+  retry before a conversion failure counts as an abort. Code fixes in the same change (no promptVersion effect):
+  `convert_quotes.py` reads `snapshot_list` and epoch-millisecond times, and `parse_rating` accepts exactly one
+  JSON object embedded in prose, logging a warning. The 60-second freshness rule is unchanged.
+- No rule, class, sizing, risk limit, horizon, grading or hypothesis changes.
