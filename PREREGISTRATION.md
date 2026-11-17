@@ -258,3 +258,4 @@ Written on 17 November 2026 at about 23:10 Singapore, still before any order in 
   `scripts/session_info.py` prints barsAsOf and session hours from the frozen calendar. The
   coordinator uses it and does not research the exchange calendar. No rule, class, sizing,
   risk limit, horizon, grading or hypothesis changes.
+- Correction, 23:17 Singapore: 14 November 2026 was a Saturday. The completed session before 17 November is Monday 16 November, and the calendar now records that date. The third rerun halted correctly when every stock lacked a bar for 14 November; it did not substitute a date.

@@ -393,9 +393,9 @@ def test_preregistration_requires_addendum_and_matches_current_prompts():
 def test_session_info_uses_frozen_calendar():
     import subprocess, sys, json as _json
     from moowoo.calendar import previous_session
-    assert previous_session("2026-11-17").isoformat() == "2026-11-14"
+    assert previous_session("2026-11-17").isoformat() == "2026-11-16"
     assert previous_session("2026-11-27").isoformat() == "2026-11-25"
     out = subprocess.run([sys.executable, str(ROOT / "scripts/session_info.py"), "--now", "2026-11-17T15:00:00Z"],
                          capture_output=True, text=True, check=True, stdin=subprocess.DEVNULL).stdout
     facts = _json.loads(out)
-    assert facts["barsAsOf"] == "2026-11-14" and facts["regularHours"] and facts["minutesSinceOpen"] == 30
+    assert facts["barsAsOf"] == "2026-11-16" and facts["regularHours"] and facts["minutesSinceOpen"] == 30

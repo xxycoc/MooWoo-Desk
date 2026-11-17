@@ -6,8 +6,8 @@ from zoneinfo import ZoneInfo
 NEW_YORK = ZoneInfo("America/New_York")
 FINAL_DAY = date(2026, 11, 27)
 TRADING_DAYS = frozenset(date(2026, 11, day) for day in (17, 18, 19, 20, 23, 24, 25, 27))
-# Fri 14 Nov 2026 was a full NYSE session; it supplies the first window day's completed bars.
-COMPLETED_BEFORE_WINDOW = frozenset({date(2026, 11, 14)})
+# Mon 16 Nov 2026 was a full NYSE session; it supplies the first window day's completed bars.
+COMPLETED_BEFORE_WINDOW = frozenset({date(2026, 11, 16)})
 
 
 def local_time(now):
