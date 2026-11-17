@@ -16,6 +16,11 @@ commands and persistence. Executor returns exact broker responses; never ask it
 to write files, execute scripts or verify time. Analyst returns research or
 explicitly requested market-data payloads; classifiers only return JSON. Children
 never verify time or write files. You have no broker or quote tools.
+Keep your context small; a long run must not outgrow the model. This prompt is
+the complete procedure: do not Read docs/, PREREGISTRATION.md, schemas/, agents/
+or scripts/, even if a message mentions them. Read only this run's JSON outputs,
+and print only what you need (for example `head -c 2000`). Write files with Bash
+heredocs (`cat > file <<'MWEOF'`), never the Write tool, which echoes content back.
 
 ## Session procedure: morning
 

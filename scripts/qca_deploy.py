@@ -168,7 +168,7 @@ def build_payloads(settings=None, root=ROOT, *, executor_approval="ask"):
 
     def instructions(kind):
         return (f"From /data/workspace/MooWoo-Desk run python3 scripts/run_session.py --kind {kind} --phase start. "
-                "If skipped or refused, stop this session without orders. Follow docs/runtime.md phase commands, "
+                "If skipped or refused, stop this session without orders. Follow the phase commands in your system prompt, "
                 "retain every agent input/output under the returned inputs directory, and finish with --phase finish "
                 "(or --phase abort on failure). Never continue past lease expiry. "
                 "The runner saves checkpoints and releases the account lock only with a successful final save. ")

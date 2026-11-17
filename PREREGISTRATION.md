@@ -315,3 +315,18 @@ Written on 18 November 2026 at about 02:20 Singapore (17 November in New York), 
   account or routing mismatch, or a broker or persistence error during execution. Its own file slips are
   rewritten from the original reply; a child's failed or missing reply is that ticker's logged skip; it never
   waits idle while holding the lease. No rule, class, sizing, risk limit, horizon, grading or hypothesis changes.
+
+## 16. Addendum 2026-11-18: keep the coordinator's context small
+
+Written on 18 November 2026 at about 03:10 Singapore (17 November in New York), still before any order in the competition account.
+
+- promptVersion `a09024d009fba94c1774207df3b3e467354adafc67eddfa807496b1e6ba73d6b`, computed by
+  `scripts/hash_prompts.py`. It replaces `616b8953...`.
+- Why: rerun 9 reached the debate for all five picks, then every coordinator model request timed out (504,
+  no response within 63 seconds) from about 02:41 Singapore while new sessions answered normally. Its
+  conversation held about 268,000 characters: 78,000 from reading reference docs, 58,000 from the Write
+  tool echoing saved files back, and 61,000 of debate briefs.
+- Change: the coordinator does not read docs, the pre-registration, schemas, agent prompts or scripts; it reads
+  only this run's JSON outputs, prints only what it needs, and saves files with shell heredocs. The scheduled
+  start message no longer points to `docs/runtime.md`. No rule, class, sizing, risk limit, horizon, grading or
+  hypothesis changes.

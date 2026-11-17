@@ -30,7 +30,7 @@
         "initial_events": [
           {
             "type": "user.message",
-            "content": "From /data/workspace/MooWoo-Desk run python3 scripts/run_session.py --kind morning --phase start. If skipped or refused, stop this session without orders. Follow docs/runtime.md phase commands, retain every agent input/output under the returned inputs directory, and finish with --phase finish (or --phase abort on failure). Never continue past lease expiry. The runner saves checkpoints and releases the account lock only with a successful final save. "
+            "content": "From /data/workspace/MooWoo-Desk run python3 scripts/run_session.py --kind morning --phase start. If skipped or refused, stop this session without orders. Follow the phase commands in your system prompt, retain every agent input/output under the returned inputs directory, and finish with --phase finish (or --phase abort on failure). Never continue past lease expiry. The runner saves checkpoints and releases the account lock only with a successful final save. "
           }
         ],
         "trigger_policy": {
@@ -71,7 +71,7 @@
         "initial_events": [
           {
             "type": "user.message",
-            "content": "From /data/workspace/MooWoo-Desk run python3 scripts/run_session.py --kind watch --phase start. If skipped or refused, stop this session without orders. Follow docs/runtime.md phase commands, retain every agent input/output under the returned inputs directory, and finish with --phase finish (or --phase abort on failure). Never continue past lease expiry. The runner saves checkpoints and releases the account lock only with a successful final save. "
+            "content": "From /data/workspace/MooWoo-Desk run python3 scripts/run_session.py --kind watch --phase start. If skipped or refused, stop this session without orders. Follow the phase commands in your system prompt, retain every agent input/output under the returned inputs directory, and finish with --phase finish (or --phase abort on failure). Never continue past lease expiry. The runner saves checkpoints and releases the account lock only with a successful final save. "
           }
         ],
         "trigger_policy": {
@@ -112,7 +112,7 @@
         "initial_events": [
           {
             "type": "user.message",
-            "content": "From /data/workspace/MooWoo-Desk run python3 scripts/run_session.py --kind watch --phase start. If skipped or refused, stop this session without orders. Follow docs/runtime.md phase commands, retain every agent input/output under the returned inputs directory, and finish with --phase finish (or --phase abort on failure). Never continue past lease expiry. The runner saves checkpoints and releases the account lock only with a successful final save. "
+            "content": "From /data/workspace/MooWoo-Desk run python3 scripts/run_session.py --kind watch --phase start. If skipped or refused, stop this session without orders. Follow the phase commands in your system prompt, retain every agent input/output under the returned inputs directory, and finish with --phase finish (or --phase abort on failure). Never continue past lease expiry. The runner saves checkpoints and releases the account lock only with a successful final save. "
           }
         ],
         "trigger_policy": {
@@ -153,7 +153,7 @@
         "initial_events": [
           {
             "type": "user.message",
-            "content": "From /data/workspace/MooWoo-Desk run python3 scripts/run_session.py --kind audit --phase start. If skipped or refused, stop this session without orders. Follow docs/runtime.md phase commands, retain every agent input/output under the returned inputs directory, and finish with --phase finish (or --phase abort on failure). Never continue past lease expiry. The runner saves checkpoints and releases the account lock only with a successful final save. "
+            "content": "From /data/workspace/MooWoo-Desk run python3 scripts/run_session.py --kind audit --phase start. If skipped or refused, stop this session without orders. Follow the phase commands in your system prompt, retain every agent input/output under the returned inputs directory, and finish with --phase finish (or --phase abort on failure). Never continue past lease expiry. The runner saves checkpoints and releases the account lock only with a successful final save. "
           }
         ],
         "trigger_policy": {
@@ -194,7 +194,7 @@
         "initial_events": [
           {
             "type": "user.message",
-            "content": "From /data/workspace/MooWoo-Desk run python3 scripts/run_session.py --kind audit --phase start. If skipped or refused, stop this session without orders. Follow docs/runtime.md phase commands, retain every agent input/output under the returned inputs directory, and finish with --phase finish (or --phase abort on failure). Never continue past lease expiry. The runner saves checkpoints and releases the account lock only with a successful final save. "
+            "content": "From /data/workspace/MooWoo-Desk run python3 scripts/run_session.py --kind audit --phase start. If skipped or refused, stop this session without orders. Follow the phase commands in your system prompt, retain every agent input/output under the returned inputs directory, and finish with --phase finish (or --phase abort on failure). Never continue past lease expiry. The runner saves checkpoints and releases the account lock only with a successful final save. "
           }
         ],
         "trigger_policy": {
