@@ -161,7 +161,9 @@ def test_permissions():
     for path in agents:
         agent = json.loads(path.read_text())
         role = path.parent.name
-        assert agent['system'] == path.with_name('system.md').read_text()
+        prompt_bytes = path.with_name('system.md').read_bytes()
+        assert b'\r' not in prompt_bytes
+        assert agent['system'] == prompt_bytes.decode('utf-8')
         configs = next(t['configs'] for t in agent['tools'] if t['type'] == 'mcp_toolset')
         assert configs == policy['agents'][role]['configs']
         by_name = {c['name']: c for c in configs}
@@ -305,3 +307,31 @@ def test_schema_accepts_valid_and_rejects_structural_errors(good):
     good['expectedMove']['horizon'] = 3
     with pytest.raises(jsonschema.ValidationError):
         validator.validate(good)
+
+
+def test_coordinator_runtime_handoffs():
+    prompt = (ROOT / 'agents/coordinator/system.md').read_text(encoding='utf-8')
+    steps = prompt.split('## Exact command sequence (both kinds)', 1)[1]
+    commands = [
+        'run_session.py --kind K --phase start',
+        'run_session.py --kind K --phase preflight',
+        'run_session.py --kind K --phase reconcile',
+        'scripts/session_info.py',
+        'gather_inputs.py --kind K --inputs <inputs>',
+        'ingest_ratings.py --inputs <inputs>',
+        'convert_quotes.py --inputs <inputs>',
+        'run_session.py --kind K --phase plan',
+        'run_session.py --kind K --phase prepare',
+        'dispatch_check.py --kind K --decision-id <id>',
+        'run_session.py --kind K --phase record',
+        'run_session.py --kind K --phase reconcile',
+        'run_session.py --kind K --phase finish',
+    ]
+    cursor = 0
+    for command in commands:
+        cursor = steps.index(command, cursor) + len(command)
+    assert 'Skip only step 6' in prompt
+    assert '<inputs>/replies/<decisionId>.<role>.json' in steps
+    assert 'Only if it prints ok:true' in steps
+    assert '--phase renew' in steps and '--phase abort' in steps
+    assert 'current US session has not opened' not in prompt

@@ -314,8 +314,9 @@ releasing ownership. An order with uncertain persistence is a halt, not a retry.
 
 The session procedures in coordinator/system.md and auditor/system.md target
 `scripts/run_session.py` from the separately supplied runtime implementation.
-That runner is absent from this prompt-only base checkout; integrate the runtime
-before deployment. If absent or incompatible, halt rather than invoke direct
+The runner is present in this checkout. Integrate the companion ingestion,
+dispatch-check and renewal commands before deployment. If any command is absent
+or incompatible, halt rather than invoke direct
 planning/execution CLIs. No watcher agent exists: coordinator runs `--kind watch`.
 There is no `agents/AGENTS.md`; the repository-root AGENTS.md is the handbook.
 
@@ -334,7 +335,19 @@ the prompts enumerate each required file and handoff. Never invent missing data.
 CLI data errors may report successful automatic abort. Do not repeat cleanup in
 those cases. Preserve local evidence and report a failed save; never resume
 trading after persistence failure or dispatch after an unsuccessful prepare.
-Successful prepare checkpoints the exact attempts before executor handoff.
+Successful prepare checkpoints the exact attempts. Before EACH handoff, require
+`python3 scripts/dispatch_check.py --kind K --decision-id <id>` to return ok:true;
+executor receives its exact args for one order. AUTONOMY-01 plus deployed
+always_allow authorizes paper execution without a further approval request.
+Coordinator alone writes files, runs commands and checks date -u. Children never
+write files or verify time. After baseline reconciliation, use session_info and
+gather_inputs for both kinds; morning routes candidates to children and saves
+verbatim replies under `<inputs>/replies/<decisionId>.<role>.json`, then runs
+ingest_ratings. Fetch quotes LAST via analyst and convert_quotes before plan.
+Use the exact commands and receipt contracts in [runtime.md](runtime.md).
+Optional gaps are logged; missing cost telemetry is unavailable (credits null).
+Renew below 10 minutes remaining when work remains, up to 120 minutes total;
+never continue after expiry.
 The 30-minute watch schedule does not guarantee continuous stop monitoring.
 
 The runtime uses a separate Git ledger branch with checked chains, handoffs,
@@ -342,7 +355,8 @@ exclusive ownership and conflict detection; source and runtime are separate
 repositories. Secret delivery, durable cloud restore/save, effective schedules,
 Moomoo behavior and Slack delivery still require live verification. This branch
 changes no runtime Python, schedules, permissions, frozen values or registration.
-The missing dated promptVersion addendum continues to block live orders. Offline
+Dated promptVersion addenda and AUTONOMY-01 already exist. This prompt revision
+still requires a committed matching hash addendum before execution. Offline
 prompt tests do not establish a model evaluation pass or live integration success.
 
 
