@@ -11,7 +11,8 @@ package contains eight agents despite the deployment brief saying seven.
 ```mermaid
 flowchart TD
     Schedule[09:35 New York weekday schedule] --> C[coordinator]
-    C --> Screen[code screener]
+    C --> Gate[runner start, preflight and baseline reconcile]
+    Gate --> Screen[code screener]
     Screen --> A[analyst per picked mover]
     A --> B[bull: ranks 1-5]
     A --> R[bear: ranks 1-5]
@@ -112,7 +113,8 @@ Later quotes and financial snapshots cannot silently become historical evidence.
 
 The morning run starts at 09:35 New York (22:35 SGT), after the open and the first-five-minutes rule.
 The existing screener is a completed-daily-bar screener, not a premarket gap feed.
-Morning screening therefore uses the last completed US session. `screen.py`
+The runtime start gate skips that premarket schedule; do not screen or wait
+under its lease. For an eligible morning run, screening uses the last completed US session. `screen.py`
 uses its `--asof` date for its log runId. Preserve that separate source log and
 map each rating to the upcoming trade session's runId. A gap chosen from a daily
 bar uses that day's open as the news cutoff even though full-day volume was used
@@ -189,8 +191,9 @@ lookahead rejection; arbitrary validation failures never count as passes.
 `--previous` selects a comparison report; otherwise the old report is read before
 replacement and full output differences are retained.
 
-Manager and quick must return raw JSON with no Markdown fences and a reason of
-at most 600 characters. Ingestion tolerates exactly one complete JSON fence and
+Manager and quick must return raw JSON with no Markdown fences. Manager reason
+is at most 600 characters; quick reason is at most 3 sentences and at most 400
+characters. The shared schema/ingestion limit stays at 600 characters. Ingestion tolerates exactly one complete JSON fence and
 logs a warning when stripping it; prose, multiple blocks and malformed JSON fail.
 After manager has decided, ingestion accepts `--bull-output` / `--bear-output`
 JSON files and records their argument text, truncated to 600 characters each.
@@ -255,8 +258,8 @@ Docs were retrieved on 17 Nov 2026 (UTC). Sources:
 | Schedules | Forward schedules require identity_id, template_id and environment_id. Builder therefore creates coordinator and auditor Templates with the Agent configuration copied into them; a Template does not accept a Cloud Agent ID as its execution definition. |
 | Morning | `trigger_policy={type: cron, expression: "35 9 * * 1-5", timezone: America/New_York}`. |
 | Watcher | Two cron schedules in America/New_York: `0,30 10-15 * * 1-5`, `0 16 * * 1-5`; every 30 minutes 10:00-16:00. The 09:35 morning run covers the open. |
-| Audit delivery | New auditor Session daily at 16:10 New York, `sinks: [{type: im_channel, channel_pairing_id}]`. Pairing must belong to the auditor Template/Identity and point to Slack. Channel ID/credentials are not invented. Early-close days receive their daily report later at this fixed time. |
-| Trading window | Schedule API documents no creation-time start/end bound. Metadata window dates are labels, NOT enforcement. Code/calendar guards and prompt instructions must reject holidays, out-of-window sessions and post-early-close work. Archive schedules after the challenge. |
+| Audit delivery | New auditor Session daily at 16:10 New York, `sinks: [{type: im_channel, channel_pairing_id}]`. Pairing must belong to the auditor Template/Identity and point to Slack. Channel ID/credentials are not invented. The supplied runtime adds 13:10 New York on 27 November; its close +10 to +45 minute audit gate rejects the late 16:10 duplicate. |
+| Trading window | Schedule API documents no creation-time start/end bound. Metadata window dates are labels, NOT enforcement. Runtime calendar guards reject holidays and out-of-window order work, while allowing final receipt reconciliation and saving after close. The supplied runtime proposes stop_at=2026-11-28T06:00:00+08:00; API acceptance remains unverified. Archive schedules after the challenge. |
 | API references | `${...}` strings are local dry-run manifest placeholders, NOT Qoder API syntax. Apply resolves them before POST and fails on unresolved references. |
 
 Dry run, no credentials or network:
@@ -265,7 +268,7 @@ Dry run, no credentials or network:
 .venv/Scripts/python scripts/qca_deploy.py
 ```
 
-This prints the environment, eight Agents, two Templates, five schedules, vault
+The base deployment builder prints the environment, eight Agents, two Templates, five schedules, vault
 lookup and an example separate auditor Cloud Session payload. It does not submit
 the example Session. Audit handoff is a persisted manifest consumed by the separate
 audit schedule, not an automatic child-thread launch. An immediate independent
@@ -297,7 +300,8 @@ channel. Put the resulting SLACK_CHANNEL_PAIRING_ID in the settings file; it is
 not required for the resources stage. Verify effective Identity Config has no
 permission/model overrides. Once all runtime gates below are satisfied, a future
 explicitly authorized `--apply --stage schedules` reads the same receipts and
-creates the five schedules referencing those resources. Only Forward POSTs use
+creates schedules referencing those resources. The supplied runtime adds the
+early-close audit schedule; inspect the integrated dry-run payload before apply. Only Forward POSTs use
 the documented Idempotency-Key. Schedule creation can start future runs. A pairing
 from another Template is invalid. Neither stage has been run in this task.
 
@@ -308,28 +312,38 @@ Every run must restore verified prior state, retain immutable transcripts and
 persist the log plus trusted terminal hash/count and ticket receipts before
 releasing ownership. An order with uncertain persistence is a halt, not a retry.
 
-Two options are proposed, neither implemented here:
+The session procedures in coordinator/system.md and auditor/system.md target
+`scripts/run_session.py` from the separately supplied runtime implementation.
+That runner is absent from this prompt-only base checkout; integrate the runtime
+before deployment. If absent or incompatible, halt rather than invoke direct
+planning/execution CLIs. No watcher agent exists: coordinator runs `--kind watch`.
+There is no `agents/AGENTS.md`; the repository-root AGENTS.md is the handbook.
 
-- Commit per-run logs/checkpoints to a dedicated repo location using a narrowly
-  scoped token supplied by the vault. Use a single writer and conflict checks;
-  never place credentials in the event log or source tree. Generic shell-token
-  injection is not specified by the fetched MCP-vault docs and needs verification.
-- Mount a storage bucket. Current Qoder docs describe Alibaba OSS mounts through
-  config.storage.buckets with the oss-bucket-2026-09-23 beta header. Verify write
-  durability and cross-session locking; a shared mount alone is not a lock.
+Each fresh Session runs `start` to restore the dedicated runtime ledger and
+acquire the global 45-minute lease. Morning and watch then run `preflight`,
+`reconcile` (baseline), `plan`, `prepare`, `record`, `reconcile`, `finish`.
+Morning screening and rating ingestion occur only after baseline reconciliation;
+watch does no classification. Auditor runs `start`, `reconcile`, `grade_calls`,
+`score_hypotheses`, `finish` in its independent Session, without order authority.
+Use the returned input directory for exact account/snapshot/market/receipt files;
+the prompts enumerate each required file and handoff. Never invent missing data.
 
-The coordinator and three watcher schedules can overlap despite each having
-max_concurrent_runs=1. A global account/session lock, durable ticket idempotency
-and deterministic calendar guards are required before trading. The 30-minute
-watcher cannot guarantee continuous stop monitoring. Real risk checks and order
-freshness must be enforced by the risk integration, including between heartbeats.
+`finish` is the final save phase; the parser has no phase named `save`.
+`abort` is the failure-save path when ownership permits. Stop at every phase on
+`skipped=true`, nonzero exit or lease expiry. Skipped phases already save/unlock;
+CLI data errors may report successful automatic abort. Do not repeat cleanup in
+those cases. Preserve local evidence and report a failed save; never resume
+trading after persistence failure or dispatch after an unsuccessful prepare.
+Successful prepare checkpoints the exact attempts before executor handoff.
+The 30-minute watch schedule does not guarantee continuous stop monitoring.
 
-The risk agent owns scripts/plan_session.py and the risk modules. This branch does
-not edit them, invent a CLI contract, or implement a replacement watcher. It halts
-if they are absent. No code risk watcher/calendar interface is available on this
-base main, so that integration remains unverified. Likewise we have not executed
-models, fetched Moomoo account/tool schemas, provisioned cloud resources, mounted
-storage or sent a Slack report. All local tests use offline artifacts or mocks.
+The runtime uses a separate Git ledger branch with checked chains, handoffs,
+exclusive ownership and conflict detection; source and runtime are separate
+repositories. Secret delivery, durable cloud restore/save, effective schedules,
+Moomoo behavior and Slack delivery still require live verification. This branch
+changes no runtime Python, schedules, permissions, frozen values or registration.
+The missing dated promptVersion addendum continues to block live orders. Offline
+prompt tests do not establish a model evaluation pass or live integration success.
 
 
 ## Debate output contract (build/13b-debate-format)

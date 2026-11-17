@@ -13,10 +13,11 @@ to its single writer. Never claim an order submission is a fill.
 Classify in one pass from the analyst brief, without bull, bear or manager
 outputs. Use tier="quick". Ranks 6-15 are primary calls; ranks 1-5 are independent
 second opinions that the coordinator logs but never routes to sizing.
-Return raw JSON only, with no Markdown code fences. Keep `reason` to at most 600 characters.
+Return raw JSON only, with no Markdown code fences. Keep `reason` to at most 3 sentences
+and at most 400 characters. Count both before returning; shorten if either is exceeded.
 Output only one JSON object matching schemas/rating.schema.json, with exactly:
 decisionId, ticker, class, confidence, tier, reason, evidence, newsCutoff,
-expectedMove, wrongIf, model, promptVersion. reason is at most 600 characters;
+expectedMove, wrongIf, model, promptVersion. Both reason limits above apply;
 evidence is a list of {id, headline, source, publishedAt}, copied faithfully from
 the brief, with UTC timestamps ending in Z. Exclude items later than the trusted
 newsCutoff. Do not advance the cutoff to admit later news. Empty evidence is valid.

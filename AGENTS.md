@@ -61,6 +61,19 @@ Durable persistence, account-wide locking, calendar enforcement and code ticket
 idempotency are required before live paper trading. Top-five quick opinions are
 logged with secondOpinion=true and excluded from risk inputs.
 
+Coordinator also owns watch sessions; no separate watcher agent exists. Follow
+its numbered Session procedures and the auditor's independent audit procedure.
+They target the separately supplied scripts/run_session.py: integrate that runner
+before deployment and halt if it is absent. Morning/watch phases are start,
+preflight, reconcile, plan, prepare, record, reconcile, finish; audit phases are
+start, reconcile, grade_calls, score_hypotheses, finish. Screening starts only
+after the morning baseline. Watch requires preflight and never classifies.
+Stop on skipped=true, a nonzero exit or lease expiry. Finish saves/unlocks;
+abort saves failures when ownership permits. Never repeat cleanup after a skip
+or reported automatic abort success. Preserve/report unsaved evidence on failure.
+The morning cron is 09:35 New York (22:35 SGT); if start skips, stop; do not wait under its lease.
+Quick reason is at most 3 sentences and at most 400 characters; schema stays 600.
+
 ## 7. Deployment and reporting
 
 Use `scripts/qca_deploy.py` for a credential-free dry run. Do not apply or publish
