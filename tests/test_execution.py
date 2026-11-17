@@ -117,6 +117,11 @@ def test_latest_addendum_only():
 
 def test_broker_required_and_optional(monkeypatch):
     assert parse_accounts(fixture("accounts"))[0]["accountType"] == 2
+    # Live shape seen in the 17 Nov morning run.
+    wrapped = {"ret_code": 0, "ret_msg": "success", "data": {"accounts": fixture("accounts")}}
+    assert parse_accounts(wrapped)[0]["accountType"] == 2
+    with pytest.raises(ValueError, match="ret_code 1"):
+        parse_accounts({"ret_code": 1, "ret_msg": "denied", "data": {}})
     assert parse_cash(fixture("cash"))["cash"] == 94999.01
     for parser, name, field in ((parse_accounts, "accounts", "account_type"),
                                 (parse_positions, "positions", "qty"),

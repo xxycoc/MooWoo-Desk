@@ -57,6 +57,9 @@ def ticker(symbol):
 
 
 def parse_accounts(payload):
+    # The live MCP tool wraps rows as {ret_code, ret_msg, data: {accounts: [...]}}.
+    if isinstance(payload, dict) and "ret_code" in payload:
+        payload = successful_data(payload).get("accounts")
     result = rows(payload, fields.ACCOUNT_LIST)
     for row in result:
         if type(row["accountType"]) is not int or type(row["market"]) is not int:
