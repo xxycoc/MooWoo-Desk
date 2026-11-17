@@ -282,7 +282,15 @@ Templates in dependency order. It does not create schedules. Every successful
 creation writes a nonsecret receipt to `.cache/qca-deployment.jsonl` (override
 with `--receipts`). It was NOT run. Receipts include IDs, never tokens. Cloud
 creation is not transactional; after failure inspect receipts/remote state before
-retrying. Recorded resources are not silently recreated or updated.
+retrying. Recorded resources are not silently recreated or updated. For an
+authorized in-place redeployment, add `--update --apply --stage resources` with
+the existing `--receipts` file. The deployer requires all eleven resources, reads
+current Agent versions for optimistic concurrency, and updates in dependency
+order. Coordinator child references pin newly returned versions. Environments
+and Forward Templates have no version/OCC field in their update API. Receipts
+retain the existing IDs and are atomically replaced after each update; stdout
+masks IDs. This mode never creates resources or touches schedules. Verify remote
+state by GET after completion and after any failure before retrying.
 
 Next pair the newly created auditor Template and Identity to the intended Slack
 channel. Put the resulting SLACK_CHANNEL_PAIRING_ID in the settings file; it is

@@ -1,4 +1,4 @@
-"""Build Qoder API payloads offline; --apply explicitly creates cloud resources.
+"""Build Qoder payloads offline; --apply creates, --apply --update updates resources.
 
 No sessions are launched by this script. Applying schedules can start future runs.
 Dry run never reads .env, contacts Qoder, or loads credentials.
@@ -11,6 +11,7 @@ import json
 import os
 from pathlib import Path
 import re
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -215,7 +216,7 @@ def api_request(method, path, token, body=None):
             return json.load(response)
     except urllib.error.HTTPError as exc:
         # Do not print response bodies or request objects containing authentication.
-        raise RuntimeError(f"Qoder {method} {path.split('?')[0]} failed: HTTP {exc.code}") from None
+        raise RuntimeError(f"Qoder {method} failed: HTTP {exc.code}") from None
     except urllib.error.URLError:
         raise RuntimeError("Qoder transport failed; inspect remote state before retrying") from None
 
@@ -232,9 +233,11 @@ def load_receipts(path):
 
 
 def apply_payloads(manifest, settings, token, request=api_request, *, stage="resources", prior=None,
-                   receipt_path=None):
+                   receipt_path=None, update=False):
     if stage not in ("resources", "schedules"):
         raise ValueError("stage must be resources or schedules")
+    if update and stage != "resources":
+        raise ValueError("update only supports existing resources, never schedules")
     check_settings(settings, complete=True, stage=stage)
     models = {m["id"]: m for m in request("GET", "/cloud/models", token)["data"]}
     for name in ("ultimate", "efficient"):
@@ -266,28 +269,64 @@ def apply_payloads(manifest, settings, token, request=api_request, *, stage="res
     if stage == "schedules" and not {"environment.id", "template.coordinator.id", "template.auditor.id"} <= bindings.keys():
         raise ValueError("schedule stage requires the resource receipt file")
     receipts = list((prior or {}).get("receipts", []))
+    current = {}
+    if update:
+        resources = [op for op in manifest["operations"] if not op["key"].startswith("schedule.")]
+        if any(op["key"] + ".id" not in bindings for op in resources):
+            raise ValueError("update requires receipts for every existing resource")
+        for op in resources:
+            current[op["key"]] = request("GET", op["path"] + "/" + bindings[op["key"] + ".id"], token)
+            if current[op["key"]]["id"] != bindings[op["key"] + ".id"]:
+                raise ValueError("resource identity mismatch")
+            if op["key"].startswith("agent.") and type(current[op["key"]].get("version")) is not int:
+                raise ValueError("agent current version missing")
     for op in manifest["operations"]:
         is_schedule = op["key"].startswith("schedule.")
         if is_schedule != (stage == "schedules"):
             continue
-        if op["key"] + ".id" in bindings:
+        if not update and op["key"] + ".id" in bindings:
             raise ValueError(f"resource already recorded: {op['key']}; inspect remote state before updating")
         body = resolve(op["body"], bindings)
+        if update:
+            versions = {record["id"]: record["version"] for key, record in current.items()
+                        if key.startswith("agent.")}
+            for child in (body.get("multiagent") or {}).get("agents", []):
+                if child.get("id") in versions:
+                    child["version"] = versions[child["id"]]
+            if op["key"].startswith("agent."):
+                body["version"] = current[op["key"]]["version"]
         if re.search(r"\$\{[A-Za-z0-9_.-]+\}", json.dumps(body)):
             raise ValueError(f"unresolved reference in {op['key']}")
-        result = request(op["method"], op["path"], token, body)
+        endpoint = op["path"] + "/" + bindings[op["key"] + ".id"] if update else op["path"]
+        result = request(op["method"], endpoint, token, body)
+        if update:
+            if result["id"] != bindings[op["key"] + ".id"]:
+                raise ValueError("update changed resource identity")
+            current[op["key"]] = result
         bindings[op["key"] + ".id"] = result["id"]
         receipt = {"key": op["key"], "id": result["id"], "version": result.get("version")}
-        receipts.append(receipt)
+        if update:
+            receipts = [receipt if row["key"] == op["key"] else row for row in receipts]
+        else:
+            receipts.append(receipt)
         if receipt_path is not None:
             destination = Path(receipt_path)
             destination.parent.mkdir(parents=True, exist_ok=True)
-            # Append receipts instead of repeatedly replacing a file Windows may scan.
-            with destination.open("a", encoding="utf-8", newline="\n") as stream:
-                stream.write(json.dumps(receipt) + "\n")
+            pending = destination.with_suffix(destination.suffix + ".tmp") if update else destination
+            with pending.open("w" if update else "a", encoding="utf-8", newline="\n") as stream:
+                stream.write("".join(json.dumps(row) + "\n" for row in (receipts if update else [receipt])))
                 stream.flush()
                 os.fsync(stream.fileno())
-        print(json.dumps(receipt), flush=True)
+            if update:
+                for attempt in range(5):
+                    try:
+                        pending.replace(destination)
+                        break
+                    except PermissionError as exc:
+                        if getattr(exc, "winerror", None) not in (5, 32, 33) or attempt == 4:
+                            raise
+                        time.sleep(0.1 * (attempt + 1))
+        print(json.dumps({**receipt, "id": "***" + receipt["id"][-4:]}), flush=True)
     return receipts
 
 
@@ -295,11 +334,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--settings", type=Path, help="nonsecret JSON deployment bindings")
     parser.add_argument("--apply", action="store_true")
+    parser.add_argument("--update", action="store_true", help="update all recorded resources in place")
     parser.add_argument("--executor-approval", choices=("ask", "allow"), default="ask")
     parser.add_argument("--approval-log", type=Path, help="verified rule_change log required to apply allow")
     parser.add_argument("--stage", choices=("resources", "schedules"), default="resources")
     parser.add_argument("--receipts", type=Path, default=ROOT / ".cache/qca-deployment.jsonl")
     args = parser.parse_args()
+    if args.update and (not args.apply or args.stage != "resources"):
+        parser.error("--update requires --apply --stage resources")
     settings = read_json(args.settings) if args.settings else {}
     manifest = build_payloads(settings, executor_approval=args.executor_approval)
     if args.apply:
@@ -316,7 +358,7 @@ def main():
         check_settings(settings, complete=True, stage=args.stage)
         prior = load_receipts(args.receipts) if args.receipts.exists() else None
         apply_payloads(manifest, settings, load_pat(ROOT / ".env"), stage=args.stage,
-                       prior=prior, receipt_path=args.receipts)
+                       prior=prior, receipt_path=args.receipts, update=args.update)
     else:
         print(json.dumps(manifest, indent=2, allow_nan=False))
 

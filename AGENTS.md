@@ -81,21 +81,31 @@ cloud version, local revision and change summary. Do not fill pending with guess
 
 ### analyst
 
+<!-- Verified at (UTC): 2026-11-17T07:16:00Z Agent ID: ***q45l (masked) Cloud version: 2 Local revision: fbac2f96c3f6901acd9f4a2f69563256ed6fdf9f Change summary: Updated existing resource and verified prompt, model and permissions by GET; executor approval remains ask. -->
+
 <!-- Retrieved at (UTC): 2026-11-17T04:27:36Z Agent ID: pending  Cloud version: pending  Local revision: agents-v1  Change summary: Created local analyst prompt and policy from retrieved Qoder docs; no cloud Agent fetched. -->
 
 ### auditor
+
+<!-- Verified at (UTC): 2026-11-17T07:16:00Z Agent ID: ***8zys (masked) Cloud version: 2 Local revision: fbac2f96c3f6901acd9f4a2f69563256ed6fdf9f Change summary: Updated existing resource and verified prompt, model and permissions by GET; executor approval remains ask. -->
 
 <!-- Retrieved at (UTC): 2026-11-17T04:27:36Z Agent ID: pending  Cloud version: pending  Local revision: agents-v1  Change summary: Created local auditor prompt and policy from retrieved Qoder docs; no cloud Agent fetched. -->
 
 ### bear
 
+<!-- Verified at (UTC): 2026-11-17T07:16:00Z Agent ID: ***78l4 (masked) Cloud version: 2 Local revision: fbac2f96c3f6901acd9f4a2f69563256ed6fdf9f Change summary: Updated existing resource and verified prompt, model and permissions by GET; executor approval remains ask. -->
+
 <!-- Retrieved at (UTC): 2026-11-17T04:27:36Z Agent ID: pending  Cloud version: pending  Local revision: agents-v1  Change summary: Created local bear prompt and policy from retrieved Qoder docs; no cloud Agent fetched. -->
 
 ### bull
 
+<!-- Verified at (UTC): 2026-11-17T07:16:00Z Agent ID: ***ugkv (masked) Cloud version: 2 Local revision: fbac2f96c3f6901acd9f4a2f69563256ed6fdf9f Change summary: Updated existing resource and verified prompt, model and permissions by GET; executor approval remains ask. -->
+
 <!-- Retrieved at (UTC): 2026-11-17T04:27:36Z Agent ID: pending  Cloud version: pending  Local revision: agents-v1  Change summary: Created local bull prompt and policy from retrieved Qoder docs; no cloud Agent fetched. -->
 
 ### coordinator
+
+<!-- Verified at (UTC): 2026-11-17T07:16:00Z Agent ID: ***fbza (masked) Cloud version: 2 Local revision: fbac2f96c3f6901acd9f4a2f69563256ed6fdf9f Change summary: Updated existing resource and verified prompt, model and permissions by GET; executor approval remains ask. -->
 
 <!-- Changed at (UTC): 2026-11-17T06:55:00Z Agent ID: pending Cloud version: pending Local revision: build/12-prefreeze Change summary: Added debate-output ingestion instructions; local only, cloud not queried or changed. -->
 
@@ -103,15 +113,21 @@ cloud version, local revision and change summary. Do not fill pending with guess
 
 ### executor
 
+<!-- Verified at (UTC): 2026-11-17T07:16:00Z Agent ID: ***xlsm (masked) Cloud version: 2 Local revision: fbac2f96c3f6901acd9f4a2f69563256ed6fdf9f Change summary: Updated existing resource and verified prompt, model and permissions by GET; executor approval remains ask. -->
+
 <!-- Retrieved at (UTC): 2026-11-17T04:27:36Z Agent ID: pending  Cloud version: pending  Local revision: agents-v1  Change summary: Created local executor prompt and policy from retrieved Qoder docs; no cloud Agent fetched. -->
 
 ### manager
+
+<!-- Verified at (UTC): 2026-11-17T07:16:00Z Agent ID: ***dflq (masked) Cloud version: 2 Local revision: fbac2f96c3f6901acd9f4a2f69563256ed6fdf9f Change summary: Updated existing resource and verified prompt, model and permissions by GET; executor approval remains ask. -->
 
 <!-- Changed at (UTC): 2026-11-17T06:55:00Z Agent ID: pending Cloud version: pending Local revision: build/12-prefreeze Change summary: Required raw JSON and a maximum 600-character reason; local only, cloud not queried or changed. -->
 
 <!-- Retrieved at (UTC): 2026-11-17T04:27:36Z Agent ID: pending  Cloud version: pending  Local revision: agents-v1  Change summary: Created local manager prompt and policy from retrieved Qoder docs; no cloud Agent fetched. -->
 
 ### quick
+
+<!-- Verified at (UTC): 2026-11-17T07:16:00Z Agent ID: ***3gsf (masked) Cloud version: 2 Local revision: fbac2f96c3f6901acd9f4a2f69563256ed6fdf9f Change summary: Updated existing resource and verified prompt, model and permissions by GET; executor approval remains ask. -->
 
 <!-- Changed at (UTC): 2026-11-17T06:55:00Z Agent ID: pending Cloud version: pending Local revision: build/12-prefreeze Change summary: Required raw JSON and a maximum 600-character reason; local only, cloud not queried or changed. -->
 
