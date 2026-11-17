@@ -63,7 +63,7 @@ def is_regular_hours(now):
 
 def minutes_since_open(now):
     now = local_time(now)
-    opened = session_open(now)
+    opened = session_open(now) if is_trading_day(now) else None
     return (now - opened).total_seconds() / 60 if opened else None
 
 

@@ -193,12 +193,19 @@ def test_full_days(day):
     assert not calendar.is_regular_hours(calendar.session_close(day))
 
 
-@pytest.mark.parametrize("day", (16, 21, 22, 26, 28, 29, 30))
+@pytest.mark.parametrize("day", (14, 21, 22, 26, 28, 29, 30))
 def test_nontrading_days(day):
     day = f"2026-11-{day}"
     assert not calendar.is_trading_day(day)
     assert calendar.session_open(day) is calendar.session_close(day) is None
     assert calendar.minutes_since_open(day + "T15:00:00Z") is None
+
+
+def test_completed_pre_window_session_has_hours_but_no_runs():
+    assert not calendar.is_trading_day("2026-11-16")
+    assert calendar.session_close("2026-11-16").hour == 16
+    assert calendar.minutes_since_open("2026-11-16T15:00:00Z") is None
+    assert not calendar.run_allowed("watch", "2026-11-16T15:00:00Z")
 
 
 def test_half_day_dst_and_audit():
