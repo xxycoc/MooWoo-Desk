@@ -4,21 +4,34 @@ import * as echarts from "echarts";
 export const CHART_FONT =
   'ui-monospace, "Cascadia Code", "SFMono-Regular", Menlo, Consolas, monospace';
 
+export interface ChartClick {
+  name?: string;
+  dataIndex?: number;
+  data?: unknown;
+}
+
 export function Chart({
   option,
   height,
   ariaLabel,
   summary,
   footnote,
+  onPointClick,
 }: {
   option: echarts.EChartsOption;
   height: number;
   ariaLabel: string;
   summary: string;
   footnote?: string;
+  onPointClick?: (point: ChartClick) => void;
 }) {
   const holder = useRef<HTMLDivElement | null>(null);
   const instance = useRef<echarts.ECharts | null>(null);
+  const clickRef = useRef(onPointClick);
+
+  useEffect(() => {
+    clickRef.current = onPointClick;
+  }, [onPointClick]);
 
   useEffect(() => {
     if (!holder.current) return;
@@ -26,6 +39,9 @@ export function Chart({
     instance.current = chart;
     const observer = new ResizeObserver(() => chart.resize());
     observer.observe(holder.current);
+    chart.on("click", (params) => {
+      clickRef.current?.(params as ChartClick);
+    });
     return () => {
       observer.disconnect();
       chart.dispose();

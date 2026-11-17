@@ -96,3 +96,27 @@ Add three views to dashboard/, same rules as before:
 
 ## Credit estimate
 Stage 1: about 80 to 180 credits. Stage 2: 60 to 120. Stage 3: 40 to 100. Stage 4: 60 to 120. Stages 1 to 3 together: roughly 180 to 400 of 3,500. Check the console after stage 1.
+
+## Stage 2b: the desk duck (mascot)
+
+```
+Add a small mascot to the dashboard in dashboard/: an ORIGINAL 2D duck drawn as inline SVG in code (do not copy or trace the Qoder mascot or any other brand artwork). Body Qoder yellow #f2c230, beak and feet Moomoo orange #ff7a1a, eye #0c1322, a thin darker outline so it reads on the dark background. About 28 px tall.
+
+Behaviour:
+- On load it sits next to the "MooWoo Desk" title in the top bar, idling with an occasional blink.
+- When the mouse moves, it waddles after the cursor with a gentle lag (smooth easing, e.g. lerp each animation frame), staying about 24 px below and to the right of the pointer, never on top of it. It faces the direction it is moving (flip horizontally) and uses a simple 2-frame waddle bob while moving.
+- After 8 seconds without mouse movement it waddles back to its spot by the title and sits down (small "z" after a while).
+- Small delight, only one: when "Verify logs" returns OK, it does one little hop.
+- It must never get in the way: pointer-events none, z-index below tooltips, the decision drawer and any modal; it never covers the number the pointer is hovering (keep the offset).
+- Touch devices (no hover / coarse pointer): it stays parked by the title and does not follow.
+- prefers-reduced-motion: parked by the title, no following, no animation.
+- A small toggle in the top bar ("Duck on/off"), remembered in localStorage inside try/catch; off by default only if localStorage says so.
+- Performance: one requestAnimationFrame loop, paused when the tab is hidden or the duck is parked and idle; no libraries.
+Put it in dashboard/src/components/Duck.tsx with its SVG, and mention it in dashboard/README.md. Keep everything else unchanged. Run it locally and give me the URL.
+```
+
+### Stage 2b restyle (sent after 2b)
+
+```
+Restyle the desk duck in dashboard/src/components/Duck.tsx; keep all behaviour unchanged. Style reference described in words (do not copy or trace any existing image): a chunky glossy rubber duck in side view, sticker style, with a backwards black baseball cap, black wayfarer-style sunglasses with a small white glint, a wide slightly open orange beak (#ff7a1a, darker orange inside), yellow body (#f2c230) with a lighter highlight on head and wing, a short tucked wing, a thick near-black outline and a thin light outer edge. Original inline SVG, simplified to read clearly at about 36 px tall. Walking: bob and tilt the whole sticker slightly. Dozing: sunglasses stay on, small "z". Face the direction of travel.
+```

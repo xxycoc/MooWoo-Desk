@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { DeskState } from "../data/types";
 import { fmtHash, fmtSignedPct, fmtUsd, countdownText, signClass } from "../data/format";
+import { Duck, DuckToggle, readDuckPreference, writeDuckPreference } from "./Duck";
 import { Num, Trace } from "./Trace";
 
 const TIERS = [
@@ -77,6 +78,12 @@ export function TopBar({
   const remaining = nextRunAt(now) - now.getTime();
   const pnl = state.liveSession?.pnlPct ?? null;
   const activeTier = state.tier;
+  const [duckEnabled, setDuckEnabled] = useState<boolean>(readDuckPreference);
+  const toggleDuck = () => {
+    const next = !duckEnabled;
+    writeDuckPreference(next);
+    setDuckEnabled(next);
+  };
   const verifyLabel = verifyBusy
     ? "Checking"
     : verifyTone === "ok"
@@ -90,6 +97,7 @@ export function TopBar({
       <div className="topbar-inner">
         <div className="brand-block">
           <span className="brand">MooWoo Desk</span>
+          <Duck enabled={duckEnabled} verifyBusy={verifyBusy} verifyTone={verifyTone} />
           <span className="sim-badge">SIMULATED FUNDS</span>
         </div>
 
@@ -159,6 +167,7 @@ export function TopBar({
               <code>{state.promptVersion ?? "—"}</code>
             </Trace>
           </span>
+          <DuckToggle enabled={duckEnabled} onToggle={toggleDuck} />
           <button
             type="button"
             className={`verify-button tone-${verifyTone}`}

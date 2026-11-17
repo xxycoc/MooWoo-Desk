@@ -3,17 +3,26 @@ import { loadCorpus, type Corpus } from "./data/load";
 import { stateAt } from "./data/state";
 import { verifyLog, type FileVerifyResult } from "./data/verify";
 import { TopBar } from "./components/TopBar";
-import { BottomTabs, SideNav, type ViewKey } from "./components/Nav";
+import { BottomTabs, SideNav, VIEWS, type ViewKey } from "./components/Nav";
 import { VerifyPanel, type VerifyState } from "./components/VerifyPanel";
 import { TraceTooltip } from "./components/Trace";
 import { DecisionDrawer } from "./components/Drawer";
 import { MissionControl } from "./views/MissionControl";
 import { RiskDesk } from "./views/RiskDesk";
+import { MoverRadar } from "./views/MoverRadar";
+import { TruthTable } from "./views/TruthTable";
+import { DebateRoom } from "./views/DebateRoom";
+
+function viewFromHash(hash: string): ViewKey | null {
+  if (hash === "#main") return null;
+  const key = hash.startsWith("#") ? hash.slice(1) : hash;
+  return VIEWS.find((item) => item.key === key)?.key ?? "mission";
+}
 
 export default function App() {
   const [corpus, setCorpus] = useState<Corpus | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [view, setView] = useState<ViewKey>("mission");
+  const [view, setView] = useState<ViewKey>(() => viewFromHash(window.location.hash) ?? "mission");
   const [decisionId, setDecisionId] = useState<string | null>(null);
   const [verifyOpen, setVerifyOpen] = useState(false);
   const [verify, setVerify] = useState<VerifyState>({ busy: false, ran: false, results: [], error: null });
@@ -27,6 +36,18 @@ export default function App() {
         setLoadError((err as Error).message);
       });
     return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const next = viewFromHash(window.location.hash);
+      if (!next) return;
+      setView(next);
+      setDecisionId(null);
+      window.scrollTo({ top: 0, left: 0 });
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
   const liveSeq = corpus?.events.length ?? 0;
@@ -81,12 +102,6 @@ export default function App() {
     );
   }
 
-  const selectView = (next: ViewKey) => {
-    setView(next);
-    setDecisionId(null);
-    window.scrollTo({ top: 0, left: 0 });
-  };
-
   return (
     <div className="app">
       <a className="skip-link" href="#main">
@@ -117,28 +132,28 @@ export default function App() {
       ) : null}
 
       <div className="shell">
-        <SideNav
-          view={view}
-          onSelect={selectView}
-        />
+        <SideNav view={view} />
         <main id="main" className="main" tabIndex={-1}>
           {view === "mission" ? (
             <MissionControl state={state} onOpenDecision={setDecisionId} />
-          ) : (
+          ) : view === "risk" ? (
             <RiskDesk state={state} onOpenDecision={setDecisionId} />
+          ) : view === "radar" ? (
+            <MoverRadar state={state} onOpenDecision={setDecisionId} />
+          ) : view === "truth" ? (
+            <TruthTable state={state} />
+          ) : (
+            <DebateRoom state={state} />
           )}
           <footer className="app-footer">
-            <span>MooWoo Desk · Stage 1</span>
-            <span>Static fixture logs only. No API keys, no broker calls, no network data.</span>
+            <span>MooWoo Desk · Stage 2</span>
+            <span>Static fixture logs only. No API keys, no broker calls, no additional network data.</span>
             <span>SIMULATED FUNDS</span>
           </footer>
         </main>
       </div>
 
-      <BottomTabs
-        view={view}
-        onSelect={selectView}
-      />
+      <BottomTabs view={view} />
 
       <DecisionDrawer
         state={state}
