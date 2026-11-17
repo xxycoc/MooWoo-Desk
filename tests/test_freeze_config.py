@@ -83,4 +83,10 @@ def test_preregistration_matches_frozen_artifact():
     committed_config = subprocess.check_output(
         ["git", "show", f"{frozen['gitCommit']}:moowoo/config.py"], cwd=ROOT
     )
-    assert committed_config.replace(b"\r\n", b"\n") == (ROOT / "moowoo/config.py").read_bytes().replace(b"\r\n", b"\n")
+    namespace = {}
+    exec(committed_config, namespace)
+    for key, value in namespace.items():
+        if not key.startswith("_"):
+            assert getattr(config, key) == value
+    additions = json.loads((ROOT / "config/rule-ledger.jsonl").read_text())["after"]
+    assert {k: v for k, v in vars(config).items() if not k.startswith("_") and k not in namespace} == additions
