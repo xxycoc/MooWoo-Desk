@@ -124,9 +124,12 @@ A future intraday adapter is outside this change.
 `agents/permissions.json` is the canonical named Moomoo tool policy. Every
 `agent.json` embeds those same configs under `tools[type=mcp_toolset].configs`.
 Qoder uses `mcp_server_name`, raw tool `name`, `enabled`, and
-`permission_policy: {type: "always_allow"|"always_deny"}`. All seven named
+`permission_policy: {type: "always_ask"|"always_allow"|"always_deny"}`. All seven named
 real-money/crypto order tools are disabled and always denied everywhere. The
-three simulated order tools are allowed only for executor. Bull, bear, manager,
+three simulated order tools default to `always_ask`, only for executor.
+`qca_deploy.py --executor-approval allow` selects `always_allow`; applying that
+override requires a logged decision through `--approval-log`. See
+[execution](execution.md) for approval expiry and receipt handling. Bull, bear, manager,
 quick and coordinator have no Moomoo reads enabled. Analyst has the five specified
 reads. Executor has the five specified account/order reads; auditor has account,
 cash, positions and order history reads.
@@ -147,11 +150,13 @@ Code ticket checking, account checking and exclusive submission must also be
 verified at the execution integration; this package does not claim those live tests.
 
 Executor reads account-context.json generated from session environment variables
-MOOMOO_ACC_ID, MOOMOO_MARKET and MOOMOO_CHALLENGE_TITLE. It confirms the exact account
+MOOMOO_ACCOUNT_ID, MOOMOO_MARKET and MOOMOO_CHALLENGE_TITLE. It confirms the exact account
 via sim_trade_account_list, integer account_type=2, title and US market before any
 batch. Missing or mismatched fields halt without an order. We have not fetched the
-Moomoo response schema: title-field naming and market/account representation must
-be verified against the official MCP, not guessed. The prompt fails closed on
+remaining Moomoo response schemas. Confirmed account fields are `account_id`,
+`account_type`, `market_id`, and `account_title`; US market is integer `100`.
+Other response fields remain provisional in `moowoo/broker_fields.py` and must
+be checked against real responses. The prompt fails closed on
 unknown shape. Account values and exact ticket args are never edited by the model.
 All cancels/modifications need their own code-approved tickets. No blind retries.
 
@@ -244,7 +249,7 @@ audit schedule, not an automatic child-thread launch. An immediate independent
 audit requires an external runner or an operator to start that auditor Session.
 
 For future authorized deployment, create a nonsecret JSON settings file containing
-MOOMOO_MCP_URL, MOOMOO_ACC_ID, MOOMOO_MARKET (`US`), MOOMOO_CHALLENGE_TITLE,
+MOOMOO_MCP_URL, MOOMOO_ACCOUNT_ID, MOOMOO_MARKET (`100`), MOOMOO_CHALLENGE_TITLE,
 REPO_REVISION (published 40-character SHA), IDENTITY_ID,
 SLACK_CHANNEL_PAIRING_ID and the full moomoo_tool_names list. These are local
 binding names, not raw Qoder API field names. Store only QODER_PAT in ignored .env.

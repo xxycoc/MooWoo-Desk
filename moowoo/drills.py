@@ -1,4 +1,4 @@
-"""Four isolated safety exercises. No drill creates or reserves an order ticket."""
+"""Five isolated safety exercises. No drill creates or reserves an order ticket."""
 
 from copy import deepcopy
 from datetime import timedelta
@@ -8,6 +8,21 @@ from . import config as C
 from .desk_data import instant
 from .risk import check
 from .tiers import update
+from .execution import retry_allowed
+
+
+def mcp_timeout(decision_id, log):
+    """An isolated absence-confirmed timeout drill, with no real order attempts."""
+    attempts = []
+    for attempt in (1, 2):
+        attempts.append(dict(decisionId=decision_id, attempt=attempt, status="timeout",
+                             retry=retry_allowed(attempt, "timeout", absence_confirmed=True)))
+    observed = dict(attempts=len(attempts), sameDecisionId=len({item["decisionId"] for item in attempts}) == 1,
+                    retries=sum(item["retry"] for item in attempts), skipped=not attempts[-1]["retry"])
+    expected = dict(attempts=2, sameDecisionId=True, retries=1, skipped=True)
+    result = dict(name="mcp_timeout", expected=expected, observed=observed, **{"pass": observed == expected})
+    log.append("drill", result, drill=True)
+    return result
 
 
 def run_drills(proposal, state, market, log):
@@ -40,4 +55,5 @@ def run_drills(proposal, state, market, log):
         result = dict(name=name, expected=expected, observed=observed, **{"pass": passed})
         log.append("drill", result, drill=True, ts=context["now"])
         results.append(result)
+    results.append(mcp_timeout(proposal["decisionId"], log))
     return results

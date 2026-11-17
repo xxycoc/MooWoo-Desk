@@ -28,8 +28,9 @@ authoritative text. Models are planned IDs, pending account catalog verification
 
 Each `agents/<name>/agent.json` uses `agents/permissions.json` via identical
 `mcp_toolset.configs` entries. All real-money and crypto order tools are disabled
-and always_deny. Simulated input/cancel/modify order tools are always_allow only
-for executor and denied for everyone else. All other named tools are denied unless
+and always_deny. Simulated input/cancel/modify order tools default to always_ask
+for executor and are denied for everyone else. A logged autonomy decision may
+enable the deploy builder's explicit allow override. All other named tools are denied unless
 explicitly allowed in the registry. Additional discovered MCP tools are disabled
 by the deploy builder; full inventory and effective policy must be verified.
 No empty built-in enabled_tools array is permitted because Qoder enables all

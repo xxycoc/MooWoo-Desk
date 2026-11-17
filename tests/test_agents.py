@@ -169,7 +169,7 @@ def test_permissions():
             assert by_name[name]['permission_policy']['type'] == 'always_deny'
             assert by_name[name]['enabled'] is False
         for name in policy['simulated_order_tools']:
-            expected = 'always_allow' if role == 'executor' else 'always_deny'
+            expected = 'always_ask' if role == 'executor' else 'always_deny'
             assert by_name[name]['permission_policy']['type'] == expected
             assert by_name[name]['enabled'] is (role == 'executor')
         for t in agent['tools']:
@@ -241,8 +241,8 @@ def test_bad_deploy_settings(settings):
 
 def test_apply_payload_resolution_with_mock_api(tmp_path):
     policy = json.loads((ROOT/'agents/permissions.json').read_text())
-    settings = dict(MOOMOO_MCP_URL='https://example.invalid/mcp', MOOMOO_ACC_ID='simulation-test',
-                    MOOMOO_MARKET='US', MOOMOO_CHALLENGE_TITLE='Moomoo x Qoder AI Trading Agent Challenge',
+    settings = dict(MOOMOO_MCP_URL='https://example.invalid/mcp', MOOMOO_ACCOUNT_ID='simulation-test',
+                    MOOMOO_MARKET='100', MOOMOO_CHALLENGE_TITLE='Moomoo x Qoder AI Trading Agent Challenge',
                     REPO_REVISION='a'*40, IDENTITY_ID='idn_test', SLACK_CHANNEL_PAIRING_ID='pair_test',
                     moomoo_tool_names=[c['name'] for c in policy['agents']['executor']['configs']])
     calls = []

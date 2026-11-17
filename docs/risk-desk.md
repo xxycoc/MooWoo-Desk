@@ -104,14 +104,16 @@ Missing or invalid data needed by an entry gate fails closed at that gate.
 | 10 | `spread` | (ask - bid) / midpoint > `MAX_SPREAD` = 0.0015 | Veto entry |
 | 11 | `correlation` | Pearson correlation > `MAX_CORRELATION` = 0.80 over `CORRELATION_PERIOD` = 60 aligned daily returns against another open/pending satellite name | Veto entry |
 | 12 | `bounce_count` | A new bounce name would exceed `MAX_BOUNCE_POSITIONS` = 3, including pending buys | Veto entry |
-| 13 | `per_name_cap` | Satellite stock exposure > `PER_NAME_CAP` = 8% of marked equity; core ETFs exempt | Resize |
-| 14 | `satellite_cap` | `SATELLITE_CAP` = 25%, or `SATELLITE_CAP_STEP_UP` = 40% once effective; regime 20% still wins | Resize |
-| 15 | `cash_floor` | Cash after pending buys, proposed buy and fees must retain `CASH_FLOOR` = 10% of equity | Resize |
-| 16 | `adv` | Notional <= `MAX_ADV_FRACTION` = 0.005 ? average close ? volume over prior `VOLUME_PERIOD` = 20 completed sessions | Resize |
+| 13 | `satellite_invalidated` | Thesis invalidated; block new satellite exposure | Veto entry |
+| 14 | `per_name_cap` | Satellite stock exposure > `PER_NAME_CAP` = 8% of marked equity; core ETFs exempt | Resize |
+| 15 | `satellite_cap` | `SATELLITE_CAP` = 25%, or `SATELLITE_CAP_STEP_UP` = 40% once effective; regime 20% still wins | Resize |
+| 16 | `cash_floor` | Cash after pending buys, proposed buy and fees must retain `CASH_FLOOR` = 10% of equity | Resize |
+| 17 | `adv` | Notional <= `MAX_ADV_FRACTION` = 0.005 times average close times volume over prior `VOLUME_PERIOD` = 20 completed sessions | Resize |
 
-Two preregistration allocation guards follow these ordered gates:
-`satellite_invalidated` vetoes new satellite exposure after thesis failure;
-`core_target` prevents core buys above the 50% aggregate target. Finally,
+Invalidation runs directly after bounce count, before the pure resize rules, so
+an oversized invalidated entry reports invalidation rather than a resize as its
+first failure. The earlier mixed regime gate retains its preregistered position.
+`core_target` follows these gates and prevents core buys above the 50% aggregate target. Finally,
 `below_min_notional` vetoes undersized buys even when no resize was needed.
 Every resize rounds down. Below one share or below the entry floor means veto.
 A resize-triggered veto retains that resizing rule as `firedRule`.

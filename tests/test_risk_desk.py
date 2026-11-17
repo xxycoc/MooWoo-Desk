@@ -96,6 +96,7 @@ def test_every_rule_independently_in_order(desk, rule):
     elif rule == "bounce_count":
         p["kind"] = "bounce"
         for ticker in ("BBB", "CCC", "DDD"): s.positions[ticker] = position("bounce")
+    elif rule == "satellite_invalidated": s.stepUp["invalidated"] = True
     elif rule == "per_name_cap":
         p["qty"] = 240
         expected = "resize"
@@ -134,6 +135,17 @@ def test_resizes_minimum_and_cash_fees(desk):
     assert check(p, s, m)["qtyAfter"] == 49
     p["qty"] = 19
     assert check(p, PortfolioState(cash=100000), m)["firedRule"] == "below_min_notional"
+
+
+def test_invalidation_precedes_oversized_resize(desk):
+    proposal, state, market = desk
+    proposal["qty"] = 240
+    assert check(proposal, state, market)["firedRule"] == "per_name_cap"
+    state.stepUp["invalidated"] = True
+    verdict = check(proposal, state, market)
+    assert verdict["verdict"] == "veto"
+    assert verdict["firedRule"] == "satellite_invalidated"
+    assert verdict["qtyAfter"] == 0
 
 
 def test_regime_cap_stepup_and_invalidation(desk):
@@ -303,7 +315,7 @@ def test_ticket_hash_and_adapter(ticket, monkeypatch):
     monkeypatch.setenv("MOOMOO_MARKET", "100")
     args = to_sim_order(ticket)
     assert args == dict(acc_id="123", market=100, symbol="US.AAA", order_type=1,
-                        order_side=1, qty=50, price=100., text=ticket.decisionId)
+                        order_side=1, qty=50, price=100., order_trade_time_type=0, text=ticket.decisionId)
     assert verify_placed(ticket, args)["ok"]
     for key, value in dict(qty=51, price=101, order_side=2, symbol="US.BBB", acc_id="other").items():
         result = verify_placed(ticket, args | {key: value})
@@ -338,7 +350,7 @@ def test_drills_are_shadow_only(desk, tmp_path):
     before = s.to_json()
     log = EventLog(tmp_path / f"{RUN}.jsonl")
     results = run_drills(p, s, m, log)
-    assert len(results) == 4 and all(r["pass"] for r in results)
+    assert len(results) == 5 and all(r["pass"] for r in results)
     assert s.to_json() == before
     events = [json.loads(line) for line in log.path.read_text().splitlines()]
     assert all(e["type"] == "drill" and e["drill"] for e in events)

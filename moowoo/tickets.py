@@ -94,7 +94,7 @@ def to_sim_order(ticket, acc_id=None, market=None, *, symbol_format="US.{ticker}
     ticket = OrderTicket(**ticket) if isinstance(ticket, dict) else OrderTicket(**ticket.to_dict())
     return dict(acc_id=account, market=configured_market, symbol=format_symbol(ticket.ticker, symbol_format),
                 order_type=1, order_side=1 if ticket.side == "BUY" else 2,
-                qty=ticket.qty, price=ticket.limitPrice, text=ticket.decisionId)
+                qty=ticket.qty, price=ticket.limitPrice, order_trade_time_type=0, text=ticket.decisionId)
 
 
 def verify_placed(ticket, placed_args, *, symbol_format="US.{ticker}"):

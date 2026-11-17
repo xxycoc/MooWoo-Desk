@@ -1,6 +1,7 @@
 """Durable single-writer JSONL logs and disposable SQLite projections."""
 
 from dataclasses import dataclass
+from contextlib import contextmanager
 from datetime import date, datetime, timezone
 import json
 import os
@@ -8,6 +9,8 @@ from pathlib import Path
 import re
 import sqlite3
 import tempfile
+import threading
+import time
 
 from .events import COMMON_FIELDS, ZERO_HASH, ValidationError, canonical_bytes, event_hash, validate_event
 
@@ -74,15 +77,20 @@ def _checked_events(path):
 
 
 class EventLog:
-    """Append one fsynced line at a time. Callers must serialize writers.
+    """Append one fsynced line at a time under an exclusive adjacent lock file.
 
     Existing contents are verified on open and before each append. A crash may
     leave a partial final line; it is rejected, never silently repaired.
+    Use locked() across an entire state/log read-modify-write transaction.
     """
 
-    def __init__(self, path, runId: str | None = None):
+    def __init__(self, path, runId: str | None = None, *, lock_timeout=5.0):
         self.path = Path(path)
-        events = _checked_events(self.path) if self.path.exists() else []
+        self.lock_timeout = lock_timeout
+        self._mutex = threading.RLock()
+        self._depth = 0
+        with self.locked():
+            events = _checked_events(self.path) if self.path.exists() else []
         match = re.fullmatch(r"(\d{4}-\d{2}-\d{2})-us\.jsonl", self.path.name)
         inferred = None
         if match:
@@ -97,6 +105,45 @@ class EventLog:
             raise ValidationError("runId does not match the existing log")
 
     def append(self, type, payload, decisionId=None, drill=False, ts=None):
+        with self.locked():
+            return self._append(type, payload, decisionId, drill, ts)
+
+    @contextmanager
+    def locked(self):
+        """Serialize complete transactions; stale locks fail closed."""
+        with self._mutex:
+            if self._depth:
+                self._depth += 1
+                try:
+                    yield self
+                finally:
+                    self._depth -= 1
+                return
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            lock = self.path.with_name(self.path.name + ".lock")
+            deadline = time.monotonic() + self.lock_timeout
+            while True:
+                try:
+                    descriptor = os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
+                    break
+                except FileExistsError:
+                    if time.monotonic() >= deadline:
+                        raise TimeoutError(f"event log lock timeout: {lock}; another writer or stale lock")
+                    time.sleep(min(.05, max(0, deadline-time.monotonic())))
+            self._depth = 1
+            try:
+                os.write(descriptor, str(os.getpid()).encode("ascii"))
+                yield self
+            finally:
+                self._depth = 0
+                os.close(descriptor)
+                lock.unlink()
+
+    def read(self):
+        with self.locked():
+            return _checked_events(self.path) if self.path.exists() else []
+
+    def _append(self, type, payload, decisionId=None, drill=False, ts=None):
         if not isinstance(payload, dict):
             raise ValidationError("payload must be an object")
         collisions = COMMON_FIELDS.intersection(payload)

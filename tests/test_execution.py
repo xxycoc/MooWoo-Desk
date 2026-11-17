@@ -1,0 +1,376 @@
+"""Synthetic, PROVISIONAL broker responses. No broker/network calls."""
+
+import json
+from pathlib import Path
+import subprocess
+import sys
+
+import pytest
+
+from moowoo import broker_fields
+from moowoo.broker import parse_accounts, parse_cash, parse_history, parse_positions, snapshot_to_state
+from moowoo.drills import mcp_timeout
+from moowoo.execution import preflight, prepare, record, reconcile, registered_prompt
+from moowoo.fees import estimate_fees
+from moowoo.ledger import EventLog, verify
+from moowoo.portfolio import PortfolioState
+from moowoo.tickets import OrderTicket
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "scripts"))
+from hash_prompts import prompt_version
+from plan_session import frozen_config
+from qca_deploy import build_payloads
+import watch as watcher
+from _execution import command
+from types import SimpleNamespace
+
+RUN = "2026-11-17-us"
+NOW = "2026-11-17T15:00:00Z"
+
+
+def fixture(name):
+    return json.loads((ROOT / f"fixtures/broker/provisional_{name}.json").read_text())
+
+
+def save(path, data):
+    path.write_text(json.dumps(data), encoding="utf-8")
+    return str(path)
+
+
+@pytest.fixture(autouse=True)
+def synthetic_account(monkeypatch):
+    monkeypatch.setenv("MOOMOO_ACCOUNT_ID", "synthetic-paper-account")
+    monkeypatch.setenv("MOOMOO_MARKET", "100")
+
+
+@pytest.fixture
+def setup(tmp_path):
+    frozen = frozen_config()
+    ticket = OrderTicket(decisionId=RUN+":AAA", ticker="AAA", side="BUY", qty=50,
+        limitPrice=100., sleeve="satellite", kind="drift", stop=94., reason="synthetic",
+        configHash=frozen["configHash"], createdTs=NOW, estFees=.99, signalAtr=2.)
+    log = EventLog(tmp_path / f"{RUN}.jsonl")
+    state = PortfolioState(cash=100000)
+    state.reserve(ticket)
+    prereg = f"configHash: {frozen['configHash']}\n## Addendum 2026-11-17\npromptVersion={prompt_version()}\n"
+    return ticket, log, state, prereg
+
+
+def start(setup):
+    ticket, log, state, prereg = setup
+    preflight(fixture("accounts"), state, frozen_config(), prereg, prompt_version(), ["AAA"], log)
+    return ticket, log, state
+
+
+def submit(setup):
+    ticket, log, state = start(setup)
+    prepared = prepare({ticket.decisionId: ticket}, log)["orders"][0]
+    record({ticket.decisionId: ticket}, [prepared | dict(status="placed", response=fixture("placement"))], log)
+    return ticket, log, state
+
+
+def snapshots(qty, status=None):
+    history, positions, cash = fixture("history"), fixture("positions"), fixture("cash")
+    history["data"][0].update(filled_qty=qty, avg_price=100 if qty else 0,
+                              status=status or ("FILLED" if qty == 50 else "PARTIAL" if qty else "SUBMITTED"))
+    positions["data"][0]["qty"] = qty
+    cash.update(cash=100000-qty*100-(.99 if qty else 0), equity=100000-(.99 if qty else 0))
+    return parse_history(history), parse_positions(positions), parse_cash(cash)
+
+
+def test_preflight_good(setup):
+    _, log, _ = start(setup)
+    event = log.read()[-1]
+    assert event["type"] == "run_started" and event["trdEnv"] == "SIMULATE"
+    assert event["cash"] == event["equity"] == 100000
+
+
+@pytest.mark.parametrize("bad", ["missing", "ordinary", "market", "title", "config", "prompt", "halted", "prompt_changed"])
+def test_preflight_halts_through_command(setup, tmp_path, monkeypatch, bad):
+    _, log, state, prereg = setup
+    accounts, frozen = fixture("accounts"), frozen_config()
+    if bad == "missing": accounts.clear()
+    elif bad == "ordinary": accounts[0]["account_type"] = 1
+    elif bad == "market": accounts[0]["market_id"] = 99
+    elif bad == "title": accounts[0]["account_title"] = "Ordinary paper"
+    elif bad == "config": frozen["configHash"] = "0"*64
+    elif bad == "prompt": prereg = "no addendum"
+    elif bad == "halted": state.halted = True
+    elif bad == "prompt_changed": prereg = prereg.replace(prompt_version(), "0"*64)
+    args = SimpleNamespace(log=log.path)
+    code = command(args, lambda args, locked: preflight(accounts, state, frozen, prereg, prompt_version(), ["AAA"], locked))
+    assert code == 2
+    assert log.read()[-1]["type"] == "halt"
+    if bad == "prompt": assert log.read()[-1]["reason"] == "prompts not pre-registered"
+
+
+def test_latest_addendum_only():
+    assert registered_prompt("## Addendum 2026-11-17\npromptVersion="+"a"*64) == "a"*64
+    with pytest.raises(ValueError):
+        registered_prompt("## Addendum 2026-11-17\npromptVersion="+"a"*64+"\n## Addendum 2026-11-18\npending")
+
+
+def test_broker_required_and_optional(monkeypatch):
+    assert parse_accounts(fixture("accounts"))[0]["accountType"] == 2
+    assert parse_cash(fixture("cash"))["cash"] == 94999.01
+    for parser, name, field in ((parse_accounts, "accounts", "account_type"),
+                                (parse_positions, "positions", "qty"),
+                                (parse_history, "history", "filled_qty")):
+        payload = fixture(name)
+        row = payload[0] if name == "accounts" else payload["data"][0]
+        del row[field]
+        with pytest.raises(ValueError, match="required"):
+            parser(payload)
+    with pytest.raises(ValueError): parse_cash({"cash": 5})
+    changed = fixture("cash")
+    changed["settled_cash"] = changed.pop("cash")
+    monkeypatch.setitem(broker_fields.CASH_INFO["required"], "cash", "settled_cash")
+    assert parse_cash(changed)["cash"] == 94999.01
+
+
+def test_snapshot_identity(setup):
+    ticket, _, state, _ = setup
+    state.positions["AAA"] = dict(qty=3, avgCost=90, kind="drift", sleeve="satellite",
+                                  decisionId=ticket.decisionId, stop=94, entryDate="2026-11-17")
+    rebuilt = snapshot_to_state(parse_positions(fixture("positions")), parse_cash(fixture("cash")), state)
+    assert rebuilt.positions["AAA"]["qty"] == 50
+    assert rebuilt.positions["AAA"]["stop"] == 94
+    assert state.positions["AAA"]["qty"] == 3
+    state.positions["AAA"]["decisionId"] = "other:AAA"
+    with pytest.raises(ValueError, match="identity"):
+        snapshot_to_state(parse_positions(fixture("positions")), parse_cash(fixture("cash")), state)
+
+
+def test_prepare_idempotency(setup):
+    ticket, log, _ = submit(setup)
+    assert not prepare({ticket.decisionId: ticket}, log)["orders"]
+    assert len([event for event in log.read() if event["type"] == "order_submitted"]) == 1
+
+
+@pytest.mark.parametrize("field", ["acc_id", "market", "symbol", "order_type", "order_side", "qty", "price", "order_trade_time_type", "text", "extra"])
+def test_record_field_mismatch_halts(setup, field):
+    ticket, log, _ = start(setup)
+    request = prepare({ticket.decisionId: ticket}, log)["orders"][0]
+    request["args"][field] = "wrong"
+    request.update(status="placed", response=fixture("placement"))
+    result = command(SimpleNamespace(log=log.path), lambda args, locked: record({ticket.decisionId: ticket}, [request], locked))
+    assert result == 2 and log.read()[-1]["type"] == "halt"
+    assert not any(event["type"] == "order_submitted" for event in log.read())
+    assert "synthetic-paper-account" not in log.path.read_text()
+
+
+def test_timeout_once_then_skip(setup):
+    ticket, log, _ = start(setup)
+    tickets = {ticket.decisionId: ticket}
+    first = prepare(tickets, log)["orders"][0]
+    assert not prepare(tickets, log)["orders"]
+    failure = first | dict(status="timeout", reason="synthetic timeout")
+    record(tickets, [failure], log)
+    assert not prepare(tickets, log)["orders"]
+    record(tickets, [failure | dict(absenceConfirmed=True)], log)
+    second = prepare(tickets, log)["orders"][0]
+    assert second["attempt"] == 2 and second["decisionId"] == first["decisionId"]
+    record(tickets, [second | dict(status="timeout", reason="again", absenceConfirmed=True)], log)
+    assert not prepare(tickets, log)["orders"]
+    assert log.read()[-1]["executionAction"] == "skip"
+    assert mcp_timeout(ticket.decisionId, log)["pass"]
+
+
+def test_approval_expired_skips(setup):
+    ticket, log, _ = start(setup)
+    tickets = {ticket.decisionId: ticket}
+    request = prepare(tickets, log)["orders"][0]
+    record(tickets, [request | dict(status="approval_expired", reason="session closed")], log)
+    assert not prepare(tickets, log)["orders"]
+    state = setup[2]
+    updated, result = reconcile(tickets, [], [], dict(cash=100000, equity=100000), state, log)
+    assert not result["halted"] and not updated.pendingTickets
+    assert ticket.decisionId in updated.ticketedDecisionIds
+
+
+@pytest.mark.parametrize("qty", [0, 20, 50])
+def test_reconcile_full_partial_unfilled_and_replay(setup, qty):
+    ticket, log, state = submit(setup)
+    history, positions, cash = snapshots(qty)
+    updated, result = reconcile({ticket.decisionId: ticket}, history, positions, cash, state, log)
+    assert not result["halted"]
+    assert updated.cash == cash["cash"]
+    assert bool(result["cancel"]) == (qty < 50)
+    if qty < 50:
+        assert result["cancel"][0]["remainingQty"] == 50-qty
+        assert result["cancel"][0]["args"]["order_id"] == "synthetic-order-1"
+    count = len(log.read())
+    replay, _ = reconcile({ticket.decisionId: ticket}, history, positions, cash, updated, log)
+    assert replay.to_dict() == updated.to_dict() and len(log.read()) == count
+    if qty == 20:
+        completed, result = reconcile({ticket.decisionId: ticket}, *snapshots(50), updated, log)
+        assert completed.cash == pytest.approx(94999.01)
+        assert completed.positions["AAA"]["qty"] == 50
+        assert not result["cancel"] and not completed.pendingTickets
+
+
+@pytest.mark.parametrize("difference", ["cash", "position", "extra_position", "missing_position"])
+def test_unexplained_difference_halts(setup, difference):
+    ticket, log, state = submit(setup)
+    history, positions, cash = snapshots(50)
+    if difference == "cash": cash["cash"] += 2; cash["equity"] += 2
+    elif difference == "position": positions[0]["qty"] += 1; cash["equity"] += 100
+    elif difference == "extra_position": positions.append(positions[0] | dict(ticker="BBB")); cash["equity"] += 5000
+    else: positions.clear(); cash["equity"] -= 5000
+    updated, result = reconcile({ticket.decisionId: ticket}, history, positions, cash, state, log)
+    assert updated.halted and result["diff"]
+    assert log.read()[-1]["type"] == "halt" and log.read()[-1]["diff"]
+
+
+def test_sell_partial_fee_deltas_and_replay(setup):
+    entry, log, state, prereg = setup
+    state.pendingTickets = []
+    state.ticketedDecisionIds = []
+    state.positions["AAA"] = dict(qty=50, avgCost=100, sleeve="satellite", kind="drift",
+        stop=94, entryPrice=100, entryDate="2026-11-16", decisionId="prior:AAA")
+    state.cash = 95000
+    ticket = OrderTicket(**(entry.body() | dict(side="SELL", estFees=estimate_fees("SELL", 50))))
+    state.reserve(ticket)
+    preflight(fixture("accounts"), state, frozen_config(), prereg, prompt_version(), ["AAA"], log)
+    tickets = {ticket.decisionId: ticket}
+    request = prepare(tickets, log)["orders"][0]
+    record(tickets, [request | dict(status="placed", response=fixture("placement"))], log)
+    for quantity in (20, 35, 50):
+        history = fixture("history")
+        history["data"][0].update(order_side=2, filled_qty=quantity,
+            status="FILLED" if quantity == 50 else "PARTIAL")
+        positions = fixture("positions")
+        positions["data"][0].update(qty=50-quantity, text="prior:AAA")
+        cash = dict(cash=95000+quantity*100-estimate_fees("SELL", quantity),
+                    equity=100000-estimate_fees("SELL", quantity))
+        history, positions, cash = parse_history(history), parse_positions(positions), parse_cash(cash)
+        state, result = reconcile(tickets, history, positions, cash, state, log)
+        assert not result["halted"]
+        assert state.cash == pytest.approx(cash["cash"])
+        count = len(log.read())
+        replay, _ = reconcile(tickets, history, positions, cash, state, log)
+        assert replay.to_dict() == state.to_dict() and len(log.read()) == count
+
+
+def test_ambiguous_history_cannot_guess_entry_identity(setup):
+    ticket, log, state = submit(setup)
+    history, positions, cash = snapshots(50)
+    positions[0].pop("decisionId", None)
+    history.append(history[0] | dict(orderId="older-order", decisionId="older:AAA"))
+    updated, result = reconcile({ticket.decisionId: ticket}, history, positions, cash, state, log)
+    assert updated.halted and "unmatched strategy identity" in result["diff"]["snapshot"]
+
+
+def test_reconcile_counts_submissions_across_run_logs(setup):
+    ticket, log, state = submit(setup)
+    state.execution["orders"] = {"other-order": "2026-11-17"}
+    state.ordersPlacedThisSession = 1
+    updated, result = reconcile({ticket.decisionId: ticket}, *snapshots(50), state, log)
+    assert not result["halted"] and updated.ordersPlacedThisSession == 2
+
+
+def test_cancelled_partial_has_no_cancel(setup):
+    ticket, log, state = submit(setup)
+    updated, result = reconcile({ticket.decisionId: ticket}, *snapshots(20, "CANCELLED"), state, log)
+    assert not result["cancel"] and not updated.pendingTickets
+
+
+def test_incomplete_history_fails():
+    payload = fixture("history") | dict(next_key="more")
+    with pytest.raises(ValueError, match="incomplete"): parse_history(payload)
+
+
+def test_log_lock_blocks_concurrent_writer(tmp_path):
+    log = EventLog(tmp_path / f"{RUN}.jsonl")
+    script = "from moowoo.ledger import EventLog; EventLog(__import__('sys').argv[1], lock_timeout=.1).append('reflection_note', dict(prompt='test', text='writer'))"
+    with log.locked():
+        process = subprocess.run([sys.executable, "-c", script, str(log.path)], cwd=ROOT, capture_output=True, text=True)
+        assert process.returncode != 0 and "lock timeout" in process.stderr
+    log.append("reflection_note", dict(prompt="test", text="released"))
+    assert verify(log.path).ok and not log.path.with_suffix(".jsonl.lock").exists()
+
+
+def test_deploy_approval_override():
+    for mode in ("ask", "allow"):
+        manifest = build_payloads(executor_approval=mode)
+        for operation in manifest["operations"]:
+            if not operation["key"].startswith("agent."): continue
+            role = operation["key"].split(".")[1]
+            configs = next(tool["configs"] for tool in operation["body"]["tools"] if tool["type"] == "mcp_toolset")
+            for tool in configs:
+                if tool["name"] in ("sim_trade_input_order", "sim_trade_cancel_order", "sim_trade_modify_order"):
+                    assert tool["permission_policy"]["type"] == ("always_"+mode if role == "executor" else "always_deny")
+    process = subprocess.run([sys.executable, "scripts/qca_deploy.py", "--executor-approval", "allow"], cwd=ROOT, capture_output=True, text=True)
+    assert process.returncode == 0 and json.loads(process.stdout)["executorApproval"] == "allow"
+
+
+def test_watch_stop_and_replay(tmp_path):
+    state = PortfolioState(cash=95000, positions={"AAA": dict(qty=50, avgCost=100, sleeve="satellite",
+        kind="drift", entryDate="2026-11-16", entryPrice=100, decisionId="prior:AAA", stop=94, signalAtr=2)})
+    state_path = save(tmp_path / "state.json", state.to_dict())
+    quote_path = save(tmp_path / "quotes.json", dict(sessionDate="2026-11-17", now=NOW,
+        regularOpen="2026-11-17T14:30:00Z", regularClose="2026-11-17T21:00:00Z",
+        quotes={"AAA": dict(last=93, bid=92.9, ask=93.1, ts=NOW)}))
+    bars_path = save(tmp_path / "bars.json", {"AAA": [dict(date="2026-11-16", open=100, high=101, low=99, close=100, volume=100000)]})
+    args = [sys.executable, "scripts/watch.py", "--state", state_path, "--quotes", quote_path,
+            "--bars-asof", "2026-11-16", "--bars", bars_path, "--log", str(tmp_path / f"{RUN}.jsonl"),
+            "--tickets-dir", str(tmp_path / "tickets")]
+    for _ in range(2):
+        process = subprocess.run(args, cwd=ROOT, capture_output=True, text=True)
+        assert process.returncode == 0, process.stdout+process.stderr
+    events = EventLog(tmp_path / f"{RUN}.jsonl").read()
+    assert len([event for event in events if event["type"] == "stop_hit"]) == 1
+    saved = json.loads(Path(state_path).read_text())
+    assert saved["positions"]["AAA"]["stop"] >= 94
+    assert len(saved["pendingTickets"]) == 1
+
+
+def test_watch_trail_persists_and_never_loosens(tmp_path):
+    state = PortfolioState(cash=95000, positions={"AAA": dict(qty=50, avgCost=100, sleeve="satellite",
+        kind="drift", entryDate="2026-11-16", entryPrice=100, decisionId="prior:AAA", stop=94, signalAtr=2)})
+    state_path = save(tmp_path / "state.json", state.to_dict())
+    quote_path = save(tmp_path / "quotes.json", dict(sessionDate="2026-11-17", now=NOW,
+        regularOpen="2026-11-17T14:30:00Z", regularClose="2026-11-17T21:00:00Z",
+        quotes={"AAA": dict(last=110, bid=109.9, ask=110.1, ts=NOW)}))
+    bars_path = save(tmp_path / "bars.json", {"AAA": [dict(date="2026-11-16", open=100,
+        high=109, low=99, close=108, volume=100000)]})
+    log = EventLog(tmp_path / f"{RUN}.jsonl")
+    args = SimpleNamespace(state=state_path, quotes=quote_path, bars=bars_path,
+        bars_asof="2026-11-16", tickets_dir=tmp_path / "tickets", log=log.path)
+    assert command(args, watcher.run, persist_halt=True) == 0
+    first_stop = json.loads(Path(state_path).read_text())["positions"]["AAA"]["stop"]
+    assert first_stop > 94
+    quotes = json.loads(Path(quote_path).read_text())
+    quotes["quotes"]["AAA"].update(last=first_stop+1, bid=first_stop+.9, ask=first_stop+1.1)
+    save(Path(quote_path), quotes)
+    assert command(args, watcher.run, persist_halt=True) == 0
+    assert json.loads(Path(state_path).read_text())["positions"]["AAA"]["stop"] == first_stop
+
+
+def test_execution_cli_pipeline(setup, tmp_path):
+    ticket, log, state = start(setup)
+    tickets_path = save(tmp_path / "tickets.json", dict(runId=RUN, configHash=ticket.configHash, tickets=[ticket.to_dict()]))
+    base = [sys.executable, "scripts/execute_tickets.py"]
+    suffix = ["--tickets", tickets_path, "--log", str(log.path)]
+    process = subprocess.run(base+["prepare"]+suffix, cwd=ROOT, capture_output=True, text=True)
+    assert process.returncode == 0, process.stdout+process.stderr
+    order = json.loads(process.stdout)["orders"][0]
+    receipt = save(tmp_path / "responses.json", [order | dict(status="placed", response=fixture("placement"))])
+    process = subprocess.run(base+["record"]+suffix+["--responses", receipt], cwd=ROOT, capture_output=True, text=True)
+    assert process.returncode == 0, process.stdout+process.stderr
+    state_path = save(tmp_path / "state.json", state.to_dict())
+    args = [sys.executable, "scripts/reconcile.py", "--state", state_path]+suffix
+    for name in ("history", "positions", "cash"):
+        args += ["--"+name, str(ROOT / f"fixtures/broker/provisional_{name}.json")]
+    process = subprocess.run(args, cwd=ROOT, capture_output=True, text=True)
+    assert process.returncode == 0, process.stdout+process.stderr
+    assert json.loads(Path(state_path).read_text())["cash"] == pytest.approx(94999.01)
+
+
+def test_actual_preflight_requires_addendum(tmp_path):
+    args = [sys.executable, "scripts/preflight.py", "--accounts", str(ROOT / "fixtures/broker/provisional_accounts.json"),
+            "--state", save(tmp_path / "state.json", PortfolioState(cash=100000).to_dict()),
+            "--log", str(tmp_path / f"{RUN}.jsonl")]
+    process = subprocess.run(args, cwd=ROOT, capture_output=True, text=True)
+    assert process.returncode == 2 and "prompts not pre-registered" in process.stdout

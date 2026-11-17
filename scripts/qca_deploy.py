@@ -20,7 +20,7 @@ from hash_prompts import prompt_version
 ROOT = Path(__file__).resolve().parents[1]
 API = "https://api.qoder.com/api/v1"
 ROLES = ("analyst", "bull", "bear", "manager", "quick", "executor", "auditor", "coordinator")
-SETTING_KEYS = {"MOOMOO_MCP_URL", "MOOMOO_ACC_ID", "MOOMOO_MARKET", "MOOMOO_CHALLENGE_TITLE",
+SETTING_KEYS = {"MOOMOO_MCP_URL", "MOOMOO_ACCOUNT_ID", "MOOMOO_MARKET", "MOOMOO_CHALLENGE_TITLE",
                 "REPO_REVISION", "IDENTITY_ID", "SLACK_CHANNEL_PAIRING_ID", "moomoo_tool_names"}
 
 
@@ -64,14 +64,16 @@ def check_settings(settings, *, complete=False, stage="schedules"):
     revision = settings.get("REPO_REVISION")
     if revision and not re.fullmatch(r"[0-9a-f]{40}", revision):
         raise ValueError("REPO_REVISION must be a pinned 40-character commit SHA")
-    if settings.get("MOOMOO_MARKET", "US") != "US":
+    if settings.get("MOOMOO_MARKET", "100") != "100":
         raise ValueError("only US market is permitted")
     required = SETTING_KEYS - ({"SLACK_CHANNEL_PAIRING_ID"} if stage == "resources" else set())
     if complete and required - settings.keys():
         raise ValueError("apply requires all nonsecret settings, including verified MCP inventory")
 
 
-def build_payloads(settings=None, root=ROOT):
+def build_payloads(settings=None, root=ROOT, *, executor_approval="ask"):
+    if executor_approval not in ("ask", "allow"):
+        raise ValueError("executor approval must be ask or allow")
     settings = settings or {}
     check_settings(settings)
     root = Path(root)
@@ -97,10 +99,10 @@ def build_payloads(settings=None, root=ROOT):
         "python3 - <<'PY'",
         "import json, os",
         "from pathlib import Path",
-        "keys = ('MOOMOO_ACC_ID', 'MOOMOO_MARKET', 'MOOMOO_CHALLENGE_TITLE')",
+        "keys = ('MOOMOO_ACCOUNT_ID', 'MOOMOO_MARKET', 'MOOMOO_CHALLENGE_TITLE')",
         "values = {k: os.environ[k] for k in keys}",
         "assert all(v.strip() and '${' not in v for v in values.values())",
-        "assert values['MOOMOO_MARKET'] == 'US'",
+        "assert values['MOOMOO_MARKET'] == '100'",
         "Path('/data/workspace/account-context.json').write_text(json.dumps(values))",
         "PY",
     ])
@@ -117,6 +119,11 @@ def build_payloads(settings=None, root=ROOT):
         agent["system"] = (root / f"agents/{role}/system.md").read_text(encoding="utf-8")
         agent["metadata"]["promptVersion"] = version
         configs = deepcopy(policy["agents"][role]["configs"])
+        if role == "executor":
+            for tool in configs:
+                if tool["name"] in policy["simulated_order_tools"]:
+                    tool["permission_policy"]["type"] = "always_ask" if executor_approval == "ask" else "always_allow"
+            agent["metadata"]["executorApproval"] = executor_approval
         known = {c["name"] for c in configs}
         # Qoder documents per-tool configs, not an MCP wildcard deny policy.
         for name in sorted(set(settings.get("moomoo_tool_names", [])) - known):
@@ -129,7 +136,7 @@ def build_payloads(settings=None, root=ROOT):
         add("agent." + role, "/cloud/agents", agent)
 
     environment_variables = {k: "${" + k + "}" for k in
-                             ("MOOMOO_ACC_ID", "MOOMOO_MARKET", "MOOMOO_CHALLENGE_TITLE")}
+                             ("MOOMOO_ACCOUNT_ID", "MOOMOO_MARKET", "MOOMOO_CHALLENGE_TITLE")}
     for role in ("coordinator", "auditor"):
         template = {k: deepcopy(v) for k, v in agents[role].items()
                     if k in {"name", "description", "model", "system", "tools", "skills", "mcp_servers", "multiagent", "metadata"}}
@@ -165,6 +172,8 @@ def build_payloads(settings=None, root=ROOT):
 
     return resolve({
         "promptVersion": version,
+        "executorApproval": executor_approval,
+        "approvalDecisionRequired": executor_approval == "allow",
         "vault_lookup": {"method": "GET", "path": "/cloud/vaults?name=moomoo-mcp&limit=100",
                          "display_name": "moomoo-mcp"},
         "operations": operations,
@@ -285,12 +294,24 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--settings", type=Path, help="nonsecret JSON deployment bindings")
     parser.add_argument("--apply", action="store_true")
+    parser.add_argument("--executor-approval", choices=("ask", "allow"), default="ask")
+    parser.add_argument("--approval-log", type=Path, help="verified rule_change log required to apply allow")
     parser.add_argument("--stage", choices=("resources", "schedules"), default="resources")
     parser.add_argument("--receipts", type=Path, default=ROOT / ".cache/qca-deployment.jsonl")
     args = parser.parse_args()
     settings = read_json(args.settings) if args.settings else {}
-    manifest = build_payloads(settings)
+    manifest = build_payloads(settings, executor_approval=args.executor_approval)
     if args.apply:
+        if args.executor_approval == "allow":
+            import _common
+            from moowoo.ledger import EventLog
+            if not args.approval_log:
+                parser.error("allow requires --approval-log with executor_approval rule_change")
+            decisions = [event for event in EventLog(args.approval_log).read()
+                         if event["type"] == "rule_change" and event["ruleId"] == "executor_approval"
+                         and not event["drill"]]
+            if not decisions or decisions[-1]["after"] != "allow":
+                parser.error("latest executor_approval decision must authorize allow")
         check_settings(settings, complete=True, stage=args.stage)
         prior = load_receipts(args.receipts) if args.receipts.exists() else None
         apply_payloads(manifest, settings, load_pat(ROOT / ".env"), stage=args.stage,

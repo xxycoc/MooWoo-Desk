@@ -35,6 +35,7 @@ class PortfolioState:
     ticketedDecisionIds: list = field(default_factory=list)
     pendingTickets: list = field(default_factory=list)
     restartReasons: list = field(default_factory=list)
+    execution: dict = field(default_factory=dict)
 
     def __post_init__(self):
         positive(self.cash, "cash", zero=True)

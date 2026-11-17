@@ -9,7 +9,7 @@ from .portfolio import positive
 
 RULES = ("kill_or_halted", "exits_only", "daily_loss", "final_day", "first_minutes",
          "regime", "duplicate_decision", "max_orders", "stale_price", "spread",
-         "correlation", "bounce_count", "per_name_cap", "satellite_cap", "cash_floor", "adv")
+         "correlation", "bounce_count", "satellite_invalidated", "per_name_cap", "satellite_cap", "cash_floor", "adv")
 
 
 def check(proposal, state, market):
@@ -135,12 +135,12 @@ def check(proposal, state, market):
         ("spread", spread, "veto"),
         ("correlation", correlated, "veto"),
         ("bounce_count", bounce_count, "veto"),
+        ("satellite_invalidated", lambda: satellite and state.stepUp.get("invalidated", False), "veto"),
         ("per_name_cap", lambda: ceiling(C.PER_NAME_CAP * equity() - state.exposure(
             market["prices"], ticker=ticker)) if satellite else None, "resize"),
         ("satellite_cap", satellite_cap, "resize"),
         ("cash_floor", lambda: ceiling(state.cash - state.reservedCash - C.CASH_FLOOR * equity() - C.FEE_PER_ORDER), "resize"),
         ("adv", adv_cap, "resize"),
-        ("satellite_invalidated", lambda: satellite and state.stepUp.get("invalidated", False), "veto"),
         ("core_target", lambda: ceiling(C.CORE_WEIGHT * equity() - state.exposure(
             market["prices"], sleeve="core")) if not satellite else None, "resize"),
     ]

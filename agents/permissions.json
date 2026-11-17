@@ -934,21 +934,21 @@
           "name": "sim_trade_input_order",
           "enabled": true,
           "permission_policy": {
-            "type": "always_allow"
+            "type": "always_ask"
           }
         },
         {
           "name": "sim_trade_cancel_order",
           "enabled": true,
           "permission_policy": {
-            "type": "always_allow"
+            "type": "always_ask"
           }
         },
         {
           "name": "sim_trade_modify_order",
           "enabled": true,
           "permission_policy": {
-            "type": "always_allow"
+            "type": "always_ask"
           }
         },
         {

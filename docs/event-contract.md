@@ -100,7 +100,10 @@ existing contents. Default timestamps use current UTC; fixture timestamps never 
 
 Use one writer at a time per log. Every open and append verifies existing contents;
 append performs one binary line write, flush, and fsync before returning. Writers
-must be serialized by the caller; there is no cross-process locking. An interrupted
+are serialized by an exclusive adjacent `.lock` file with a five-second timeout.
+Use `EventLog.locked()` around complete state/log transactions, as the execution
+scripts and planner do. A stale lock fails closed and needs operator inspection;
+different logs sharing one state still require external serialization. An interrupted
 write may leave an incomplete tail, which is rejected without automatic repair.
 There are no edit, delete, or truncate APIs. This guarantee does not extend to
 arbitrary external filesystem edits or power-loss behavior of every filesystem.

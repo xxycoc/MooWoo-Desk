@@ -82,6 +82,14 @@ def load_bars(path, asof):
 
 
 def plan(args):
+    snapshot = read_json(args.quotes)
+    run_id = args.run_id or snapshot.get("runId", f"{snapshot['sessionDate']}-us")
+    log = EventLog(args.log, runId=run_id)
+    with log.locked():
+        return _plan(args, log)
+
+
+def _plan(args, log):
     frozen = frozen_config()
     state = PortfolioState.from_dict(read_json(args.state))
     snapshot = read_json(args.quotes)
@@ -107,7 +115,6 @@ def plan(args):
     market = dict(now=snapshot["now"], sessionDate=session, prices=prices, bars=bars,
                   quotes=quotes, minutesSinceOpen=(now-opened).total_seconds()/60,
                   isRegularSession=opened <= now <= closed)
-    log = EventLog(args.log, runId=run_id)
     tickets = {}
     if log.path.exists():
         for line in log.path.read_text(encoding="utf-8").splitlines():
