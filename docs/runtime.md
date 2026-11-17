@@ -112,7 +112,12 @@ and watcher planning use completed bars from before the current session.
 
 After baseline reconciliation, use `scripts/gather_inputs.py --kind morning|watch
 --inputs <returned-input-directory>` for completed bars, session facts and the
-morning screen/candidates. Collect the generated analyst quote request, then run
+morning screen/candidates. First run `python3 scripts/session_info.py` for
+barsAsOf, hours and cutoffs; never research the calendar. Morning only: delegate
+according to candidates.json and save every child reply verbatim to
+`<inputs>/replies/<decisionId>.<role>.json`, then run
+`python3 scripts/ingest_ratings.py --inputs <inputs>` for ratings.json.
+Quotes come LAST: collect the generated analyst quote request, then run
 `scripts/convert_quotes.py --inputs <returned-input-directory>` immediately before
 plan. See [the input handoff](handoff-16-inputs.md) for exact commands, raw quote
 formats, prompt replacement text and the offline no-order rehearsal.
@@ -120,8 +125,9 @@ formats, prompt replacement text and the offline no-order rehearsal.
 The watcher also requires preflight: the existing execution gate requires a
 matching `run_started` event in each run's log. This is an additional guard beyond
 the brief's morning-only preflight, retained rather than bypassing that gate.
-The current checkout has no dated promptVersion addendum in PREREGISTRATION.md;
-real morning/watch preflight therefore refuses orders until the owner records it.
+PREREGISTRATION.md contains dated promptVersion addenda and AUTONOMY-01.
+Preflight requires the latest registered hash to match scripts/hash_prompts.py;
+a prompt revision needs its own committed matching addendum before execution.
 
 Morning and watcher sequence (substitute `watch` for `morning` as appropriate):
 
@@ -139,12 +145,14 @@ Collect account snapshots before preflight. The first reconcile establishes the
 baseline. Perform the morning screening/classifier work after preflight and
 baseline, before plan; a watcher performs no classification. Plan calls
 `plan_session.py` for morning or `watch.py` for watcher. Only after prepare succeeds
-and its checkpoint push succeeds may the executor forward the exact returned
-tool arguments. Prepare blocks every order during the first five minutes and
+and its checkpoint push succeeds, run
+`python3 scripts/dispatch_check.py --kind K --decision-id <id>` for EACH ticket.
+Only ok:true authorizes handing its exact args to executor for one order.
+Prepare blocks every order during the first five minutes and
 rejects tickets older than the frozen freshness limit. It rechecks the calendar,
 lease and ticket freshness after the push, before returning order arguments.
-Refresh snapshots after
-the executor returns, record its receipts, then reconcile. Even an empty prepared
+Record the executor's exact receipt envelopes first, then refresh history
+(all pages), positions and cash before final reconciliation. Even an empty prepared
 batch needs `responses.json=[]` and record before final reconciliation. Cancellation
 instructions returned by reconciliation are not executed by Python; preserve and
 report unresolved cancellations, and never treat an audit as authority to cancel.
@@ -171,6 +179,21 @@ local copy and require inspection. Do not resume trading after such a failure.
 The runner never silently repeats a prepared order. State-machine transitions
 are local control data in ignored `.session.json`; durable evidence lives in the
 remote ledger and must be reconciled by a new run after container loss.
+
+Coordinator alone writes files, runs phase commands and checks `date -u` before
+each command/external call. Executor returns exact broker payloads; analyst
+returns research or requested quotes; classifiers return JSON. Children neither
+write files nor verify time. Optional evidence gaps are logged; absent cost
+telemetry is unavailable (`credits: null`), never zero. AUTONOMY-01 plus deployed
+always_allow authorizes paper execution after a passing dispatch_check handoff;
+never bypass an effective approval gate. Receipts use placed with decisionId,
+integer attempt, exact args and decoded untouched response, or rejected, failed,
+timeout or approval_expired with a reason. Acceptance is not a fill.
+
+When under 10 minutes of lease remain and work remains, run
+`python3 scripts/run_session.py --kind K --phase renew` before continuing.
+Use the returned expiry only after success; total lease cap is 120 minutes.
+Never continue past expiry or extend market hours or quote/ticket freshness.
 
 ## Calendar and deployment conflicts
 

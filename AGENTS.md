@@ -5,7 +5,8 @@
 PREREGISTRATION.md is binding. Paper trading only, US stocks and ETFs, long only.
 No first live order until the owner commits the dated promptVersion addendum.
 LLMs do not size positions or place discretionary orders. Code issues tickets.
-Never edit frozen configuration or bypass permissions. Missing inputs halt.
+Never edit frozen configuration or bypass permissions. Missing safety-critical
+inputs halt; log optional evidence gaps, with unavailable cost credits null.
 
 ## 2. Agent registry
 
@@ -56,15 +57,25 @@ version 1 for initial creation; live IDs/versions remain pending until deploymen
 
 Coordinator delegates to analyst, bull, bear, manager, quick and executor.
 Auditor is a separate new Session, never a child in that shared Session.
-Only the current locked event writer appends JSONL. Workers return transcripts.
+Coordinator is the sole file writer within morning/watch Sessions and owns
+clock checks (date -u), phase commands and persistence. Executor returns exact
+broker replies; analyst returns research or requested quotes; classifiers return
+JSON. Children never write files, execute scripts or verify time. Auditor owns
+its separate Session's files. Only the current locked event writer appends JSONL.
 Durable persistence, account-wide locking, calendar enforcement and code ticket
 idempotency are required before live paper trading. Top-five quick opinions are
 logged with secondOpinion=true and excluded from risk inputs.
 
 Coordinator also owns watch sessions; no separate watcher agent exists. Follow
 its numbered Session procedures and the auditor's independent audit procedure.
-They target the separately supplied scripts/run_session.py: integrate that runner
-before deployment and halt if it is absent. Morning/watch phases are start,
+They use scripts/run_session.py; halt if any required command is absent.
+Run session_info and gather_inputs after baseline reconciliation for both kinds.
+Morning saves verbatim child replies then runs ingest_ratings; quotes come LAST
+through analyst and convert_quotes. After prepare, require dispatch_check ok:true
+for EACH ticket before handing exact args to executor for one order. AUTONOMY-01
+and deployed always_allow authorize that paper order without another approval
+request; never bypass effective policy. Follow docs/runtime.md for exact commands.
+Renew with under 10 minutes remaining and work left, capped at 120 minutes total. Morning/watch phases are start,
 preflight, reconcile, plan, prepare, record, reconcile, finish; audit phases are
 start, reconcile, grade_calls, score_hypotheses, finish. Screening starts only
 after the morning baseline. Watch requires preflight and never classifies.
