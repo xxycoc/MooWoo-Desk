@@ -345,3 +345,7 @@ Written on 18 November 2026 at about 03:45 Singapore (17 November in New York), 
   `convert_quotes.py` reads `snapshot_list` and epoch-millisecond times, and `parse_rating` accepts exactly one
   JSON object embedded in prose, logging a warning. The 60-second freshness rule is unchanged.
 - No rule, class, sizing, risk limit, horizon, grading or hypothesis changes.
+- Addendum 17 note, 04:00 Singapore: the coordinator now runs on the `efficient` model instead of `ultimate`
+  (`agents/coordinator/agent.json`; promptVersion unchanged). Reruns 9 and 11 stalled when every coordinator
+  request timed out once the debate replies arrived, while small watcher sessions on the same model answered.
+  The coordinator rates nothing; analyst, bull, bear, manager and executor stay on `ultimate`, quick on `efficient`.
