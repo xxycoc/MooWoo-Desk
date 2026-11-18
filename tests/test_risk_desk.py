@@ -263,10 +263,21 @@ def test_trail_never_loosens_and_stop_precedes_target():
     q["AAA"]["last"] = 100
     assert propose_exits(s, {"AAA": b}, q, "2026-11-20", RUN)["proposals"][0]["reason"] == "trailing stop"
     s.positions["AAA"] = position("bounce")
-    b = exit_bars([100]); b.iloc[0] = [100, 121, 89, 100, 1000000]
-    assert propose_exits(s, {"AAA": b}, q, "2026-11-17", RUN)["proposals"][0]["reason"] == "stop hit"
-    b.iloc[0] = [100, 121, 99, 100, 1000000]
-    assert propose_exits(s, {"AAA": b}, q, "2026-11-17", RUN)["proposals"][0]["reason"] == "bounce target"
+    b = exit_bars([100, 100]); b.iloc[1] = [100, 121, 89, 100, 1000000]
+    assert propose_exits(s, {"AAA": b}, q, "2026-11-18", RUN)["proposals"][0]["reason"] == "stop hit"
+    b.iloc[1] = [100, 121, 99, 100, 1000000]
+    assert propose_exits(s, {"AAA": b}, q, "2026-11-18", RUN)["proposals"][0]["reason"] == "bounce target"
+
+
+def test_entry_day_range_before_fill_is_ignored():
+    # Bought at 100 after an earlier low of 92 (stop 94); next day trades at 101.
+    s = PortfolioState(cash=90000, positions={"AAA": position(stop=94.)})
+    b = exit_bars([100, 101]); b.iloc[0] = [97, 103, 92, 100, 1000000]
+    result = propose_exits(s, {"AAA": b}, {"AAA": dict(last=101, bid=101)}, "2026-11-18", RUN)
+    assert not result["proposals"]
+    b.iloc[0] = [97, 103, 92, 93, 1000000]
+    result = propose_exits(s, {"AAA": b}, {"AAA": dict(last=101, bid=101)}, "2026-11-18", RUN)
+    assert result["proposals"][0]["reason"] == "stop hit"
 
 
 @pytest.mark.parametrize("kind,horizon", [("drift", 5), ("bounce", 3)])

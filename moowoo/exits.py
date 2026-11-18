@@ -29,9 +29,12 @@ def propose_exits(state, bars, quotes, session, run_id):
                     day_text = str(day.date())
                     if checked and day_text <= checked:
                         continue
-                    if bar.open <= stop or bar.low <= stop:
+                    # The entry-day open/high/low may precede the fill; only its close is observed after it.
+                    low, high = ((bar.close, bar.close) if day_text == entry_date
+                                 else (min(bar.open, bar.low), max(bar.open, bar.high)))
+                    if low <= stop:
                         reason = "stop hit"
-                    elif target is not None and (bar.open >= target or bar.high >= target):
+                    elif target is not None and high >= target:
                         reason = "bounce target"
                     checked = day_text
                     if reason:
