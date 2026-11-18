@@ -27,9 +27,6 @@ def validate_dispatch(manifest, now):
     if calendar.minutes_since_open(now) < config.NO_ORDERS_FIRST_MINUTES:
         raise ValueError("no orders in first five minutes")
     for ticket in manifest["tickets"]:
-        age = (calendar.local_time(now) - calendar.local_time(ticket["createdTs"])).total_seconds()
-        if not 0 <= age <= config.STALE_PRICE_SECONDS:
-            raise ValueError("ticket expired; abort and obtain fresh risk approval in a new run")
         if ticket["side"] == "BUY" and calendar.is_final_day(now):
             raise ValueError("no new entries on final day")
 
@@ -83,9 +80,23 @@ def run(args, now=None):
         lock = renew(store, holder, injected_now)
         context["expiresAt"] = lock["expiresAt"]
         atomic_json(control, context)
-        return context | dict(renewed=True)
+        return context | dict(renewed=not lock["capped"], capped=lock["capped"])
     log = EventLog(root / f"logs/{run_id}.jsonl", runId=run_id)
     if args.phase == "abort":
+        from _execution import frozen_config
+        from moowoo.execution import load_tickets, record, release_undispatched
+        from moowoo.portfolio import PortfolioState
+        tickets_path = root / f"tickets/{run_id}.json"
+        responses_path = root / "inputs" / run_id / "responses.json"
+        if tickets_path.exists():
+            tickets = load_tickets(read_json(tickets_path), log, frozen_config()["configHash"])
+            with log.locked():
+                if responses_path.exists():
+                    record(tickets, read_json(responses_path), log)
+                state_path = root / "state.json"
+                state = PortfolioState.from_dict(read_json(state_path))
+                release_undispatched(tickets, state, log)
+                atomic_json(state_path, state.to_dict())
         log.append("reflection_note", dict(prompt="Session runner", text="Session aborted; retained all evidence", skipped=True))
         saved = store.save("Abort session; preserve evidence", holder)
         control.unlink()

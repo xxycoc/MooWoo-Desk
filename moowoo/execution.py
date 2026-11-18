@@ -157,6 +157,8 @@ def record(tickets, responses, log):
                 note(log, ticket, action, orderId=order_id, tool="sim_trade_cancel_order",
                      retCode=receipt["ret_code"], reason=safe_reason(receipt["ret_msg"]))
             continue
+        if response.get("tool") != "sim_trade_input_order":
+            raise ValueError("placement receipt requires the prepared tool")
         attempts = [event for event in events if event.get("executionAction") == "prepared"]
         attempt = response["attempt"]
         if type(attempt) is not int or not 1 <= attempt <= 2 or attempt > len(attempts):
@@ -190,8 +192,6 @@ def record(tickets, responses, log):
                 attempt=attempt, ticketHash=ticket.ticketHash), decisionId=ticket.decisionId)
             recorded.append(ticket.decisionId)
         elif status in ("rejected", "failed", "timeout", "approval_expired"):
-            if any(event["type"] == "order_submitted" for event in events):
-                raise ValueError("failure contradicts recorded submission")
             failures = [event for event in events if event.get("executionAction") == "placement_failed"
                         and event["attempt"] == attempt]
             retry_safe = retry_allowed(attempt, status, response.get("absenceConfirmed", False))
@@ -203,6 +203,8 @@ def record(tickets, responses, log):
                     raise ValueError("contradictory placement receipt")
                 if not retry_safe or failures[-1]["retrySafe"]:
                     continue
+            if any(event["type"] == "order_submitted" for event in events):
+                raise ValueError("failure contradicts recorded submission")
             note(log, ticket, "placement_failed", attempt=attempt, status=status,
                  reason=reason, retrySafe=retry_safe)
             if attempt == 2 or status == "approval_expired":
@@ -210,6 +212,25 @@ def record(tickets, responses, log):
         else:
             raise ValueError("unknown placement status")
     return dict(recorded=recorded)
+
+
+def release_undispatched(tickets, state, log):
+    """Release only provably untouched tickets; an authorized handoff may be live."""
+    released = []
+    for ticket in tickets.values():
+        events = decision_events(log, ticket.decisionId)
+        if any(event["type"] == "order_submitted" for event in events):
+            continue
+        skipped = any(event.get("executionAction") == "skip" for event in events)
+        dispatched = any(event.get("executionAction") in ("dispatch_authorized", "placement_failed")
+                         for event in events)
+        if dispatched and not skipped:
+            continue
+        if not skipped:
+            note(log, ticket, "skip", reason="session aborted before dispatch")
+        released.append(ticket.decisionId)
+    state.pendingTickets = [ticket for ticket in state.pendingTickets if ticket["decisionId"] not in released]
+    return released
 
 
 def reconcile(tickets, history, positions, cash, state, log):

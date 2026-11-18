@@ -104,29 +104,35 @@ def prepared(tmp_path, monkeypatch):
     lock = dict(holder="owner", kind="morning", startedAt=NOW.isoformat(), expiresAt=(NOW + timedelta(minutes=45)).isoformat())
     monkeypatch.setattr(LedgerStore, "fetch", lambda self: True)
     monkeypatch.setattr(LedgerStore, "remote_lock", lambda self: lock)
+    monkeypatch.setattr(LedgerStore, "save", lambda *args, **kwargs: dict(saved=True))
+    atomic_json(tmp_path / f"inputs/{RUN}/quotes-raw-AAA.json", dict(ret_code=0, ret_msg="success",
+        data=dict(snapshot_list=[dict(code="US.AAA", update_time=NOW.timestamp()*1000,
+                                     last_price=100, bid_price=99.99, ask_price=100)])))
     args = Namespace(kind="morning", decision_id=ticket.decisionId, dir=tmp_path)
     return args, ticket, log, result["orders"][0], lock
 
 
-def test_dispatch_exact_prepared_args_and_no_writes(prepared):
+def test_dispatch_exact_prepared_args_and_durable_intent(prepared):
     args, ticket, log, order, lock = prepared
     before = log.path.read_bytes()
-    assert dispatch_check.run(args, NOW) == dict(ok=True, decisionId=ticket.decisionId, args=order["args"])
-    assert log.path.read_bytes() == before
+    assert dispatch_check.run(args, NOW) == dict(ok=True, decisionId=ticket.decisionId, tool=order["tool"], attempt=1,
+        args=order["args"], quoteDeadline="2026-11-17T15:01:00Z")
+    assert log.path.read_bytes().startswith(before)
+    assert log.read()[-1]["executionAction"] == "dispatch_authorized"
     assert config.STALE_PRICE_SECONDS == 60
 
 
-def test_dispatch_only_selected_ticket_freshness(prepared):
+@pytest.mark.parametrize("seconds,ok", [(60, True), (61, False), (-1, False), (110, False)])
+def test_dispatch_only_selected_ticket_freshness(prepared, seconds, ok):
     args, ticket, log, order, lock = prepared
     path = args.dir / f"tickets/{RUN}.json"
     manifest = json.loads(path.read_text())
     manifest["tickets"].append(ticket.to_dict() | dict(decisionId=RUN + ":BBB", createdTs="2026-11-16T15:00:00Z"))
     atomic_json(path, manifest)
-    assert dispatch_check.run(args, NOW + timedelta(seconds=60))["ok"]
-    with pytest.raises(ValueError, match="expired"):
-        dispatch_check.run(args, NOW + timedelta(seconds=61))
-    with pytest.raises(ValueError, match="expired"):
-        dispatch_check.run(args, NOW - timedelta(seconds=1))
+    result = dispatch_check.run(args, NOW + timedelta(seconds=seconds))
+    assert result["ok"] is ok
+    if not ok:
+        assert result["skipped"] and log.read()[-1]["executionAction"] == "skip"
 
 
 @pytest.mark.parametrize("mutation,reason", [
@@ -180,8 +186,7 @@ def test_dispatch_clock_after_ownership_fetch(prepared, monkeypatch):
         nonlocal current
         current = NOW + timedelta(seconds=61)
     monkeypatch.setattr(dispatch_check, "require_owned", delayed_check)
-    with pytest.raises(ValueError, match="expired"):
-        dispatch_check.run(args)
+    assert dispatch_check.run(args)["skipped"]
 
 
 @pytest.mark.parametrize("moment,reason", [
@@ -257,7 +262,8 @@ def test_renewal_and_hard_cap(tmp_path):
     assert calendar.local_time(second["expiresAt"]) == NOW + timedelta(minutes=120)
     third = runlock.renew(store, "owner", NOW + timedelta(minutes=119))
     assert third["expiresAt"] == second["expiresAt"]
-    assert store.saves == [("owner", False)] * 3
+    assert second["capped"] and third["capped"]
+    assert store.saves == [("owner", False)] * 2
     with pytest.raises(LedgerError, match="expired"):
         runlock.renew(store, "owner", NOW + timedelta(minutes=120))
 
@@ -372,3 +378,57 @@ def test_reconcile_cli_preserved_primary_identity(tmp_path, monkeypatch):
     assert not json.loads(result.stdout).get("halted")
     assert log.path.read_bytes().startswith(before)
     assert all(event["runId"] == "2026-11-16-us" for event in log.read())
+
+
+@pytest.mark.parametrize("day", [16, 21, 22, 26, 28])
+def test_audit_requires_competition_day(day):
+    assert not calendar.run_allowed("audit", f"2026-11-{day}T21:15:00Z")
+
+
+@pytest.mark.parametrize("change", ["symbol", "multiple", "crossed", "spread", "price", "missing", "future"])
+def test_fresh_quote_refusal_skips_only_ticket(prepared, change):
+    args, ticket, log, order, lock = prepared
+    path = args.dir / f"inputs/{RUN}/quotes-raw-AAA.json"
+    payload = json.loads(path.read_text())
+    row = payload["data"]["snapshot_list"][0]
+    if change == "symbol": row["code"] = "US.BBB"
+    if change == "multiple": payload["data"]["snapshot_list"].append(dict(row))
+    if change == "crossed": row["bid_price"] = 101
+    if change == "spread": row["bid_price"] = 99
+    if change == "price": row.update(bid_price=100.01, ask_price=100.02)
+    if change == "future": row["update_time"] += 1000
+    atomic_json(path, payload)
+    if change == "missing": path.unlink()
+    result = dispatch_check.run(args, NOW)
+    assert result["ok"] is False and result["skipped"]
+    assert log.read()[-1]["executionAction"] == "skip"
+    assert not any(event["type"] == "halt" for event in log.read())
+
+
+def test_dispatch_old_ticket_with_fresh_source(prepared):
+    args, ticket, log, order, lock = prepared
+    path = args.dir / f"inputs/{RUN}/quotes-raw-AAA.json"
+    payload = json.loads(path.read_text())
+    payload["data"]["snapshot_list"][0]["update_time"] += 200000
+    atomic_json(path, payload)
+    assert dispatch_check.run(args, NOW + timedelta(seconds=200))["ok"]
+    with pytest.raises(ValueError, match="resolved"):
+        dispatch_check.run(args, NOW + timedelta(seconds=200))
+
+
+def test_dispatch_rechecks_quote_after_persistence(prepared, monkeypatch):
+    args, ticket, log, order, lock = prepared
+    current = NOW
+    class Clock:
+        @staticmethod
+        def now(zone): return current
+    def save(*args, **kwargs):
+        nonlocal current
+        current += timedelta(seconds=61)
+        return dict(saved=True)
+    monkeypatch.setattr(dispatch_check, "datetime", Clock)
+    monkeypatch.setattr(LedgerStore, "save", save)
+    monkeypatch.setattr(runlock, "datetime", Clock)
+    result = dispatch_check.run(args)
+    assert result["skipped"]
+    assert log.read()[-1]["executionAction"] == "skip"

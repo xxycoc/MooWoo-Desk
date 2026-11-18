@@ -58,6 +58,19 @@ def quote_time(row):
     return calendar.local_time(value)
 
 
+def parse_quote(row):
+    """Shared source timestamp and price parsing for planning and dispatch."""
+    if not isinstance(row.get("code"), str) or not row["code"].startswith("US."):
+        raise ValueError("quote must identify a US security")
+    stamp = quote_time(row)
+    quote = {target: decimal_number(row[source], target)
+             for target, source in (("last", "last_price"), ("bid", "bid_price"), ("ask", "ask_price"))}
+    if quote["bid"] > quote["ask"]:
+        raise ValueError("crossed quote")
+    quote["ts"] = calendar.utc_stamp(stamp)
+    return ticker(row["code"]), quote
+
+
 def convert(inputs, now=None):
     inputs = Path(inputs).resolve()
     # A failed refresh must not leave the previous valid snapshot usable.
@@ -74,19 +87,11 @@ def convert(inputs, now=None):
     raw = read_json(inputs / "quotes-raw.json") if expected else []
     quotes = {}
     for row in quote_rows(raw):
-        if not isinstance(row.get("code"), str) or not row["code"].startswith("US."):
-            raise ValueError("quote must identify a US security")
-        symbol = ticker(row["code"])
+        symbol, quote = parse_quote(row)
         if symbol not in expected or symbol in quotes:
             raise ValueError("unexpected or duplicate quote symbol")
-        stamp = quote_time(row)
-        if not 0 <= (now - stamp).total_seconds() <= C.STALE_PRICE_SECONDS:
+        if not 0 <= (now - calendar.local_time(quote["ts"])).total_seconds() <= C.STALE_PRICE_SECONDS:
             raise ValueError("stale or future quote timestamp")
-        quote = {target: decimal_number(row[source], target)
-                 for target, source in (("last", "last_price"), ("bid", "bid_price"), ("ask", "ask_price"))}
-        if quote["bid"] > quote["ask"]:
-            raise ValueError("crossed quote")
-        quote["ts"] = calendar.utc_stamp(stamp)
         quotes[symbol] = quote
     if set(quotes) != expected:
         raise ValueError("missing requested quotes")
