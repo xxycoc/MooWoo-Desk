@@ -280,8 +280,8 @@ export function MoverRadar({
             ))}
           </ol>
           <p className="tiny">
-            The bar is log-scaled so the small stages remain visible. The fixture logs a three-name
-            screen, not a full 727-name scan; the 727 denominator is the preregistered gated universe.
+            The bar is log-scaled so the small stages remain visible. Screen counts come from logged
+            candidates; the 727 denominator is the preregistered gated universe.
           </p>
         </Panel>
 

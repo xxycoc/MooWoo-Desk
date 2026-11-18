@@ -275,7 +275,7 @@ export function RiskDesk({
         >
           <div className={`kill-status ${state.killActive ? "danger" : "ok"}`}>
             <span className="kill-label">Kill switch</span>
-            <strong>{state.killActive ? "TRIGGERED · LIQUIDATE" : "ARMED · NOT TRIGGERED"}</strong>
+            <strong>{state.asOf?.dataset === "paper-ledger" ? "CURRENT LATCH UNKNOWN" : state.killActive ? "TRIGGERED · LIQUIDATE" : "ARMED · NOT TRIGGERED"}</strong>
             <span className="kill-tier">
               tier <strong>{state.tier.replace("_", " ")}</strong> · drawdown{" "}
               <Num
@@ -292,7 +292,7 @@ export function RiskDesk({
 
           <div className="kill-block">
             <h3 className="mini-title">Last restart reason</h3>
-            <p className="empty">No restart event is present in the fixtures; nothing is assumed.</p>
+            <p className="empty">Operator restarts are recorded in private state.json restartReasons, not in these event logs. Current halt/restart status is unavailable.</p>
           </div>
 
           <div className="kill-block">
@@ -307,6 +307,7 @@ export function RiskDesk({
                     <span className="halt-main">
                       <strong>{halt.ticker ?? "run-wide"}</strong>{" "}
                       <span className="muted">{halt.reason}</span>
+                      {halt.ev.diff != null ? <pre className="tiny">{JSON.stringify(halt.ev.diff, null, 2)}</pre> : null}
                     </span>
                     <Trace events={[halt.ev]}>
                       <span className="halt-time">{fmtDate(halt.ev.ts)}</span>

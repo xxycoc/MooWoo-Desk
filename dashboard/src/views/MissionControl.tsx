@@ -729,7 +729,7 @@ export function MissionControl({
           question="Will credits last?"
           id="panel-credits"
         >
-          <Chart
+          {credits.unavailable ? <p className="empty">Credit usage unavailable: rating events contain null credits. No total or pace is inferred.</p> : <Chart
             option={creditOption}
             height={244}
             ariaLabel="Cumulative credits on a linear scale from zero to 4000 against a 3500 credit budget and dashed pace projection"
@@ -739,7 +739,7 @@ export function MissionControl({
                 : "no projection available."
             }`}
             footnote="Linear scale 0 to 4,000. Cumulative credits from daily_report; pace = credits used ÷ completed sessions × remaining weekdays to 27 Nov, assuming the current rate holds."
-          />
+          />}
         </Panel>
 
         <Panel
@@ -778,7 +778,7 @@ export function MissionControl({
           )}
         </Panel>
 
-        <Panel className="span-12" title="Data notes" question="What the fixtures do not support" id="panel-notes">
+        <Panel className="span-12" title="Data notes" question="What the logs do not support" id="panel-notes">
           <ul className="data-notes">
             {notes.map((note) => (
               <li key={note.key}>

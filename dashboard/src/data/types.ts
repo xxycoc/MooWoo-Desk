@@ -8,8 +8,8 @@ export interface RawEvent {
   decisionId: string | null;
   type: string;
   drill: boolean;
-  prevHash: string;
-  hash: string;
+  prevHash?: string;
+  hash?: string;
   [key: string]: unknown;
 }
 
@@ -80,7 +80,7 @@ export interface IntentRecord {
   qty: number;
   limitPrice: number;
   notional: number;
-  stop: number;
+  stop: number | null;
   sizing: Record<string, unknown>;
   equityAt: number | null;
   cashAt: number | null;
@@ -109,7 +109,7 @@ export interface RatingRecord {
   cls: string;
   confidence: number;
   tier: string;
-  credits: number;
+  credits: number | null;
   newsCutoff: string;
   setupScore: number;
   reason: string;
@@ -143,7 +143,7 @@ export interface CreditEntry {
   runId: string;
   ts: string;
   decisionId: string | null;
-  credits: number;
+  credits: number | null;
   tier: string;
 }
 
@@ -226,7 +226,7 @@ export interface SessionSummary {
   ordersSubmitted: number;
   vetoCount: number;
   skipCount: number;
-  ratingCredits: number;
+  ratingCredits: number | null;
   events: LoadedEvent[];
 }
 
@@ -288,9 +288,9 @@ export interface DeskState {
   drills: DrillRecord[];
   ruleChanges: RuleChangeRecord[];
   tierChanges: TierChangeRecord[];
-  reflectionNotes: { ev: LoadedEvent; prompt: string; text: string }[];
+  reflectionNotes: { ev: LoadedEvent; prompt: string; text: string; executionAction: string | null }[];
   credits: CreditEntry[];
-  creditTotal: number;
+  creditTotal: number | null;
   realizedBySleeve: Record<Sleeve, number>;
   feesPaid: number;
   decisions: Record<string, DecisionRecord>;

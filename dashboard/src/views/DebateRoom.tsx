@@ -35,7 +35,7 @@ function CallBlock({ record }: { record: DebateRecord }) {
     <div className="call-pair">
       <div className="call-card">
         <div className="call-head">
-          <h3>Manager verdict</h3>
+          <h3>{record.tier === "single" ? "Researcher-rater verdict" : "Manager verdict"}</h3>
           <span className={`stamp ${manager ? "ok" : "untold"}`}>{manager ? "logged" : "not logged"}</span>
         </div>
         {manager ? (
@@ -55,7 +55,7 @@ function CallBlock({ record }: { record: DebateRecord }) {
               <span className="num">{fmtPct(manager.confidence * 100, 1)}</span>
             </div>
             <p className="tiny">
-              Setup {manager.setupScore}/5 · {manager.credits} credit(s) · {fmtDateTime(manager.ev.ts)}
+              Setup {manager.setupScore}/5 · {manager.credits ?? "unavailable"} credit(s) · {fmtDateTime(manager.ev.ts)}
             </p>
             <p className="call-reason">{manager.reason}</p>
           </>
@@ -88,14 +88,13 @@ function CallBlock({ record }: { record: DebateRecord }) {
               <span className="num">{fmtPct(quick.confidence * 100, 1)}</span>
             </div>
             <p className="tiny">
-              Setup {quick.setupScore}/5 · {quick.credits} credit(s) · {fmtDateTime(quick.ev.ts)}
+              Setup {quick.setupScore}/5 · {quick.credits ?? "unavailable"} credit(s) · {fmtDateTime(quick.ev.ts)}
             </p>
             <p className="call-reason">{quick.reason}</p>
           </>
         ) : (
           <p className="tiny">
-            No quick-tier call is logged for this name. The debate tier is the only classifier call
-            recorded here.
+            No quick-tier call is logged for this name. The primary call uses the {record.tier} tier.
           </p>
         )}
       </div>
@@ -193,7 +192,7 @@ export function DebateRoom({ state }: { state: DeskState }) {
               <span>
                 {active.evidenceCount > 0
                   ? `${active.evidenceCount} item(s)`
-                  : "0 items — no analyst evidence array is in these fixtures"}
+                  : "0 items — no analyst evidence array is in these logs"}
               </span>
             </div>
             <div className="fact-row">

@@ -243,6 +243,7 @@ export interface CreditPoint {
 }
 
 export function creditPlan(state: DeskState): {
+  unavailable: boolean;
   points: CreditPoint[];
   used: number;
   completedSessions: number;
@@ -252,11 +253,12 @@ export function creditPlan(state: DeskState): {
   budget: number;
   finalTs: string;
 } {
+  const unavailable = state.ratings.some((rating) => rating.credits == null);
   const points: CreditPoint[] = [];
   let cumulative = 0;
   for (const session of state.sessions) {
     const credits = session.creditsUsed ?? session.ratingCredits;
-    if (credits <= 0) continue;
+    if (credits == null || credits <= 0) continue;
     cumulative += credits;
     points.push({
       label: fmtDate(session.endTs ?? session.startTs),
@@ -270,12 +272,13 @@ export function creditPlan(state: DeskState): {
   const pace = completedSessions > 0 ? cumulative / completedSessions : 0;
   const projected = completedSessions > 0 && remainingSessions > 0 ? cumulative + pace * remainingSessions : null;
   return {
-    points,
+    unavailable,
+    points: unavailable ? [] : points,
     used: cumulative,
     completedSessions,
     remainingSessions,
     pace,
-    projected,
+    projected: unavailable ? null : projected,
     budget: RULES.creditBudget,
     finalTs: `${RULES.finalDay}T21:00:00Z`,
   };
@@ -425,7 +428,7 @@ export function dataNotes(state: DeskState): DataNote[] {
   const notes: DataNote[] = [
     {
       key: "fixture",
-      text: "Prices, reports and returns in these logs are fictional seed-7 fixtures, not a reconciled replay.",
+      text: "Static paper-trading events; included fixtures are explicitly labelled. Core rebalance proposals are not fills.",
       ev: state.sessions[0]?.startEv ?? null,
     },
     {
@@ -435,12 +438,12 @@ export function dataNotes(state: DeskState): DataNote[] {
     },
     {
       key: "shadows",
-      text: "SPY, equal-weight, follow-all and fade-all lines come from daily_report fields, compounded day by day. The fixture repeats the same shadow percentages each session.",
+      text: "SPY, equal-weight, follow-all and fade-all lines come from daily_report fields, compounded day by day. Missing reports do not establish returns.",
       ev: state.liveSession?.reportEv ?? null,
     },
     {
       key: "hitrate",
-      text: "No graded outcome events exist in the event contract yet, so the hit rate has no graded calls.",
+      text: "Graded outcomes are not available in this snapshot; no hit rate is inferred.",
       ev: null,
     },
     {
@@ -465,7 +468,7 @@ export function dataNotes(state: DeskState): DataNote[] {
       text: `Mark-based equity is $${markBased.toLocaleString("en-US", { maximumFractionDigits: 0 })} versus reported $${state.equity.toLocaleString(
         "en-US",
         { maximumFractionDigits: 0 },
-      )} (${diff >= 0 ? "+" : "-"}$${Math.abs(diff).toLocaleString("en-US", { maximumFractionDigits: 0 })}). Fixture marks and reported cash do not fully reconcile.`,
+      )} (${diff >= 0 ? "+" : "-"}$${Math.abs(diff).toLocaleString("en-US", { maximumFractionDigits: 0 })}). Event prints and broker snapshot marks may differ.`,
       ev: state.cashEv,
     });
   }

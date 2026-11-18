@@ -21,8 +21,8 @@ export async function loadCorpus(signal?: AbortSignal): Promise<Corpus> {
   const res = await fetch(`${base}data/index.json`, { signal });
   if (!res.ok) throw new Error(`data/index.json: HTTP ${res.status}`);
   const index = (await res.json()) as DataIndex;
-  if (!Array.isArray(index.files) || index.files.length === 0) {
-    throw new Error("data/index.json lists no files");
+  if (!Array.isArray(index.files)) {
+    throw new Error("data/index.json must list files");
   }
 
   const logs: LoadedLog[] = [];
@@ -51,6 +51,8 @@ export async function loadCorpus(signal?: AbortSignal): Promise<Corpus> {
     events.push(...fileEvents);
   }
 
-  events.sort((a, b) => a.gseq - b.gseq);
+  // Runs overlap, so assign global seq only after merging by timestamp.
+  events.sort((a, b) => Date.parse(a.ts) - Date.parse(b.ts) || a.ts.localeCompare(b.ts) || a.gseq - b.gseq);
+  events.forEach((event, i) => { event.gseq = i + 1; });
   return { events, logs, errors };
 }

@@ -31,7 +31,7 @@ export function SideNav({ view }: { view: ViewKey }) {
       <div className="side-note">
         <p className="nav-label">Build</p>
         <p>
-          Stage 2: all five views are built from the static fixture logs. Outcome grading, bull/bear
+          Stage 2: all five views are built from the static event logs. Outcome grading, bull/bear
           transcripts and the quick shadow book are not logged, so those cells say so. Stage 3 is not
           built.
         </p>

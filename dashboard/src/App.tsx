@@ -73,9 +73,9 @@ export default function App() {
   const verifyTone: "ok" | "fail" | "unchecked" =
     verify.busy || !verify.ran
       ? "unchecked"
-      : verify.error || verify.results.some((result) => !result.ok)
+      : verify.error || verify.results.some((result) => result.ok === false)
         ? "fail"
-        : "ok";
+        : verify.results.some((result) => result.scrubbed) ? "unchecked" : "ok";
 
   if (loadError) {
     return (
@@ -131,6 +131,11 @@ export default function App() {
         </div>
       ) : null}
 
+      <div className="load-warning" role="status">
+        <strong>{corpus.events.some((event) => event.exportKind === "scrubbed") ? "Scrubbed export" : "Original logs"}</strong>
+        {" · "}As of {state.asOf?.ts ?? "no events"}. Static snapshot; refresh requires a new export and publish.
+        {corpus.events.some((event) => event.dataset === "fixture") ? " Includes FICTIONAL fixtures; combined totals are not the real ledger." : ""}
+      </div>
       <div className="shell">
         <SideNav view={view} />
         <main id="main" className="main" tabIndex={-1}>
@@ -147,7 +152,7 @@ export default function App() {
           )}
           <footer className="app-footer">
             <span>MooWoo Desk · Stage 2</span>
-            <span>Static fixture logs only. No API keys, no broker calls, no additional network data.</span>
+            <span>Static event snapshot. No API keys, no broker calls, no additional network data.</span>
             <span>SIMULATED FUNDS</span>
           </footer>
         </main>

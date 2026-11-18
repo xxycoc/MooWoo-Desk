@@ -69,9 +69,9 @@ interface Mutable {
   drills: DrillRecord[];
   ruleChanges: RuleChangeRecord[];
   tierChanges: TierChangeRecord[];
-  reflectionNotes: { ev: LoadedEvent; prompt: string; text: string }[];
+  reflectionNotes: { ev: LoadedEvent; prompt: string; text: string; executionAction: string | null }[];
   credits: CreditEntry[];
-  creditTotal: number;
+  creditTotal: number | null;
   realized: Record<Sleeve, number>;
   feesPaid: number;
   decisions: Record<string, DecisionRecord>;
@@ -311,7 +311,7 @@ function apply(ev: LoadedEvent, m: Mutable) {
         cls: str(p.class),
         confidence: num(p.confidence),
         tier: str(p.tier),
-        credits: num(p.credits),
+        credits: typeof p.credits === "number" ? p.credits : null,
         newsCutoff: str(p.newsCutoff),
         setupScore: num(p.setupScore),
         reason: str(p.reason),
@@ -320,8 +320,8 @@ function apply(ev: LoadedEvent, m: Mutable) {
       };
       m.ratings.push(rating);
       d.rating = rating;
-      const credits = num(p.credits);
-      m.creditTotal += credits;
+      const credits = rating.credits;
+      m.creditTotal = credits == null || m.creditTotal == null ? null : m.creditTotal + credits;
       m.credits.push({
         ev,
         runId: ev.runId,
@@ -330,7 +330,7 @@ function apply(ev: LoadedEvent, m: Mutable) {
         credits,
         tier: rating.tier,
       });
-      session.ratingCredits += credits;
+      session.ratingCredits = credits == null || session.ratingCredits == null ? null : session.ratingCredits + credits;
       if (!secondOpinion && !TRADEABLE_CLASSES.has(rating.cls)) {
         const skip: SkipRecord = {
           ev,
@@ -366,6 +366,8 @@ function apply(ev: LoadedEvent, m: Mutable) {
     }
 
     case "core_rebalance": {
+      // Runtime rebalances are proposals. Only fills change holdings.
+      if (p.dataset === "paper-ledger") break;
       const etf = str(p.etf);
       const side = str(p.side);
       const qty = Math.abs(num(p.qty));
@@ -433,7 +435,7 @@ function apply(ev: LoadedEvent, m: Mutable) {
         qty: num(p.qty),
         limitPrice: num(p.limitPrice),
         notional: num(p.notional),
-        stop: num(p.stop),
+        stop: typeof p.stop === "number" && p.stop > 0 ? p.stop : null,
         sizing: asRecord(p.sizing),
         equityAt: m.equity,
         cashAt: m.cash,
@@ -644,9 +646,9 @@ function apply(ev: LoadedEvent, m: Mutable) {
     }
 
     case "reflection_note": {
-      const note = { ev, prompt: str(p.prompt), text: str(p.text) };
+      const note = { ev, prompt: str(p.prompt), text: str(p.text), executionAction: str(p.executionAction) || null };
       m.reflectionNotes.push(note);
-      if (p.skipped === true) {
+      if (p.skipped === true || p.executionAction === "skip") {
         const ticker =
           typeof p.ticker === "string" && p.ticker ? p.ticker : (ev.decisionId?.split(":").slice(1).join(":") ?? "—");
         m.skips.push({
@@ -680,7 +682,7 @@ function apply(ev: LoadedEvent, m: Mutable) {
       };
       session.brier = num(p.brier);
       session.maxDrawdownPct = num(p.maxDrawdownPct);
-      session.creditsUsed = num(p.creditsUsed);
+      session.creditsUsed = typeof p.creditsUsed === "number" ? p.creditsUsed : null;
       session.ordersReported = num(p.orders);
       session.vetoesReported = num(p.vetoes);
       session.skipsReported = num(p.skips);

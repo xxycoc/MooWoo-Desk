@@ -46,6 +46,7 @@ export const RULE_TEXT: Record<string, string> = {
 };
 
 export const FIRED_RULE_TEXT: Record<string, string> = {
+  core_target: "core ETF order exceeds its target allocation",
   correlation: "pair correlation > 0.80 over 60 aligned daily returns",
   tier_size: "reduced-tier sizing factor 0.5",
   per_name_cap: "satellite stock exposure > 8% of marked equity",
