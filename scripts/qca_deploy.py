@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 API = "https://api.qoder.com/api/v1"
 ROLES = ("analyst", "executor", "auditor", "coordinator")
 SETTING_KEYS = {"MOOMOO_MCP_URL", "MOOMOO_ACCOUNT_ID", "MOOMOO_MARKET", "MOOMOO_CHALLENGE_TITLE",
-                "FEED_REPO_URL", "REPO_REVISION", "IDENTITY_ID", "SLACK_CHANNEL_PAIRING_ID", "moomoo_tool_names"}
+                "FEED_REPO_URL", "FEED_BRANCH", "REPO_REVISION", "IDENTITY_ID", "SLACK_CHANNEL_PAIRING_ID", "moomoo_tool_names"}
 
 
 def read_json(path):
@@ -67,12 +67,15 @@ def check_settings(settings, *, complete=False, stage="schedules"):
     if settings.get("FEED_REPO_URL"):
         from publish_feed import validate_repo_url
         validate_repo_url(settings["FEED_REPO_URL"])
+    if "FEED_BRANCH" in settings:
+        from publish_feed import validate_feed_branch
+        validate_feed_branch(settings["FEED_BRANCH"])
     revision = settings.get("REPO_REVISION")
     if revision and not re.fullmatch(r"[0-9a-f]{40}", revision):
         raise ValueError("REPO_REVISION must be a pinned 40-character commit SHA")
     if settings.get("MOOMOO_MARKET", "100") != "100":
         raise ValueError("only US market is permitted")
-    required = SETTING_KEYS - {"SLACK_CHANNEL_PAIRING_ID", "FEED_REPO_URL"}
+    required = SETTING_KEYS - {"SLACK_CHANNEL_PAIRING_ID", "FEED_REPO_URL", "FEED_BRANCH"}
     if complete and required - settings.keys():
         raise ValueError("apply requires all nonsecret settings, including verified MCP inventory")
 
@@ -147,6 +150,7 @@ def build_payloads(settings=None, root=ROOT, *, executor_approval="ask"):
     environment_variables["GITHUB_LEDGER_TOKEN"] = "${secret.GITHUB_LEDGER_TOKEN}"
     environment_variables["GITHUB_FEED_TOKEN"] = "${secret.GITHUB_FEED_TOKEN}"
     environment_variables["FEED_REPO_URL"] = settings.get("FEED_REPO_URL", "")
+    environment_variables["FEED_BRANCH"] = settings.get("FEED_BRANCH", "dashboard-feed")
     for role in ("coordinator", "auditor"):
         template = {k: deepcopy(v) for k, v in agents[role].items()
                     if k in {"name", "description", "model", "system", "tools", "skills", "mcp_servers", "multiagent", "metadata"}}
@@ -391,10 +395,12 @@ def main():
     if args.update and (not args.apply or args.stage != "resources"):
         parser.error("--update requires --apply --stage resources")
     settings = read_json(args.settings) if args.settings else {}
-    if args.apply and not settings.get("FEED_REPO_URL"):
-        feed_url = load_secret(ROOT / ".env", "FEED_REPO_URL", required=False)
-        if feed_url:
-            settings["FEED_REPO_URL"] = feed_url
+    if args.apply:
+        for key in ("FEED_REPO_URL", "FEED_BRANCH"):
+            if not settings.get(key):
+                value = load_secret(ROOT / ".env", key, required=False)
+                if value:
+                    settings[key] = value
     manifest = build_payloads(settings, executor_approval=args.executor_approval)
     if args.executor_approval == "allow" and args.approval_log:
         validate_approval(args.approval_log)

@@ -4,6 +4,11 @@ interface DataIndex {
   files: string[];
 }
 
+interface FeedMeta {
+  latestEventTs: string | null;
+  logs: string[];
+}
+
 export interface Corpus {
   events: LoadedEvent[];
   logs: LoadedLog[];
@@ -52,6 +57,18 @@ async function loadSource(base: string, signal?: AbortSignal, remote = false): P
     throw new Error("data/index.json must list files");
   }
 
+  let meta: FeedMeta | undefined;
+  if (remote) {
+    const metaRes = await fetch(`${base}meta.json${query}`, { signal });
+    if (!metaRes.ok) throw new Error(`data/meta.json: HTTP ${metaRes.status}`);
+    meta = await metaRes.json() as FeedMeta;
+    if (!meta || !Array.isArray(meta.logs) || JSON.stringify(meta.logs) !== JSON.stringify(index.files)
+        || (meta.latestEventTs !== null && (typeof meta.latestEventTs !== "string"
+          || !Number.isFinite(Date.parse(meta.latestEventTs))))) {
+      throw new Error("data/meta.json does not match the feed index");
+    }
+  }
+
   const logs: LoadedLog[] = [];
   const events: LoadedEvent[] = [];
   let gseq = 0;
@@ -84,6 +101,9 @@ async function loadSource(base: string, signal?: AbortSignal, remote = false): P
   if (remote && (errors.length || events.some((e) => !Number.isFinite(Date.parse(e.ts))))) {
     throw new Error("Remote feed is incomplete or invalid");
   }
-  return { events, logs, errors, source: remote ? "feed" : "bundled",
-    latestEventTs: events.at(-1)?.ts ?? null };
+  const latestEventTs = events.at(-1)?.ts ?? null;
+  if (meta && meta.latestEventTs !== latestEventTs) {
+    throw new Error("data/meta.json does not match the feed events");
+  }
+  return { events, logs, errors, source: remote ? "feed" : "bundled", latestEventTs };
 }

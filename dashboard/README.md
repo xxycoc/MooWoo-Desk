@@ -62,32 +62,47 @@ demonstration and labels the resulting combined totals as unsuitable for real-le
 
 ## Publish once with an updating feed
 
-Create a **public** GitHub repository dedicated to scrubbed dashboard data, for
-example `xxycoc/MooWoo-Desk-feed`. It may be empty; the publisher creates `main`.
-Use a fine-grained GitHub token limited to that repository with **Contents: read
-and write** (Metadata read is implicit). Keep the private ledger token separate.
+Use the data-only `dashboard-feed` branch in the existing **public** repository
+`xxycoc/MooWoo-Desk`. Do not create a separate feed repository or branch it from
+`main`. The first publish initializes a fresh Git repository and pushes an unrelated
+root commit containing only `data/`; later publishes fetch and update only the
+feed branch. The publisher refuses `main`, `master` and invalid branch names,
+never changes the default branch, and never force-pushes.
 
-In the deployment `.env`, set `GITHUB_FEED_TOKEN` and `FEED_REPO_URL`, for example
-`FEED_REPO_URL=https://github.com/xxycoc/MooWoo-Desk-feed`. The URL may instead go
-in deployment settings JSON; the token must stay in `.env`. Apply the updated
+In the deployment `.env`, set:
+
+```dotenv
+FEED_REPO_URL=https://github.com/xxycoc/MooWoo-Desk
+FEED_BRANCH=dashboard-feed
+GITHUB_FEED_TOKEN=<same secret value as GITHUB_LEDGER_TOKEN>
+```
+
+Copy the existing ledger token value into `GITHUB_FEED_TOKEN`; this is not a
+literal variable reference. The token must also have **Contents: read and write**
+access to `xxycoc/MooWoo-Desk`. Branch isolation is enforced by the publisher,
+not by token permissions. Never put either token in settings JSON or Vite env.
+The URL and branch may instead go in deployment settings JSON, which takes
+precedence over `.env`. Omitting `FEED_BRANCH` selects `dashboard-feed`. Apply the updated
 coordinator/auditor templates and schedules with `scripts/qca_deploy.py` after
 the implementation is merged and the deployment revision is pinned. It passes
-both values to sessions; dry runs never read or print secrets. Missing feed
+all three values to sessions; dry runs never read or print secrets. Missing feed
 configuration disables publication without affecting trading.
 
 Build the site with the **public raw data directory URL**, including `data/`:
 
 ```powershell
-$env:VITE_FEED_URL = 'https://raw.githubusercontent.com/xxycoc/MooWoo-Desk-feed/main/data/'
+$env:VITE_FEED_URL = 'https://raw.githubusercontent.com/xxycoc/MooWoo-Desk/dashboard-feed/data/'
 cd dashboard
 npm run build
 ```
 
 Publish `dashboard/dist/` to Qoder Sites **once**. Keep the bundled `data/` in
 the site as the offline fallback. No token belongs in Vite variables or the
-browser. With `VITE_FEED_URL` configured, the dashboard fetches the index and
-its JSONL files with cache-busting queries every 60 seconds. A failed, invalid,
-or stalled feed falls back to the complete bundled snapshot. The top bar names
+browser. With `VITE_FEED_URL` configured, the dashboard resolves `index.json`,
+`meta.json` and each listed JSONL filename relative to that data directory, with
+cache-busting queries every 60 seconds. Metadata must match the manifest and
+latest loaded event. A failed, invalid, or stalled feed falls back to the complete
+bundled snapshot. The top bar names
 the source and shows its latest event timestamp, not the fetch time. Raw GitHub
 CDN propagation can still delay updates. Clearing `VITE_FEED_URL` preserves the
 original bundled-only behavior.
@@ -95,7 +110,8 @@ original bundled-only behavior.
 After each scheduled run's successful finish, abort, or saved calendar skip,
 the runner starts `scripts/publish_feed.py --runtime runtime`. It exports only
 the same scrubbed run logs, replaces `data/` in a temporary feed checkout, and
-pushes a normal commit on `main`. It does not rewrite history. Publication is
+pushes a normal commit on `FEED_BRANCH` (default `dashboard-feed`). It never
+pushes to `main` or `master` and does not rewrite history. Publication is
 best effort with a 30-second runner limit and a `feedPublished` boolean in the
 phase JSON; failures cannot undo the completed save/unlock. The Git token is
 passed in a child environment HTTP header, never a URL or command argument.

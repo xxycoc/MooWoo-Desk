@@ -21,12 +21,27 @@ def validate_repo_url(value):
     return value.rstrip('/')
 
 
+def validate_feed_branch(branch):
+    if (not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9._/-]*', branch)
+            or branch.lower() in ('main', 'master', 'head')
+            or '..' in branch or branch.endswith('.')
+            or any(not part or part.startswith('.') or part.endswith('.lock')
+                   for part in branch.split('/'))):
+        raise ValueError('FEED_BRANCH must be a data-only branch, never main or master')
+    return branch
+
+
+def feed_branch():
+    return validate_feed_branch(os.environ.get('FEED_BRANCH', 'dashboard-feed'))
+
+
 def publish(runtime, *, local_remote=None):
     remote = os.environ.get('FEED_REPO_URL', '')
     token = os.environ.get('GITHUB_FEED_TOKEN', '')
     if not remote or not token:
         return dict(published=False, reason='FEED_REPO_URL or GITHUB_FEED_TOKEN absent')
     remote = validate_repo_url(remote)
+    branch = feed_branch()
     # Explicit local bare repositories support offline transport tests, never env URL overrides.
     if local_remote is not None:
         remote = str(Path(local_remote).resolve(strict=True))
@@ -68,11 +83,11 @@ def publish(runtime, *, local_remote=None):
                 raise RuntimeError('feed git failed')
             return result
 
-        git('init', '--initial-branch=main')
-        exists = git('ls-remote', '--exit-code', remote, 'refs/heads/main', allowed=(0, 2))
+        git('init', f'--initial-branch={branch}')
+        exists = git('ls-remote', '--exit-code', remote, f'refs/heads/{branch}', allowed=(0, 2))
         if exists.returncode == 0:
-            git('fetch', '--no-tags', '--depth=1', remote, 'refs/heads/main')
-            git('checkout', '-B', 'main', 'FETCH_HEAD')
+            git('fetch', '--no-tags', '--depth=1', remote, f'refs/heads/{branch}')
+            git('checkout', '-B', branch, 'FETCH_HEAD')
         destination = repo / 'data'
         if destination.is_symlink() or destination.is_file():
             destination.unlink()
@@ -84,8 +99,8 @@ def publish(runtime, *, local_remote=None):
         shutil.copytree(data, destination)
         git('add', '--all', '--', 'data')
         git('commit', '--allow-empty', '-m', f"Feed update {meta['latestEventTs']}")
-        git('push', remote, 'HEAD:refs/heads/main')
-    return dict(published=True, latestEventTs=meta['latestEventTs'])
+        git('push', remote, f'HEAD:refs/heads/{branch}')
+    return dict(published=True, branch=branch, latestEventTs=meta['latestEventTs'])
 
 
 def main():

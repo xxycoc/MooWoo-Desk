@@ -17,6 +17,7 @@ from test_export_dashboard import event, git
 
 @pytest.fixture(autouse=True)
 def feed_env(monkeypatch):
+    monkeypatch.delenv('FEED_BRANCH', raising=False)
     monkeypatch.setenv('FEED_REPO_URL', 'https://github.com/example/public-feed')
     monkeypatch.setenv('GITHUB_FEED_TOKEN', 'ghp_TestSecretNeverPrinted')
 
@@ -53,14 +54,14 @@ def test_push_tree_scrubbed_and_replaces_stale_data(tmp_path, monkeypatch, capsy
     (logs / '2026-11-18-watch-abcdef.jsonl').write_text(json.dumps(event()) + '\n')
     assert publish_feed.publish(runtime, local_remote=remote)['published']
     monkeypatch.setattr(publish_feed.subprocess, 'run', real_run)
-    names = git(remote, 'ls-tree', '-r', '--name-only', 'main').splitlines()
+    names = git(remote, 'ls-tree', '-r', '--name-only', 'dashboard-feed').splitlines()
     assert set(names) == {'data/index.json', 'data/meta.json', 'data/2026-11-18-watch-abcdef.jsonl'}
-    for revision in ('main', 'main^'):
+    for revision in ('dashboard-feed', 'dashboard-feed^'):
         for name in git(remote, 'ls-tree', '-r', '--name-only', revision).splitlines():
             contents = git(remote, 'show', f'{revision}:{name}')
             assert not re.search(r'\d{7,}|acc_id|ghp_|github_pat_|Bearer |opaque-secret', contents, re.I)
-    assert git(remote, 'log', '-1', '--format=%s').strip() == 'Feed update 2026-11-18T16:00:00Z'
-    assert git(remote, 'rev-list', '--count', 'main').strip() == '2'
+    assert git(remote, 'log', '-1', '--format=%s', 'dashboard-feed').strip() == 'Feed update 2026-11-18T16:00:00Z'
+    assert git(remote, 'rev-list', '--count', 'dashboard-feed').strip() == '2'
     assert (runtime / 'state.json').read_bytes() == original[Path('state.json')]
     token = 'ghp_TestSecretNeverPrinted'
     auth = base64.b64encode(('x-access-token:' + token).encode()).decode()
@@ -177,3 +178,48 @@ def test_publish_cli_never_echoes_exception_secrets(monkeypatch, capsys):
     output = capsys.readouterr()
     assert 'Sensitive' not in output.out + output.err
     assert json.loads(output.out) == dict(published=False, reason='feed publication failed')
+
+
+@pytest.mark.parametrize("branch", ["main", "master", "MAIN", "HEAD", "-x", "", "a..b",
+                                    "a//b", "a/", "a.", "a.lock", "a.lock/b", "a/.b",
+                                    "a b", "a@{b", "a:b", "a\\b", "a\nb"])
+def test_feed_refuses_code_branches(monkeypatch, branch):
+    monkeypatch.setenv("FEED_BRANCH", branch)
+    monkeypatch.setattr(publish_feed.subprocess, 'run', lambda *a, **k: pytest.fail('git on invalid branch'))
+    with pytest.raises(ValueError):
+        publish_feed.publish(Path('unused'))
+
+
+@pytest.mark.parametrize('branch', ['dashboard-feed', 'feeds/dashboard-v2'])
+def test_publish_keeps_main_and_creates_unrelated_feed(tmp_path, monkeypatch, branch):
+    remote = tmp_path / 'remote.git'
+    remote.mkdir()
+    git(remote, 'init', '--bare', '--initial-branch=main')
+    code = tmp_path / 'code'
+    code.mkdir()
+    git(code, 'init', '--initial-branch=main')
+    git(code, 'config', 'user.name', 'Test')
+    git(code, 'config', 'user.email', 'test@example.invalid')
+    (code / 'app.py').write_text('print("code, not feed")\n')
+    git(code, 'add', '.')
+    git(code, 'commit', '-m', 'Code root')
+    git(code, 'push', str(remote), 'main')
+    original_main = git(remote, 'rev-parse', 'main')
+    original_tree = git(remote, 'ls-tree', '-r', 'main')
+    runtime = tmp_path / 'runtime'
+    logs = runtime / 'logs'
+    logs.mkdir(parents=True)
+    (logs / '2026-11-18-watch-abcdef.jsonl').write_text(json.dumps(event()) + '\n')
+    monkeypatch.setenv('FEED_BRANCH', branch)
+    for count in (1, 2):
+        result = publish_feed.publish(runtime, local_remote=remote)
+        assert result['published'] and result['branch'] == branch
+        assert git(remote, 'rev-parse', 'main') == original_main
+        assert git(remote, 'ls-tree', '-r', 'main') == original_tree
+        assert git(remote, 'symbolic-ref', 'HEAD').strip() == 'refs/heads/main'
+        assert git(remote, 'rev-list', '--count', branch).strip() == str(count)
+        assert original_main.strip() not in git(remote, 'rev-list', branch).splitlines()
+        assert set(git(remote, 'ls-tree', '-r', '--name-only', branch).splitlines()) == {
+            'data/index.json', 'data/meta.json', 'data/2026-11-18-watch-abcdef.jsonl'}
+    assert set(git(remote, 'for-each-ref', '--format=%(refname)', 'refs/heads').splitlines()) == {
+        'refs/heads/main', f'refs/heads/{branch}'}
