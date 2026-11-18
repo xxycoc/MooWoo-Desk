@@ -1,14 +1,17 @@
 """Check one already-prepared order immediately before its broker tool call."""
 
 import argparse
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
 import re
 
 import _common
 from _execution import frozen_config, read_json
 from hash_prompts import prompt_version
-from moowoo.execution import decision_events, execution_ready, load_tickets, safe_reason
+from moowoo.execution import decision_events, execution_ready, load_tickets, safe_reason, note
+from moowoo import calendar, config
+from moowoo.desk_data import limit_price
+from convert_quotes import quote_rows, parse_quote
 from moowoo.persistence import LedgerError, LedgerStore
 from moowoo.runlock import require_owned
 from moowoo.runtime_logs import existing_log, index_logs
@@ -41,7 +44,10 @@ def run(args, now=None):
     if not attempts or attempts[-1]["ticketHash"] != ticket.ticketHash:
         raise ValueError("ticket has no matching prepared attempt")
     attempt = attempts[-1]["attempt"]
+    if type(attempt) is not int or not 1 <= attempt <= 2:
+        raise ValueError("prepared attempt must be integer 1 or 2")
     if any(event["type"] == "order_submitted" or event.get("executionAction") == "skip"
+           or (event.get("executionAction") == "dispatch_authorized" and event["attempt"] == attempt)
            or (event.get("executionAction") == "placement_failed" and event["attempt"] == attempt)
            for event in events):
         raise ValueError("prepared attempt is already resolved or skipped")
@@ -51,9 +57,54 @@ def run(args, now=None):
                       if order["decisionId"] == args.decision_id and order["attempt"] == attempt)
     if len(orders) != 1 or orders[0]["tool"] != "sim_trade_input_order" or orders[0]["args"] != to_sim_order(ticket):
         raise ValueError("missing, ambiguous or mismatched prepared tool arguments")
+    # Persist intent before handoff: a crash afterwards is uncertain, never safe to retry.
+    quote_path = root / "inputs" / run_id / f"quotes-raw-{ticket.ticker}.json"
+    deadline = None
+
+    def check_quote():
+        nonlocal deadline
+        rows = quote_rows(read_json(quote_path))
+        if len(rows) != 1:
+            raise ValueError("dispatch requires exactly one quote")
+        symbol, quote = parse_quote(rows[0])
+        stamp = calendar.local_time(quote["ts"])
+        deadline = calendar.utc_stamp(stamp + timedelta(seconds=config.STALE_PRICE_SECONDS))
+        current = now or datetime.now(timezone.utc)
+        validate_dispatch(dict(tickets=selected), current)
+        if symbol != ticket.ticker:
+            raise ValueError("fresh quote symbol mismatch")
+        if not 0 <= (calendar.local_time(current) - stamp).total_seconds() <= config.STALE_PRICE_SECONDS:
+            raise ValueError("stale or future quote timestamp")
+        if (ticket.side == "BUY" and (quote["ask"] - quote["bid"]) /
+                ((quote["ask"] + quote["bid"]) / 2) > config.MAX_SPREAD + 1e-12):
+            raise ValueError("fresh quote spread exceeds frozen limit")
+        if ticket.limitPrice != limit_price(quote, ticket.side):
+            raise ValueError("ticket limit price no longer matches fresh quote")
+
+    def skip_quote(exc):
+        reason = safe_reason(str(exc)) if isinstance(exc, ValueError) else "invalid or missing fresh quote"
+        note(log, ticket, "skip", attempt=attempt, reason=reason, quoteDeadline=deadline)
+        store.save("Skip ticket at dispatch", context["holder"], release=False)
+        return dict(ok=False, skipped=True, decisionId=ticket.decisionId, reason=reason, quoteDeadline=deadline)
+
     require_owned(store, context["holder"], now)
     validate_dispatch(dict(tickets=selected), now or datetime.now(timezone.utc))
-    return dict(ok=True, decisionId=args.decision_id, args=orders[0]["args"])
+    try:
+        check_quote()
+    except (ValueError, KeyError, TypeError, OSError, OverflowError) as exc:
+        return skip_quote(exc)
+    note(log, ticket, "dispatch_authorized", attempt=attempt, ticketHash=ticket.ticketHash,
+         quoteDeadline=deadline, quoteFile=quote_path.relative_to(root).as_posix())
+    store.save("Checkpoint dispatch before broker handoff", context["holder"], release=False)
+    require_owned(store, context["holder"], now)
+    validate_dispatch(dict(tickets=selected), now or datetime.now(timezone.utc))
+    try:
+        check_quote()
+    except (ValueError, KeyError, TypeError, OSError, OverflowError) as exc:
+        return skip_quote(exc)
+    return dict(ok=True, decisionId=args.decision_id, tool=orders[0]["tool"],
+                attempt=attempt, args=orders[0]["args"], quoteDeadline=deadline)
+
 
 
 def main():

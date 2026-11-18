@@ -43,6 +43,8 @@ def renew(store, holder, now=None):
     deadline = local_time(lock["startedAt"]) + timedelta(minutes=MAX_LEASE_MINUTES)
     if current >= deadline:
         raise LedgerError("run lease reached its total duration cap")
+    if local_time(lock["expiresAt"]) >= deadline:
+        return lock | dict(capped=True)
     renewed = lock | dict(expiresAt=min(current + timedelta(minutes=LEASE_MINUTES), deadline).isoformat())
     path = store.directory / "locks/run.lock"
     pending = json.dumps(renewed) + "\n"
@@ -61,7 +63,7 @@ def renew(store, holder, now=None):
         if path.read_text(encoding="utf-8") == pending:
             path.write_text(json.dumps(lock) + "\n", encoding="utf-8")
         raise
-    return renewed
+    return renewed | dict(capped=local_time(renewed["expiresAt"]) >= deadline)
 
 
 def require_owned(store, holder, now=None):

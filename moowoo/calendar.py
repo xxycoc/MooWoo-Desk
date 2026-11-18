@@ -76,7 +76,7 @@ def run_allowed(kind, now):
     now = local_time(now)
     if kind == "audit":
         closed = session_close(now)
-        return bool(closed and closed + timedelta(minutes=10) <= now < closed + timedelta(minutes=45))
+        return bool(is_trading_day(now) and closed and closed + timedelta(minutes=10) <= now < closed + timedelta(minutes=45))
     if kind not in ("morning", "watch"):
         raise ValueError("unknown run kind")
     return is_regular_hours(now)

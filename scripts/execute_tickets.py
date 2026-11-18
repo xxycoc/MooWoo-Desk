@@ -10,8 +10,8 @@ from moowoo.execution import execution_ready, load_tickets, prepare, record
 def run(args, log):
     frozen = frozen_config()
     tickets = load_tickets(read_json(args.tickets), log, frozen["configHash"])
-    execution_ready(log.read(), frozen["configHash"], prompt_version())
     if args.action == "prepare":
+        execution_ready(log.read(), frozen["configHash"], prompt_version())
         return prepare(tickets, log)
     return record(tickets, read_json(args.responses), log)
 
