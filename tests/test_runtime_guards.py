@@ -543,3 +543,44 @@ def test_sell_skips_when_bid_falls_below_limit(prepared):
         data=dict(snapshot_list=[dict(code="US.AAA", update_time=NOW.timestamp()*1000,
                                      last_price=100, bid_price=99.99, ask_price=100.05)])))
     assert dispatch_check.run(args, NOW)["ok"] is False
+
+@pytest.mark.parametrize("history_mode", ["absent", "missing_page", "later_page_match"])
+def test_runtime_releases_only_with_complete_absent_history(prepared, history_mode, monkeypatch):
+    class Clock:
+        @staticmethod
+        def now(zone): return NOW + timedelta(minutes=2)
+    monkeypatch.setattr("moowoo.execution.datetime", Clock)
+    args, ticket, log, order, lock = prepared
+    assert dispatch_check.run(args, NOW)["ok"]
+    state = PortfolioState(cash=100000)
+    state.reserve(ticket)
+    atomic_json(args.dir / "state.json", state.to_dict())
+    inputs = args.dir / "inputs" / RUN
+    atomic_json(inputs / "handoffs.json", [dict(decisionId=ticket.decisionId, attempt=1, status="approval_expired")])
+    history = fixture("history")
+    page = deepcopy(history)
+    history["data"]["orders"] = []
+    if history_mode != "absent":
+        history["pagination"] = dict(has_more=True, next_key="page2")
+    atomic_json(inputs / "history.json", history)
+    atomic_json(inputs / "positions.json", dict(data=[]))
+    atomic_json(inputs / "cash.json", dict(cash=100000, equity=100000))
+    pages = inputs / "history-pages.json"
+    atomic_json(pages, {"page2": page} if history_mode == "later_page_match" else {})
+    current = note(args.dir / "logs/next-run.jsonl", "next-run")
+    call = Namespace(runtime=args.dir, history=inputs / "history.json", history_pages=pages,
+        positions=inputs / "positions.json", cash=inputs / "cash.json", state=args.dir / "state.json")
+    if history_mode != "absent":
+        with pytest.raises(ValueError, match="missing page|unrecorded order"):
+            reconcile_cli.run(call, current)
+        assert json.loads(call.state.read_text())["pendingTickets"]
+        assert not any(e.get("executionAction") == "skip" for e in log.read())
+    else:
+        assert not reconcile_cli.run(call, current)["halted"]
+        saved = json.loads(call.state.read_text())
+        assert saved["pendingTickets"] == []
+        assert saved["ticketedDecisionIds"] == [ticket.decisionId]
+        assert log.read()[-1]["executionAction"] == "skip"
+        count = len(log.read())
+        assert not reconcile_cli.run(call, current)["halted"]
+        assert len(log.read()) == count

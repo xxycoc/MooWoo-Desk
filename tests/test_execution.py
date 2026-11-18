@@ -402,3 +402,96 @@ def test_session_info_uses_frozen_calendar():
     assert facts["barsAsOfOpen"] == "2026-11-16T14:30:00Z" and facts["barsAsOfClose"] == "2026-11-16T21:00:00Z"
     from moowoo.calendar import is_regular_hours, run_allowed
     assert not is_regular_hours("2026-11-16T15:00:00Z") and not run_allowed("morning", "2026-11-16T15:00:00Z")
+
+@pytest.mark.parametrize("age,status,attempt,complete,released", [
+    (901, None, 1, True, True),
+    (900, None, 1, True, False),
+    (899, None, 1, True, False),
+    (-1, None, 1, True, False),
+    (0, "approval_expired", 1, True, True),
+    (0, "not_submitted", 1, True, True),
+    (0, "timeout", 1, True, False),
+    (0, "approval_expired", 2, True, False),
+    (0, "approval_expired", True, True, False),
+    (901, "submitted", 1, True, False),
+    (901, "placed", 1, True, False),
+    (901, "approval_expired", 1, False, False),
+])
+def test_reconcile_expired_authorization(setup, age, status, attempt, complete, released):
+    from datetime import datetime, timedelta
+    from moowoo.execution import note, release_undispatched
+    ticket, log, state = start(setup)
+    tickets = {ticket.decisionId: ticket}
+    prepare(tickets, log)
+    note(log, ticket, "dispatch_authorized", attempt=1, ticketHash=ticket.ticketHash, quoteDeadline=NOW)
+    handoffs = [] if status is None else [dict(decisionId=ticket.decisionId, attempt=attempt, status=status)]
+    now = datetime.fromisoformat(NOW.replace("Z", "+00:00")) + timedelta(seconds=age)
+    # Abort before reconciliation must retain an uncertain authorization.
+    assert release_undispatched(tickets, state, log) == []
+    kwargs = dict(history_complete=complete, handoffs=handoffs, now=now)
+    updated, result = reconcile(tickets, [], [], dict(cash=100000, equity=100000), state, log, **kwargs)
+    assert not result["halted"]
+    assert bool(updated.pendingTickets) is not released
+    assert updated.reservedCash == (0 if released else state.reservedCash)
+    assert updated.ticketedDecisionIds == [ticket.decisionId]
+    skips = [e for e in log.read() if e.get("executionAction") == "skip"]
+    assert len(skips) == int(released)
+    if released:
+        assert skips[0]["reason"] == "authorization expired before handoff; never submitted"
+        assert prepare(tickets, log)["orders"] == []
+    before = len(log.read())
+    again, result = reconcile(tickets, [], [], dict(cash=100000, equity=100000), updated, log, **kwargs)
+    assert again.to_dict() == updated.to_dict()
+    assert len(log.read()) == before
+    release_undispatched(tickets, again, log)
+    assert bool(again.pendingTickets) is not released
+
+
+@pytest.mark.parametrize("deadline", [None, "bad", "2026-11-17T15:00:00"])
+def test_reconcile_invalid_deadline_stays_pending(setup, deadline):
+    from moowoo.execution import note
+    ticket, log, state = start(setup)
+    note(log, ticket, "dispatch_authorized", attempt=1, ticketHash=ticket.ticketHash, quoteDeadline=deadline)
+    updated, _ = reconcile({ticket.decisionId: ticket}, [], [], dict(cash=100000, equity=100000),
+                           state, log, history_complete=True)
+    assert updated.pendingTickets == state.pendingTickets
+
+
+def test_reconcile_older_attempt_cannot_release_new_authorization(setup):
+    from moowoo.execution import note
+    ticket, log, state = start(setup)
+    for attempt, deadline in [(1, "2020-01-01T00:00:00Z"), (2, "2099-01-01T00:00:00Z")]:
+        note(log, ticket, "dispatch_authorized", attempt=attempt, ticketHash=ticket.ticketHash, quoteDeadline=deadline)
+    updated, _ = reconcile({ticket.decisionId: ticket}, [], [], dict(cash=100000, equity=100000), state, log,
+        history_complete=True, handoffs=[dict(decisionId=ticket.decisionId, attempt=1, status="approval_expired")])
+    assert updated.pendingTickets == state.pendingTickets
+
+
+def test_reconcile_submitted_authorization_remains_pending(setup):
+    from moowoo.execution import note
+    ticket, log, state = submit(setup)
+    note(log, ticket, "dispatch_authorized", attempt=1, ticketHash=ticket.ticketHash, quoteDeadline=NOW)
+    updated, _ = reconcile({ticket.decisionId: ticket}, *snapshots(0), state, log,
+        history_complete=True, handoffs=[dict(decisionId=ticket.decisionId, attempt=1, status="approval_expired")])
+    assert updated.pendingTickets
+    assert not any(e.get("executionAction") == "skip" for e in log.read())
+
+
+def test_record_expired_receipt_after_reconcile_is_idempotent(setup):
+    from moowoo.execution import note, release_undispatched
+    ticket, log, state = start(setup)
+    tickets = {ticket.decisionId: ticket}
+    request = prepare(tickets, log)["orders"][0]
+    note(log, ticket, "dispatch_authorized", attempt=1, ticketHash=ticket.ticketHash, quoteDeadline=NOW)
+    updated, _ = reconcile(tickets, [], [], dict(cash=100000, equity=100000), state, log,
+                           history_complete=True, handoffs=[request | dict(status="approval_expired")])
+    response = request | dict(status="approval_expired", reason="never submitted")
+    record(tickets, [response], log)
+    before = len(log.read())
+    record(tickets, [response], log)
+    release_undispatched(tickets, updated, log)
+    release_undispatched(tickets, updated, log)
+    assert len(log.read()) == before
+    assert len([e for e in log.read() if e.get("executionAction") == "skip"]) == 1
+    assert not updated.pendingTickets
+    assert updated.ticketedDecisionIds == [ticket.decisionId]

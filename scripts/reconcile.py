@@ -27,6 +27,7 @@ class RuntimeLogs:
 
 def run(args, log):
     config_hash = frozen_config()["configHash"]
+    handoffs = []
     if getattr(args, "runtime", None):
         root = Path(args.runtime)
         logs = [log if path.resolve() == log.path.resolve() else existing_log(path)
@@ -40,6 +41,13 @@ def run(args, log):
             if tickets.keys() & loaded.keys():
                 raise ValueError("duplicate ticket manifest")
             tickets.update(loaded)
+            handoff_path = root / "inputs" / manifest["runId"] / "handoffs.json"
+            if handoff_path.exists():
+                saved = read_json(handoff_path)
+                if not isinstance(saved, list):
+                    raise ValueError("handoffs must be a list")
+                handoffs.extend(row for row in saved if isinstance(row, dict)
+                    and row.get("decisionId") in loaded)
         log = RuntimeLogs(logs, log)
     else:
         tickets = load_tickets(read_json(args.tickets), log, config_hash)
@@ -56,7 +64,8 @@ def run(args, log):
             raise ValueError("account history contains an unrecorded order; record its receipt first")
     state, result = reconcile(tickets, rows,
         parse_positions(read_json(args.positions)), parse_cash(read_json(args.cash)),
-        PortfolioState.from_dict(read_json(args.state)), log)
+        PortfolioState.from_dict(read_json(args.state)), log,
+        history_complete=True, handoffs=handoffs)
     atomic_json(args.state, state.to_dict())
     return result
 

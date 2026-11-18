@@ -3,7 +3,9 @@
 import hashlib
 import os
 import re
+from datetime import datetime, timedelta, timezone
 
+from .calendar import local_time
 from .broker import account_context, parse_accounts, parse_placement, snapshot_to_state
 from .events import canonical_bytes
 from .fees import estimate_fees
@@ -207,7 +209,8 @@ def record(tickets, responses, log):
                 raise ValueError("failure contradicts recorded submission")
             note(log, ticket, "placement_failed", attempt=attempt, status=status,
                  reason=reason, retrySafe=retry_safe)
-            if attempt == 2 or status == "approval_expired":
+            if (attempt == 2 or status == "approval_expired") and not any(
+                    event.get("executionAction") == "skip" for event in events):
                 note(log, ticket, "skip", reason=reason, attempt=attempt)
         else:
             raise ValueError("unknown placement status")
@@ -233,7 +236,47 @@ def release_undispatched(tickets, state, log):
     return released
 
 
-def reconcile(tickets, history, positions, cash, state, log):
+def expired_authorizations(tickets, history, state, log, handoffs, now):
+    """Select only absent orders whose every dispatch attempt is resolved or aged."""
+    present = {row["decisionId"] for row in history}
+    released = []
+    for pending in state.pendingTickets:
+        decision_id = pending["decisionId"]
+        if decision_id in present or pending.get("submitted") or decision_id not in tickets:
+            continue
+        ticket = tickets[decision_id]
+        events = decision_events(log, decision_id)
+        if any(event["type"] == "order_submitted" or event.get("executionAction") == "skip"
+               for event in events):
+            continue
+        authorized = [event for event in events if event.get("executionAction") == "dispatch_authorized"]
+        if not authorized:
+            continue
+        for event in authorized:
+            attempt = event.get("attempt")
+            if type(attempt) is not int or event.get("ticketHash") != ticket.ticketHash:
+                break
+            receipts = [row for row in handoffs if isinstance(row, dict)
+                        and row.get("decisionId") == decision_id
+                        and type(row.get("attempt")) is int and row["attempt"] == attempt]
+            unsubmitted = bool(receipts) and all(row.get("status") in
+                ("approval_expired", "not_submitted") for row in receipts)
+            # A saved positive handoff contradicts absence; retain it for receipt recovery.
+            if any(row.get("status") in ("placed", "submitted") for row in receipts):
+                break
+            try:
+                aged = local_time(now) - local_time(event.get("quoteDeadline")) > timedelta(minutes=15)
+            except (ValueError, TypeError, OverflowError):
+                aged = False
+            if not (unsubmitted or aged):
+                break
+        else:
+            released.append((ticket, authorized[-1]["attempt"]))
+    return released
+
+
+def reconcile(tickets, history, positions, cash, state, log, *, history_complete=False,
+              handoffs=(), now=None):
     expected = PortfolioState.from_dict(state.to_dict())
     expected.cash += expected.brokerReserved
     expected.brokerReserved = 0
@@ -251,6 +294,12 @@ def reconcile(tickets, history, positions, cash, state, log):
     if any(row["decisionId"].startswith(log.runId + ":") and row["orderId"] not in submissions
            for row in history):
         raise ValueError("history contains an unrecorded order; record its receipt first")
+    # Only the caller that drained and validated all broker pages may prove absence.
+    released = expired_authorizations(tickets, history, expected, log, handoffs,
+        now or datetime.now(timezone.utc)) if history_complete else []
+    released_ids = {ticket.decisionId for ticket, _ in released}
+    expected.pendingTickets = [pending for pending in expected.pendingTickets
+                               if pending["decisionId"] not in released_ids]
     cancellations, fill_events = [], []
     for order_id, submission in submissions.items():
         ticket = tickets[submission["decisionId"]]
@@ -331,6 +380,9 @@ def reconcile(tickets, history, positions, cash, state, log):
         independent = snapshot_to_state(positions, cash, expected, decisions=identities)
     except ValueError as exc:
         differences["snapshot"] = safe_reason(exc)
+    for ticket, attempt in released:
+        note(log, ticket, "skip", attempt=attempt,
+             reason="authorization expired before handoff; never submitted")
     for ticket, event in fill_events:
         prior = [item for item in decision_events(log, ticket.decisionId)
                  if item["type"] == "fill" and item["orderId"] == event["orderId"]]
