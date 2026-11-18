@@ -22,7 +22,7 @@ export function VerifyPanel({
         <div>
           <h2 id="verify-title">Log integrity</h2>
           <p className="question">
-            Recomputes canonical SHA-256 in this browser with Web Crypto, then checks each
+            Scrubbed exports have no original chain to verify. For original logs, recomputes SHA-256 with Web Crypto and checks each
             file&rsquo;s prevHash chain and file-local seq.
           </p>
         </div>
@@ -42,9 +42,11 @@ export function VerifyPanel({
       {state.results.length > 0 ? (
         <ul className="verify-list">
           {state.results.map((result) => (
-            <li key={result.file} className={result.ok ? "verify-row ok" : "verify-row fail"}>
+            <li key={result.file} className={result.scrubbed ? "verify-row" : result.ok ? "verify-row ok" : "verify-row fail"}>
               <span className="verify-file">{result.file}</span>
-              {result.ok ? (
+              {result.scrubbed ? (
+                <span className="verify-result">Scrubbed export · {result.total} events · original chain not verified</span>
+              ) : result.ok ? (
                 <span className="verify-result">
                   OK · {result.count} event{result.count === 1 ? "" : "s"} verified
                 </span>

@@ -235,7 +235,7 @@ export function DecisionDrawer({
                   </ul>
                 ) : (
                   <p className="empty">
-                    No evidence array is present on this rating event; the fixtures carry the reason
+                    No evidence array is present on this rating event; the events carry the reason
                     only. Item IDs and publish times cannot be shown.
                   </p>
                 )}
@@ -334,12 +334,12 @@ export function DecisionDrawer({
                 </Row>
                 <Row label="Stop distance">
                   <Trace events={[intent.ev]} note="derived from limitPrice − stop">
-                    {fmtUsd(Math.abs(intent.limitPrice - intent.stop), 2)}
+                    {intent.stop == null ? "Not recorded" : fmtUsd(Math.abs(intent.limitPrice - intent.stop), 2)}
                   </Trace>
                 </Row>
                 <Row label="Implied risk">
                   <Trace events={[intent.ev]} note="derived: qty × stop distance; not a logged field">
-                    {fmtUsd(Math.abs(intent.qty * (intent.limitPrice - intent.stop)), 2)}
+                    {intent.stop == null ? "Not recorded" : fmtUsd(Math.abs(intent.qty * (intent.limitPrice - intent.stop)), 2)}
                   </Trace>
                 </Row>
                 <Row label="Per-name cap">

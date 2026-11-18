@@ -184,7 +184,7 @@ export function radarView(state: DeskState, runId: string): RadarView | null {
       value: points.length,
       drop: UNIVERSE.gated - points.length,
       reason: "not in screen.candidates; no per-name screen reason is logged",
-      note: "The screen gate is |z| >= 2, but the fixture still lists KO at z -1.8.",
+      note: "Candidates are shown exactly as logged; the configured screen gate is |z| >= 2.",
     },
     {
       key: "top15",
@@ -194,7 +194,7 @@ export function radarView(state: DeskState, runId: string): RadarView | null {
       reason: notPicked.length
         ? `not picked: ${notPicked.map((point) => `${point.ticker} (z ${point.z.toFixed(2)})`).join(", ")}`
         : "all candidates were picked",
-      note: "The fixture records a picked list, not a 15-name list.",
+      note: "The logged picked list may contain fewer than 15 names.",
     },
     {
       key: "traded",
@@ -216,7 +216,7 @@ export function radarView(state: DeskState, runId: string): RadarView | null {
     funnel,
     outOfScreenTrades,
     caveat:
-      "Bubble size uses market cap from the frozen universe file, not from the screen event. Grey means skipped or not picked; the orange ring means a fill was logged in this session. On 19 Nov NVDA is classed unexplained_up (not tradeable in the long-only sleeve map) yet has a fill, so it is grey with a traded ring: the fixture logs contradict each other.",
+      "Bubble size uses market cap from the frozen universe file, not from the screen event. Grey means skipped or not picked; the orange ring means a fill was logged in this session.",
   };
 }
 
@@ -248,6 +248,7 @@ export interface CallMatrixRow {
 
 export interface ConfidenceBin {
   label: string;
+  single: number;
   debate: number;
   quick: number;
   total: number;
@@ -366,6 +367,7 @@ export function truthView(state: DeskState): TruthView {
     return {
       label: `${Math.round(low * 100)}–${Math.round(high * 100)}%`,
       debate: rows.filter((rating) => rating.tier === "debate").length,
+      single: rows.filter((rating) => rating.tier === "single").length,
       quick: rows.filter((rating) => rating.tier === "quick").length,
       total: rows.length,
     };
@@ -694,8 +696,8 @@ function buildTimeline(decision: DecisionRecord, rating: RatingRecord): DebateTi
   items.push({
     ts: rating.ev.ts,
     kind: "rating",
-    title: rating.tier === "debate" ? "Manager (debate tier)" : "Quick classifier",
-    detail: `${rating.cls} · confidence ${(rating.confidence * 100).toFixed(1)}% · setup ${rating.setupScore}/5 · ${rating.credits} credit(s)`,
+    title: rating.tier === "single" ? "Researcher-rater" : rating.tier === "debate" ? "Manager (debate tier)" : "Quick classifier",
+    detail: `${rating.cls} · confidence ${(rating.confidence * 100).toFixed(1)}% · setup ${rating.setupScore}/5 · ${rating.credits ?? "unavailable"} credit(s)`,
     ev: rating.ev,
   });
   for (const intent of decision.intents) {
@@ -703,7 +705,7 @@ function buildTimeline(decision: DecisionRecord, rating: RatingRecord): DebateTi
       ts: intent.ev.ts,
       kind: "intent",
       title: "Code order intent",
-      detail: `${intent.side} ${intent.qty} @ ${intent.limitPrice.toFixed(2)} · ${intent.notional.toFixed(2)} notional · stop ${intent.stop.toFixed(2)}`,
+      detail: `${intent.side} ${intent.qty} @ ${intent.limitPrice.toFixed(2)} · ${intent.notional.toFixed(2)} notional · stop ${intent.stop?.toFixed(2) ?? "not recorded"}`,
       ev: intent.ev,
     });
   }
@@ -768,7 +770,7 @@ export function debateRecords(state: DeskState): DebateRecord[] {
         rating,
         screen: null,
         tier: rating.tier,
-        manager: rating.tier === "debate" ? rating : null,
+        manager: ["debate", "single"].includes(rating.tier) ? rating : null,
         quick: rating.tier === "quick" ? rating : null,
         riskVerdict: null,
         timeline: buildTimeline(
@@ -805,7 +807,7 @@ export function debateRecords(state: DeskState): DebateRecord[] {
     }
 
     const riskVerdict = decision.verdicts[decision.verdicts.length - 1] ?? null;
-    const manager = rating.tier === "debate" ? rating : null;
+    const manager = ["debate", "single"].includes(rating.tier) ? rating : null;
     const quick = rating.tier === "quick" ? rating : null;
     const managerSign = manager ? classMeta(manager.cls).sign : 0;
     const quickSign = quick ? classMeta(quick.cls).sign : 0;
@@ -835,7 +837,7 @@ export function debateRecords(state: DeskState): DebateRecord[] {
       {
         label: "Evidence array",
         status: evidenceCount > 0 ? "logged" : "missing",
-        note: evidenceCount > 0 ? `${evidenceCount} item(s)` : "0 items in these fixtures",
+        note: evidenceCount > 0 ? `${evidenceCount} item(s)` : "0 items in these logs",
       },
       {
         label: "Screen metrics",
@@ -843,9 +845,9 @@ export function debateRecords(state: DeskState): DebateRecord[] {
         note: decision.screen ? "z, RVOL and move are present" : "no screen row",
       },
       {
-        label: "Manager call (debate tier)",
+        label: rating.tier === "single" ? "Researcher-rater call" : "Manager call (debate tier)",
         status: manager ? "logged" : "n/a",
-        note: manager ? "debate-tier rating present" : "this name used the quick tier",
+        note: manager ? `${rating.tier}-tier rating present` : "this name used the quick tier",
       },
       {
         label: "Quick call",
@@ -903,7 +905,7 @@ export function debateRecords(state: DeskState): DebateRecord[] {
         comparable,
         note: comparable
           ? "Manager and quick calls have the same direction."
-          : "No name has both a manager-tier and a quick-tier call in these fixtures.",
+          : "No name has both a manager-tier and a quick-tier call in these logs.",
       },
       checklist,
       reflection,

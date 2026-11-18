@@ -90,7 +90,7 @@ export function TopBar({
       ? "OK"
       : verifyTone === "fail"
         ? "Broken"
-        : "Unchecked";
+        : state.asOf?.exportKind === "scrubbed" ? "Scrubbed export" : "Unchecked";
 
   return (
     <header className="topbar">

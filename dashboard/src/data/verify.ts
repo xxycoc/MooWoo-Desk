@@ -2,7 +2,8 @@ const ZERO_HASH = "0".repeat(64);
 
 export interface FileVerifyResult {
   file: string;
-  ok: boolean;
+  ok: boolean | null;
+  scrubbed?: boolean;
   count: number;
   total: number;
   badSeq: number | null;
@@ -167,6 +168,15 @@ export async function verifyLog(file: string, rawText: string): Promise<FileVeri
   const lines = rawText.split("\n");
   if (lines.length > 0 && lines[lines.length - 1] === "") lines.pop();
   const total = lines.length;
+  // Redaction removes the chain; no original integrity claim is possible.
+  try {
+    const rows = lines.map((line) => JSON.parse(line) as Record<string, unknown>);
+    if (rows.length > 0 && rows.every((row) => row.exportKind === "scrubbed" &&
+        row.hash === undefined && row.prevHash === undefined)) {
+      return { file, ok: null, scrubbed: true, count: 0, total, badSeq: null,
+        reason: "Scrubbed export: original hash chain removed; integrity not verified" };
+    }
+  } catch { /* The normal parser below reports malformed lines. */ }
   let count = 0;
   let prevHash = ZERO_HASH;
 

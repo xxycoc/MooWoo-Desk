@@ -188,7 +188,7 @@ export function TruthTable({ state }: { state: DeskState }) {
             height={260}
             ariaLabel="Calibration chart with confidence on the x axis and hit rate on the y axis. The diagonal is perfect calibration. No debate or quick points are plotted because there are no graded calls."
             summary="No confidence-outsome pairs exist, so neither classifier has a calibration line."
-            footnote={`The daily_report Brier field (${truth.brierReported != null ? truth.brierReported.toFixed(2) : "—"}) is repeated fixture data, not an H3 computation: there are no graded calls. PREREGISTRATION.md requires a session-cluster bootstrap interval with 2,000 resamples and seed 20261117.`}
+            footnote={`The daily_report Brier field (${truth.brierReported != null ? truth.brierReported.toFixed(2) : "—"}) is a reported value, not an H3 computation: there are no graded calls. PREREGISTRATION.md requires a session-cluster bootstrap interval with 2,000 resamples and seed 20261117.`}
           />
           <div className="table-scroll">
             <table className="calls-table bins-table">
@@ -197,6 +197,7 @@ export function TruthTable({ state }: { state: DeskState }) {
                   <th scope="col">Confidence bin</th>
                   <th scope="col">Debate</th>
                   <th scope="col">Quick</th>
+                  <th scope="col">Single rater</th>
                   <th scope="col">Total</th>
                   <th scope="col">Hit rate</th>
                 </tr>
@@ -207,6 +208,7 @@ export function TruthTable({ state }: { state: DeskState }) {
                     <th scope="row">{bin.label}</th>
                     <td>{bin.debate}</td>
                     <td>{bin.quick}</td>
+                    <td>{bin.single}</td>
                     <td>{bin.total}</td>
                     <td className="na">—</td>
                   </tr>
