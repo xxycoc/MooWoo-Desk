@@ -92,3 +92,32 @@ def test_preregistration_matches_frozen_artifact():
     additions = next(json.loads(line)["after"] for line in (ROOT / "config/rule-ledger.jsonl").read_text().splitlines()
                      if json.loads(line)["ruleId"] == "FEES-01")
     assert {k: v for k, v in vars(config).items() if not k.startswith("_") and k not in namespace} == additions
+
+
+@pytest.mark.parametrize("damage", [None, "missing", "changed", "extra"])
+def test_topology_addendum_is_exact_and_preserves_frozen_config(tmp_path, monkeypatch, damage):
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import plan_session
+    from moowoo.rules import TOPOLOGY_CHANGE
+    directory = tmp_path / "config"
+    directory.mkdir()
+    (directory / "frozen-2026-11-17.json").write_bytes((ROOT / "config/frozen-2026-11-17.json").read_bytes())
+    lines = (ROOT / "config/rule-ledger.jsonl").read_bytes().splitlines()
+    assert lines[-1] == canonical_bytes(TOPOLOGY_CHANGE)
+    assert TOPOLOGY_CHANGE["ruleId"] == "TOPOLOGY-01"
+    assert TOPOLOGY_CHANGE["date"] == "2026-11-18"
+    assert TOPOLOGY_CHANGE["effectiveFrom"] == "first session after 18 Nov 05:00 SGT"
+    if damage == "missing":
+        lines.pop()
+    elif damage == "changed":
+        lines[-1] = canonical_bytes(TOPOLOGY_CHANGE | {"after": "raised risk limits"})
+    elif damage == "extra":
+        lines.append(canonical_bytes(TOPOLOGY_CHANGE))
+    (directory / "rule-ledger.jsonl").write_bytes(b"\n".join(lines) + b"\n")
+    monkeypatch.setattr(plan_session, "ROOT", tmp_path)
+    if damage:
+        with pytest.raises(ValueError, match="unrecognized rule addendum"):
+            plan_session.frozen_config()
+    else:
+        assert plan_session.frozen_config()["configHash"] == json.loads(
+            (directory / "frozen-2026-11-17.json").read_bytes())["configHash"]

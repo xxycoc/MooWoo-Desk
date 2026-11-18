@@ -110,7 +110,7 @@ def test_completed_bars_and_minimal_morning_request(tmp_path, provider):
         gather_inputs.gather(inputs, "morning", NOW)
 
 
-def test_ranked_debate_candidates_use_screen_identity(tmp_path, provider, monkeypatch):
+def test_ranked_single_candidates_use_screen_identity(tmp_path, provider, monkeypatch):
     original = data.get_daily_bars
     def spike(symbols, start, end):
         frames = original(symbols, start, end)
@@ -129,10 +129,27 @@ def test_ranked_debate_candidates_use_screen_identity(tmp_path, provider, monkey
     for row in candidates:
         assert row["decisionId"] == f"{inputs.name}:{row['ticker']}"
         assert row["newsCutoff"] == ("2026-11-17T14:30:00Z" if row["moveKind"] == "gap" else "2026-11-17T21:00:00Z")
-        assert row["primaryAgent"] == "manager" and row["quickSecondOpinionRequired"]
+        assert row["primaryAgent"] == "analyst" and row["tier"] == "single"
         assert 0 <= row["setupScore"] <= 5 and row["promptVersion"]
     events = EventLog(inputs.parent.parent / f"logs/{inputs.name}.jsonl", runId=inputs.name).read()
     assert len(events) == 1 and events[0]["type"] == "screen"
+    replies = inputs / "replies"
+    replies.mkdir()
+    for row in candidates:
+        obj = dict(decisionId=row["decisionId"], ticker=row["ticker"],
+            **{"class": "explained_up"}, confidence=.8, tier="single",
+            reason="Synthetic offline research.", evidence=[], newsCutoff=row["newsCutoff"],
+            expectedMove=dict(direction="up", horizon=5), wrongIf="Catalyst reverses.",
+            model=None, promptVersion=row["promptVersion"])
+        (replies / f"{row['decisionId']}.analyst.json").write_text(json.dumps(obj), encoding="utf-8")
+    result = subprocess.run([sys.executable, str(ROOT / "scripts/ingest_ratings.py"),
+        "--inputs", str(inputs)], cwd=ROOT, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert json.loads(result.stdout) == dict(accepted=len(candidates), skipped=0)
+    ratings = read_json(inputs / "ratings.json")
+    assert [row["ticker"] for row in ratings] == screen["picked"]
+    assert all(row["tier"] == "single" for row in ratings)
+    assert verify(inputs.parent.parent / f"logs/{inputs.name}.jsonl").ok
 
 
 def test_watch_gathers_only_portfolio_without_screen(tmp_path, provider):

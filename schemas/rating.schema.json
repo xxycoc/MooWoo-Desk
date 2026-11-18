@@ -70,7 +70,8 @@
     "tier": {
       "enum": [
         "debate",
-        "quick"
+        "quick",
+        "single"
       ]
     },
     "newsCutoff": {
