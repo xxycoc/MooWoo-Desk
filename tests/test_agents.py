@@ -299,7 +299,9 @@ def test_evals_and_diff(tmp_path, good):
     assert evaluate(tmp_path, mode='single')['passed'] == 3
 
 
-def test_schema_accepts_valid_and_rejects_structural_errors(good):
+@pytest.mark.parametrize("tier", ["single", "debate", "quick"])
+def test_schema_accepts_valid_and_rejects_structural_errors(good, tier):
+    good["tier"] = tier
     jsonschema = pytest.importorskip('jsonschema')
     schema = json.loads((ROOT/'schemas/rating.schema.json').read_text())
     jsonschema.Draft202012Validator.check_schema(schema)

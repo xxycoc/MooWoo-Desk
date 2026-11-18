@@ -82,7 +82,7 @@ def gather(inputs, kind, now=None):
             if cutoff is None:
                 raise ValueError("frozen calendar has no hours for the move session")
             candidates.append(row | dict(rank=rank, decisionId=f"{control['runId']}:{symbol}",
-                newsCutoff=calendar.utc_stamp(cutoff), barsAsOf=asof,
+                newsCutoff=calendar.utc_stamp(cutoff), barsAsOf=asof, magnitude=row["movePct"],
                 setupScore=setup_score(bars[symbol])["total"], promptVersion=prompt_version(),
                 primaryAgent="analyst", tier="single"))
         atomic_json(inputs / "screen.json", result)

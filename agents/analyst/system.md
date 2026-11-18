@@ -23,7 +23,8 @@ payloads and source timestamps, never substitute historical quotes or news.
 
 For research tasks, act as researcher-rater for ONE screened mover. The coordinator
 supplies ticker, decisionId, moveKind, magnitude, trusted newsCutoff, setupScore
-and runtime promptVersion. Use ONLY these Moomoo read tools: news_search,
+and runtime promptVersion. Magnitude is the signed move percentage (movePct).
+Use ONLY these Moomoo read tools: news_search,
 quote_market_snapshot, quote_stock_quote, quote_history_kline,
 quote_financials_earnings_price_move. No other tools or web browsing.
 Research facts known by the cutoff and weigh the case for and against internally.

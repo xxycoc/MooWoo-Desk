@@ -130,6 +130,7 @@ def test_ranked_single_candidates_use_screen_identity(tmp_path, provider, monkey
         assert row["decisionId"] == f"{inputs.name}:{row['ticker']}"
         assert row["newsCutoff"] == ("2026-11-17T14:30:00Z" if row["moveKind"] == "gap" else "2026-11-17T21:00:00Z")
         assert row["primaryAgent"] == "analyst" and row["tier"] == "single"
+        assert row["magnitude"] == row["movePct"]
         assert 0 <= row["setupScore"] <= 5 and row["promptVersion"]
     events = EventLog(inputs.parent.parent / f"logs/{inputs.name}.jsonl", runId=inputs.name).read()
     assert len(events) == 1 and events[0]["type"] == "screen"
