@@ -405,6 +405,19 @@ def test_fresh_quote_refusal_skips_only_ticket(prepared, change):
     assert not any(event["type"] == "halt" for event in log.read())
 
 
+@pytest.mark.parametrize("ask,ok", [(99.98, True), (100.0, True), (100.01, False)])
+def test_buy_limit_only_needs_to_stay_marketable(prepared, ask, ok):
+    args, ticket, log, order, lock = prepared
+    path = args.dir / f"inputs/{RUN}/quotes-raw-AAA.json"
+    payload = json.loads(path.read_text())
+    payload["data"]["snapshot_list"][0].update(bid_price=round(ask - .01, 2), ask_price=ask)
+    atomic_json(path, payload)
+    result = dispatch_check.run(args, NOW)
+    assert result["ok"] is ok
+    if ok:
+        assert result["args"] == order["args"]
+
+
 def test_dispatch_old_ticket_with_fresh_source(prepared):
     args, ticket, log, order, lock = prepared
     path = args.dir / f"inputs/{RUN}/quotes-raw-AAA.json"
@@ -514,3 +527,19 @@ def test_sell_keeps_existing_exit_spread_exemption(prepared):
         data=dict(snapshot_list=[dict(code="US.AAA", update_time=NOW.timestamp()*1000,
                                      last_price=100, bid_price=100, ask_price=101)])))
     assert dispatch_check.run(args, NOW)["ok"]
+
+
+def test_sell_skips_when_bid_falls_below_limit(prepared):
+    from moowoo.tickets import to_sim_order
+    from moowoo.fees import estimate_fees
+    args, ticket, log, order, lock = prepared
+    sell = OrderTicket(**(ticket.to_dict() | dict(side="SELL", estFees=estimate_fees("SELL", ticket.qty), ticketHash="")))
+    atomic_json(args.dir / f"tickets/{RUN}.json", dict(runId=RUN, configHash=ticket.configHash, tickets=[sell.to_dict()]))
+    order["args"] = to_sim_order(sell)
+    atomic_json(args.dir / f"receipts/{RUN}/prepare-test.json", dict(orders=[order]))
+    log.append("reflection_note", dict(prompt="Execution", text="prepared", executionAction="prepared",
+        attempt=1, ticketHash=sell.ticketHash), decisionId=ticket.decisionId)
+    atomic_json(args.dir / f"inputs/{RUN}/quotes-raw-AAA.json", dict(ret_code=0, ret_msg="success",
+        data=dict(snapshot_list=[dict(code="US.AAA", update_time=NOW.timestamp()*1000,
+                                     last_price=100, bid_price=99.99, ask_price=100.05)])))
+    assert dispatch_check.run(args, NOW)["ok"] is False

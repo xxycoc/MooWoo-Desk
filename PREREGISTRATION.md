@@ -414,3 +414,24 @@ Written on 18 November 2026 at about 23:50 Singapore (10:50 New York), during th
   it and converts or checks it in the same command. These are the only fields the converter and dispatch check
   read. The 60-second rule is unchanged. No rule, class, sizing, risk limit, horizon, grading or hypothesis
   changes. A rerun on the correct revision today is off-schedule and is logged as such.
+
+## 21. Addendum 2026-11-19: a prepared limit only has to stay marketable at dispatch
+
+Written on 19 November 2026 at about 00:15 Singapore (18 November, 11:15 New York), during the 18 November
+session, after the off-schedule rerun `2026-11-18-morning-d32bc89ad591`. That rerun accepted all five ratings
+(ACM, NKE, ED, UNH, CRM) and placed the first order of the competition: buy 218 IEF at limit 90.62, accepted
+by the broker and not yet filled at reconciliation.
+
+- promptVersion `5524e3574e7b0675b94bba0ffacf7bc3c9e07b6c8a35cd0d4c42071f9e20e028`, unchanged from addendum 20;
+  this addendum changes code only.
+- Why: addendum 19 required the code-derived limit price to equal one recomputed from the fresh dispatch quote.
+  In the rerun, four of five core tickets (USMV, XLP, XLV, GLD) were skipped because the quote had moved by a
+  cent between planning and dispatch.
+- Change: the prepared limit price is never changed. At dispatch a buy proceeds only if the fresh ask-derived
+  limit is at or below the ticket's limit, and a sell only if the fresh bid-derived limit is at or above it.
+  A buy never pays more, and a sell never accepts less, than planned. The 60-second source-time rule, the
+  spread rule, sizing and every other rule are unchanged.
+- Also fixed: the cloud setup's test run failed because a fresh clone had no `.pytest_tmp` folder; the code the
+  run executes was not affected.
+- Observed: the coordinator reported text in Qoder agent notifications asking it to create a one-time schedule.
+  It is not in the session event log or in any agent reply, and the coordinator ignored it as untrusted data.

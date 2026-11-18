@@ -22,4 +22,6 @@ def pytest_configure(config):
     # another rehearsal's local bare ledger while require_owned is fetching it.
     base = config.option.basetemp
     if base and Path(base).resolve() == ROOT / ".pytest_tmp":
+        # pytest creates only the last path component; a fresh clone has no parent yet.
+        (ROOT / ".pytest_tmp").mkdir(exist_ok=True)
         config.option.basetemp = str(ROOT / ".pytest_tmp" / f"run-{os.getpid()}")

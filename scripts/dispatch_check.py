@@ -78,8 +78,11 @@ def run(args, now=None):
         if (ticket.side == "BUY" and (quote["ask"] - quote["bid"]) /
                 ((quote["ask"] + quote["bid"]) / 2) > config.MAX_SPREAD + 1e-12):
             raise ValueError("fresh quote spread exceeds frozen limit")
-        if ticket.limitPrice != limit_price(quote, ticket.side):
-            raise ValueError("ticket limit price no longer matches fresh quote")
+        # The prepared limit stays fixed; it only has to remain marketable against the fresh quote,
+        # so a buy never pays above, and a sell never accepts below, the planned price (addendum 21).
+        fresh = limit_price(quote, ticket.side)
+        if (fresh > ticket.limitPrice) if ticket.side == "BUY" else (fresh < ticket.limitPrice):
+            raise ValueError("fresh quote moved past the ticket limit price")
 
     def skip_quote(exc):
         reason = safe_reason(str(exc)) if isinstance(exc, ValueError) else "invalid or missing fresh quote"
