@@ -242,3 +242,20 @@ def test_positions_live_shape_18_nov(monkeypatch):
         today_profit=None, today_turnover="4.36", unrealized_profit=None)]))
     position = parse_positions(reply)[0]
     assert (position["ticker"], position["qty"], position["avgCost"], position["marketPrice"]) == ("IEF", 218, 90.62, 90.64)
+
+
+def test_equity_check_allows_mark_drift_between_snapshots(monkeypatch):
+    # 18 Nov: broker total_asset priced positions USD 9.75 above its own position snapshot.
+    from moowoo.broker import snapshot_to_state
+    from moowoo.portfolio import PortfolioState
+    monkeypatch.setenv("MOOMOO_ACCOUNT_ID", "synthetic-paper-account")
+    monkeypatch.setenv("MOOMOO_MARKET", "100")
+    rows = parse_positions(dict(ret_code=0, ret_msg="success", data=dict(positions=[
+        dict(symbol="ACM", qty="130", cost_price="83.049", cur_price="82.935", market=100)])))
+    previous = PortfolioState(cash=100000, positions={"ACM": dict(qty=130, avgCost=83.049, sleeve="satellite",
+        kind="drift", decisionId="run:ACM")})
+    cash = dict(cash=89218.0, equity=89218.0 + 10781.55 + 9.75, reserved=0)
+    ids = {"ACM": "run:ACM"}
+    assert snapshot_to_state(rows, cash, previous, decisions=ids).positions["ACM"]["qty"] == 130
+    with pytest.raises(ValueError, match="differs"):
+        snapshot_to_state(rows, cash | dict(equity=cash["equity"] + 50), previous, decisions=ids)

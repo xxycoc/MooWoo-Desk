@@ -454,3 +454,19 @@ session. Holdings: 218 IEF bought at 90.62 (core), filled after the rerun's reco
   not the provisional `avg_cost` and `market_price`, so the 00:30 Singapore watcher halted at preflight with
   nothing changed. The mapping now uses the live names. Replaying that watcher's inputs offline reconciles with
   no difference and no halt.
+
+## 23. Addendum 2026-11-19: reconciliation tolerance scales with position value
+
+Written on 19 November 2026 at about 01:45 Singapore (18 November, 12:45 New York), during the 18 November
+session, after the off-schedule entry run `2026-11-18-morning-ebd4816e4caf` under SIZING-01.
+
+- promptVersion `5524e3574e7b0675b94bba0ffacf7bc3c9e07b6c8a35cd0d4c42071f9e20e028`, unchanged; code only.
+- That run filled the first satellite trade (ACM, 130 at 83.049, drift from explained_up) and a core buy
+  (XLP, 40 at 91.62). The IEF rebalance sell was skipped for a stale quote; USMV's authorization expired before
+  handoff and was never sent; XLV and GLD were vetoed by the core-target rule. Its final reconciliation halted:
+  broker cash, quantities and orders matched the book exactly, but the broker's total asset priced positions
+  USD 9.75 above its own position snapshot, because the two snapshots are separate calls and prices moved
+  between them. The fixed USD 1 tolerance cannot hold once positions are live.
+- Change: the cash/position equity check allows USD 1 or 0.25% of the marked position value, whichever is
+  larger. Cash and quantities are still taken exactly from the broker; a missing or extra position still
+  halts. Replaying that reconciliation offline passes with no difference. No strategy rule changes.

@@ -9,6 +9,8 @@ import re
 from . import broker_fields as fields
 from .portfolio import PortfolioState, positive
 
+EQUITY_MARK_TOLERANCE = 0.0025
+
 
 def mapped(row, table):
     if not isinstance(row, dict):
@@ -214,7 +216,12 @@ def snapshot_to_state(positions, cash, previous, *, decisions=None):
         position.update(qty=row["qty"], avgCost=row["avgCost"])
         snapshot["positions"][name] = position
     state = PortfolioState.from_dict(snapshot)
-    equity = state.equity({row["ticker"]: row["marketPrice"] for row in positions})
-    if abs(equity-cash["equity"]) > 1:
-        raise ValueError("broker cash/position equity differs by more than USD 1")
+    marks = {row["ticker"]: row["marketPrice"] for row in positions}
+    equity = state.equity(marks)
+    # Cash and positions are separate broker calls, so live marks move between them (18 Nov:
+    # USD 9.75 on USD 34k). Quantities and cash come from the broker exactly; allow 0.25% of marks.
+    held = sum(row["qty"] * row["marketPrice"] for row in positions)
+    tolerance = max(1, EQUITY_MARK_TOLERANCE * held)
+    if abs(equity-cash["equity"]) > tolerance:
+        raise ValueError(f"broker cash/position equity differs by more than USD {tolerance:.2f}")
     return state
