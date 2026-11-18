@@ -227,7 +227,7 @@ def main():
             try:
                 args.phase = "abort"
                 aborted = run(args)
-                feed_result = dict(feedPublished=aborted["feedPublished"])
+                feed_result = dict(feedPublished=bool(aborted.get("feedPublished"))) if isinstance(aborted, dict) else {}
                 recovery = "failure evidence saved and lock released"
             except (ValueError, KeyError, TypeError, OSError, LedgerError):
                 pass
