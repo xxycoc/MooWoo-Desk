@@ -157,7 +157,7 @@ def record(tickets, responses, log):
                 note(log, ticket, action, orderId=order_id, tool="sim_trade_cancel_order",
                      retCode=receipt["ret_code"], reason=safe_reason(receipt["ret_msg"]))
             continue
-        if response.get("tool") != "sim_trade_input_order":
+        if response.get("tool", "sim_trade_input_order") != "sim_trade_input_order":
             raise ValueError("placement receipt requires the prepared tool")
         attempts = [event for event in events if event.get("executionAction") == "prepared"]
         attempt = response["attempt"]

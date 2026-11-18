@@ -94,7 +94,7 @@ invented balances. Check every result and apply the renewal rule before each ste
    Save its reply verbatim to <inputs>/quotes-raw-<ticker>.json; use the ticket's
    ticker (e.g. AAPL), never its colon-containing decisionId, as the safe filename.
    Immediately run `python3 scripts/dispatch_check.py --kind K --decision-id <id>`.
-   It checks source time, symbol, spread and unchanged limit price, and prints
+   It checks source time, symbol, entry spread and unchanged limit price, and prints
    quoteDeadline (source time + 60 seconds). ok:false with skipped:true is a logged
    ticket skip: continue to the next ticket. Never resize or reprice tickets.
    Only if it prints ok:true, hand its exact tool, args, decisionId and integer
@@ -119,7 +119,8 @@ invented balances. Check every result and apply the renewal rule before each ste
     10 minutes left, run `python3 scripts/run_session.py --kind K --phase renew`.
     Use returned expiresAt only on success. If capped:true, stop renewing and
     stop starting new order/research work; reserve remaining time to record,
-    reconcile and finish, or abort to release untouched reservations. Total cap
+    reconcile and finish. If prepared tickets remain untouched, use abort to
+    release their reservations instead of finish. Total cap
     is 120 minutes. Never work past expiry; tell children verified UTC time and
     expiry. Renewal never extends market hours or quote freshness. No orders in
     the first five market minutes, outside trading hours, holidays or early close.

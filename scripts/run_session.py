@@ -78,9 +78,10 @@ def run(args, now=None):
     holder, run_id = context["holder"], context["runId"]
     if args.phase == "renew":
         lock = renew(store, holder, injected_now)
+        extended = context.get("expiresAt") != lock["expiresAt"]
         context["expiresAt"] = lock["expiresAt"]
         atomic_json(control, context)
-        return context | dict(renewed=not lock["capped"], capped=lock["capped"])
+        return context | dict(renewed=extended, capped=lock["capped"])
     log = EventLog(root / f"logs/{run_id}.jsonl", runId=run_id)
     if args.phase == "abort":
         from _execution import frozen_config

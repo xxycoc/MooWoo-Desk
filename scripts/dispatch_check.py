@@ -44,6 +44,8 @@ def run(args, now=None):
     if not attempts or attempts[-1]["ticketHash"] != ticket.ticketHash:
         raise ValueError("ticket has no matching prepared attempt")
     attempt = attempts[-1]["attempt"]
+    if type(attempt) is not int or not 1 <= attempt <= 2:
+        raise ValueError("prepared attempt must be integer 1 or 2")
     if any(event["type"] == "order_submitted" or event.get("executionAction") == "skip"
            or (event.get("executionAction") == "dispatch_authorized" and event["attempt"] == attempt)
            or (event.get("executionAction") == "placement_failed" and event["attempt"] == attempt)
@@ -73,7 +75,8 @@ def run(args, now=None):
             raise ValueError("fresh quote symbol mismatch")
         if not 0 <= (calendar.local_time(current) - stamp).total_seconds() <= config.STALE_PRICE_SECONDS:
             raise ValueError("stale or future quote timestamp")
-        if (quote["ask"] - quote["bid"]) / ((quote["ask"] + quote["bid"]) / 2) > config.MAX_SPREAD + 1e-12:
+        if (ticket.side == "BUY" and (quote["ask"] - quote["bid"]) /
+                ((quote["ask"] + quote["bid"]) / 2) > config.MAX_SPREAD + 1e-12):
             raise ValueError("fresh quote spread exceeds frozen limit")
         if ticket.limitPrice != limit_price(quote, ticket.side):
             raise ValueError("ticket limit price no longer matches fresh quote")

@@ -432,3 +432,84 @@ def test_dispatch_rechecks_quote_after_persistence(prepared, monkeypatch):
     result = dispatch_check.run(args)
     assert result["skipped"]
     assert log.read()[-1]["executionAction"] == "skip"
+
+
+@pytest.mark.parametrize("received", [False, True])
+def test_abort_retains_uncertain_handoff_and_records_saved_receipt(prepared, received):
+    args, ticket, log, order, lock = prepared
+    state = PortfolioState(cash=100000)
+    state.reserve(ticket)
+    atomic_json(args.dir / "state.json", state.to_dict())
+    assert dispatch_check.run(args, NOW)["ok"]
+    if received:
+        atomic_json(args.dir / f"inputs/{RUN}/responses.json",
+                    [order | dict(status="placed", response=fixture("placement"))])
+    log.append("halt", dict(reason="synthetic later failure", scope="run"))
+    run_session.run(Namespace(kind="morning", phase="abort", dir=args.dir, remote=run_session.REMOTE), NOW)
+    saved = json.loads((args.dir / "state.json").read_text())
+    assert [t["decisionId"] for t in saved["pendingTickets"]] == [ticket.decisionId]
+    assert len([e for e in log.read() if e["type"] == "order_submitted"]) == int(received)
+    assert not any(e.get("executionAction") == "skip" for e in log.read())
+
+
+def test_dispatch_stale_cli_is_successful_ticket_skip(prepared, monkeypatch, capsys):
+    args, ticket, log, order, lock = prepared
+    class Clock:
+        @staticmethod
+        def now(zone): return NOW + timedelta(seconds=61)
+    monkeypatch.setattr(dispatch_check, "datetime", Clock)
+    monkeypatch.setattr(runlock, "datetime", Clock)
+    monkeypatch.setattr(sys, "argv", ["dispatch_check.py", "--kind", "morning", "--decision-id", ticket.decisionId,
+                                    "--dir", str(args.dir)])
+    assert dispatch_check.main() == 0
+    output = json.loads(capsys.readouterr().out)
+    assert output["ok"] is False and output["skipped"]
+    assert output["quoteDeadline"] == "2026-11-17T15:01:00Z"
+
+
+def test_dispatch_rejects_noninteger_prepared_attempt(prepared):
+    args, ticket, log, order, lock = prepared
+    log.append("reflection_note", dict(prompt="Execution", text="prepared", executionAction="prepared",
+        attempt="1", ticketHash=ticket.ticketHash), decisionId=ticket.decisionId)
+    with pytest.raises(ValueError, match="must be integer"):
+        dispatch_check.run(args, NOW)
+
+
+def test_capped_runner_does_not_claim_extension(tmp_path, monkeypatch):
+    store = LeaseStore(tmp_path)
+    expiry = (NOW + timedelta(minutes=120)).isoformat()
+    store.lock["expiresAt"] = expiry
+    atomic_json(tmp_path / ".session.json", dict(kind="morning", runId="current", holder="owner",
+        phase="record", expiresAt=expiry))
+    monkeypatch.setattr(run_session, "LedgerStore", lambda *args: store)
+    result = run_session.run(Namespace(kind="morning", phase="renew", dir=tmp_path, remote="unused"),
+                             NOW + timedelta(minutes=115))
+    assert result["capped"] and not result["renewed"]
+    assert result["phase"] == "record" and not store.saves
+
+
+def test_quote_source_cannot_gain_another_ticket_lifetime(prepared):
+    args, ticket, log, order, lock = prepared
+    path = args.dir / f"inputs/{RUN}/quotes-raw-AAA.json"
+    payload = json.loads(path.read_text())
+    payload["data"]["snapshot_list"][0]["update_time"] -= 55000
+    atomic_json(path, payload)
+    # Ticket is only 55 seconds old, but its quote source is now 110 seconds old.
+    result = dispatch_check.run(args, NOW + timedelta(seconds=55))
+    assert result["ok"] is False and result["skipped"]
+    assert result["quoteDeadline"] == "2026-11-17T15:00:05Z"
+
+
+def test_sell_keeps_existing_exit_spread_exemption(prepared):
+    from moowoo.tickets import to_sim_order
+    args, ticket, log, order, lock = prepared
+    sell = OrderTicket(**(ticket.to_dict() | dict(side="SELL", ticketHash="")))
+    atomic_json(args.dir / f"tickets/{RUN}.json", dict(runId=RUN, configHash=ticket.configHash, tickets=[sell.to_dict()]))
+    order["args"] = to_sim_order(sell)
+    atomic_json(args.dir / f"receipts/{RUN}/prepare-test.json", dict(orders=[order]))
+    log.append("reflection_note", dict(prompt="Execution", text="prepared", executionAction="prepared",
+        attempt=1, ticketHash=sell.ticketHash), decisionId=ticket.decisionId)
+    atomic_json(args.dir / f"inputs/{RUN}/quotes-raw-AAA.json", dict(ret_code=0, ret_msg="success",
+        data=dict(snapshot_list=[dict(code="US.AAA", update_time=NOW.timestamp()*1000,
+                                     last_price=100, bid_price=100, ask_price=101)])))
+    assert dispatch_check.run(args, NOW)["ok"]

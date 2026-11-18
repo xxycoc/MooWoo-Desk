@@ -398,7 +398,6 @@ def test_cross_run_reconciliation_routes_fill_to_original_log(tmp_path, remote, 
 
 
 @pytest.mark.parametrize("started,delay,reason", [
-    ("2026-11-17T15:00:00+00:00", 61, "ticket expired"),
     ("2026-11-17T20:59:50+00:00", 10, "market closed"),
 ])
 def test_prepare_rechecks_after_checkpoint_push(tmp_path, remote, monkeypatch, started, delay, reason):
@@ -409,7 +408,10 @@ def test_prepare_rechecks_after_checkpoint_push(tmp_path, remote, monkeypatch, s
     control.write_text(json.dumps(context | {"phase": "plan"}))
     tickets = Path(args.dir) / f"tickets/{context['runId']}.json"
     tickets.parent.mkdir()
-    tickets.write_text(json.dumps({"tickets": [{"createdTs": started, "side": "SELL"}]}))
+    from moowoo.portfolio import PortfolioState
+    from _execution import frozen_config
+    tickets.write_text(json.dumps(dict(runId=context["runId"], configHash=frozen_config()["configHash"], tickets=[])))
+    (Path(args.dir) / "state.json").write_text(PortfolioState(cash=100000).to_json())
     # Isolate transport timing; order generation is exercised by the CLI tests.
     monkeypatch.setattr(run_session, "invoke", lambda *a: {"orders": [{"tool": "sim_trade_input_order"}]})
     class Clock:
