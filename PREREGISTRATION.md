@@ -470,3 +470,17 @@ session, after the off-schedule entry run `2026-11-18-morning-ebd4816e4caf` unde
 - Change: the cash/position equity check allows USD 1 or 0.25% of the marked position value, whichever is
   larger. Cash and quantities are still taken exactly from the broker; a missing or extra position still
   halts. Replaying that reconciliation offline passes with no difference. No strategy rule changes.
+
+## 24. Addendum 2026-11-19: release authorizations that were never sent
+
+Written on 19 November 2026 at about 02:15 Singapore (18 November, 13:15 New York), during the 18 November
+session.
+
+- promptVersion `5524e3574e7b0675b94bba0ffacf7bc3c9e07b6c8a35cd0d4c42071f9e20e028`, unchanged; code only.
+- Why: in run `2026-11-18-morning-ebd4816e4caf` the USMV ticket passed its dispatch check, but its quote
+  deadline passed before handoff, so the coordinator never sent it (recorded as `approval_expired`). Because
+  it had been authorized, it stayed pending with its cash reserved.
+- Change: reconciliation releases an authorized ticket only when the broker's complete order history has no
+  order for its decision and either the handoff record says it was not submitted or its quote deadline is more
+  than 15 minutes past. It logs a ticket skip and never re-dispatches that decision. Anything that may have
+  reached the broker stays pending. No strategy rule changes.
