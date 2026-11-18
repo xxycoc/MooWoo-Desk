@@ -110,14 +110,24 @@ def git(repo: Path, *args: str) -> str:
     return subprocess.check_output(['git', '-C', str(repo), *args], encoding='utf-8')
 
 
-def export(ledger_repo: Path, ref: str, out: Path, until: str | None = None,
-           include_fixtures: bool = False) -> dict:
+def export(ledger_repo: Path | None, ref: str | None, out: Path, until: str | None = None,
+           include_fixtures: bool = False, *, runtime: Path | None = None) -> dict:
     cutoff = timestamp(until) if until else None
-    # Resolve once so an externally moved ref cannot mix snapshots.
-    revision = git(ledger_repo, 'rev-parse', '--verify', ref + '^{commit}').strip()
-    paths = git(ledger_repo, 'ls-tree', '-r', '--name-only', revision, 'logs/').splitlines()
-    sources = [(p, git(ledger_repo, 'show', f'{revision}:{p}'), False)
-               for p in paths if RUN_FILE.fullmatch(p)]
+    if runtime is not None:
+        ledger_repo = runtime
+        if not (runtime / 'logs').is_dir():
+            raise ValueError('runtime logs directory is missing')
+        sources = [(f'logs/{p.name}', p.read_text(encoding='utf-8'), False)
+                   for p in sorted((runtime / 'logs').glob('*.jsonl'))
+                   if RUN_FILE.fullmatch(f'logs/{p.name}')]
+    else:
+        if ledger_repo is None or ref is None:
+            raise ValueError('ledger repository and ref are required without runtime')
+        # Resolve once so an externally moved ref cannot mix snapshots.
+        revision = git(ledger_repo, 'rev-parse', '--verify', ref + '^{commit}').strip()
+        paths = git(ledger_repo, 'ls-tree', '-r', '--name-only', revision, 'logs/').splitlines()
+        sources = [(p, git(ledger_repo, 'show', f'{revision}:{p}'), False)
+                   for p in paths if RUN_FILE.fullmatch(p)]
     if include_fixtures:
         sources += [(p.name, p.read_text(encoding='utf-8'), True)
                     for p in sorted((ROOT / 'fixtures').glob('*.jsonl'))]
@@ -140,8 +150,12 @@ def export(ledger_repo: Path, ref: str, out: Path, until: str | None = None,
     artifacts = {name: ''.join(json.dumps(e, ensure_ascii=False, sort_keys=True, allow_nan=False) + '\n'
                               for e in events) for _, name, events in logs}
     artifacts['index.json'] = json.dumps(index, indent=2) + '\n'
+    latest = max((e['ts'] for _, _, events in logs for e in events), key=timestamp, default=None)
+    artifacts['meta.json'] = json.dumps(dict(
+        generatedAt=datetime.now(timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z'),
+        latestEventTs=latest, logs=index['files']), indent=2) + '\n'
     for name, content in artifacts.items():
-        if LONG_NUMBER.search(content) or '/data/' in content:
+        if LONG_NUMBER.search(content) or '/data/' in content or PRIVATE_TEXT.search(content) or 'acc_id' in content.lower():
             raise ValueError(f'publication scan failed: {name}')
     out = out.resolve()
     # Replacing this dedicated directory also removes unlisted fixtures from Vite's public copy.
@@ -149,8 +163,8 @@ def export(ledger_repo: Path, ref: str, out: Path, until: str | None = None,
         raise ValueError('output must not be inside the read-only ledger repository')
     out.mkdir(parents=True, exist_ok=True)
     existing = list(out.iterdir())
-    if any(p.is_dir() or (p.name != 'index.json' and p.suffix != '.jsonl') for p in existing):
-        raise ValueError('output must be a dedicated data directory (index.json and JSONL only)')
+    if any(p.is_dir() or (p.name not in ('index.json', 'meta.json') and p.suffix != '.jsonl') for p in existing):
+        raise ValueError('output must be a dedicated data directory (index.json, meta.json and JSONL only)')
     for name, content in artifacts.items():
         (out / name).write_text(content, encoding='utf-8', newline='\n')
     for path in existing:
@@ -161,13 +175,19 @@ def export(ledger_repo: Path, ref: str, out: Path, until: str | None = None,
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--ledger-repo', type=Path, required=True)
-    parser.add_argument('--ref', required=True)
+    source = parser.add_mutually_exclusive_group(required=True)
+    source.add_argument('--ledger-repo', type=Path)
+    source.add_argument('--runtime', type=Path)
+    parser.add_argument('--ref')
     parser.add_argument('--out', type=Path, required=True)
     parser.add_argument('--until', help='inclusive UTC ISO cutoff')
     parser.add_argument('--include-fixtures', action='store_true')
     args = parser.parse_args()
-    index = export(args.ledger_repo, args.ref, args.out, args.until, args.include_fixtures)
+    if args.ledger_repo and not args.ref:
+        parser.error('--ledger-repo requires --ref')
+    if args.runtime and args.ref:
+        parser.error('--ref applies only to --ledger-repo')
+    index = export(args.ledger_repo, args.ref, args.out, args.until, args.include_fixtures, runtime=args.runtime)
     print(f"Exported {len(index['files'])} scrubbed logs to {args.out}")
 
 

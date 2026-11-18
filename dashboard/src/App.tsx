@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { loadCorpus, type Corpus } from "./data/load";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { feedUrl, loadCorpus, type Corpus } from "./data/load";
 import { stateAt } from "./data/state";
 import { verifyLog, type FileVerifyResult } from "./data/verify";
 import { TopBar } from "./components/TopBar";
@@ -21,6 +21,7 @@ function viewFromHash(hash: string): ViewKey | null {
 
 export default function App() {
   const [corpus, setCorpus] = useState<Corpus | null>(null);
+  const corpusVersion = useRef(0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [view, setView] = useState<ViewKey>(() => viewFromHash(window.location.hash) ?? "mission");
   const [decisionId, setDecisionId] = useState<string | null>(null);
@@ -29,13 +30,27 @@ export default function App() {
 
   useEffect(() => {
     const controller = new AbortController();
-    loadCorpus(controller.signal)
-      .then((loaded) => setCorpus(loaded))
-      .catch((err: unknown) => {
-        if ((err as Error)?.name === "AbortError") return;
+    let loading = false;
+    const refresh = async () => {
+      if (loading) return;
+      loading = true;
+      try {
+        const loaded = await loadCorpus(controller.signal);
+        if (controller.signal.aborted) return;
+        corpusVersion.current += 1;
+        setCorpus(loaded);
+        setLoadError(null);
+        setVerify({ busy: false, ran: false, results: [], error: null });
+      } catch (err) {
+        if (controller.signal.aborted) return;
         setLoadError((err as Error).message);
-      });
-    return () => controller.abort();
+      } finally {
+        loading = false;
+      }
+    };
+    void refresh();
+    const timer = feedUrl ? window.setInterval(() => void refresh(), 60000) : undefined;
+    return () => { controller.abort(); window.clearInterval(timer); };
   }, []);
 
   useEffect(() => {
@@ -55,13 +70,16 @@ export default function App() {
 
   const runVerify = useCallback(async () => {
     if (!corpus) return;
+    const version = corpusVersion.current;
     setVerify((current) => ({ ...current, busy: true, error: null }));
     try {
       const results: FileVerifyResult[] = await Promise.all(
         corpus.logs.map((log) => verifyLog(log.file, log.rawText)),
       );
+      if (version !== corpusVersion.current) return;
       setVerify({ busy: false, ran: true, results, error: null });
     } catch (err) {
+      if (version !== corpusVersion.current) return;
       setVerify({ busy: false, ran: true, results: [], error: (err as Error).message });
     }
   }, [corpus]);
@@ -109,6 +127,8 @@ export default function App() {
       </a>
       <TopBar
         state={state}
+        source={corpus.source}
+        latestEventTs={corpus.latestEventTs}
         verifyOpen={verifyOpen}
         verifyBusy={verify.busy}
         verifyTone={verifyTone}
@@ -133,7 +153,7 @@ export default function App() {
 
       <div className="load-warning" role="status">
         <strong>{corpus.events.some((event) => event.exportKind === "scrubbed") ? "Scrubbed export" : "Original logs"}</strong>
-        {" · "}As of {state.asOf?.ts ?? "no events"}. Static snapshot; refresh requires a new export and publish.
+        {" · "}As of {state.asOf?.ts ?? "no events"}. {feedUrl ? "Feed checked every 60 seconds; bundled snapshot shown if unavailable." : "Static snapshot; refresh requires a new export and publish."}
         {corpus.events.some((event) => event.dataset === "fixture") ? " Includes FICTIONAL fixtures; combined totals are not the real ledger." : ""}
       </div>
       <div className="shell">
@@ -152,7 +172,7 @@ export default function App() {
           )}
           <footer className="app-footer">
             <span>MooWoo Desk · Stage 2</span>
-            <span>Static event snapshot. No API keys, no broker calls, no additional network data.</span>
+            <span>Scrubbed event data. No API keys or broker calls.</span>
             <span>SIMULATED FUNDS</span>
           </footer>
         </main>

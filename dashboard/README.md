@@ -2,7 +2,7 @@
 
 Static operations screen for the paper-trading desk. It reads a scrubbed snapshot
 of the real paper ledger and rebuilds figures from the event stream. There are no API
-keys, no broker connections and no outbound network calls.
+keys or broker connections. An optional public feed updates the data without republishing the site.
 
 ## Run
 
@@ -36,7 +36,7 @@ Publish **`C:\Users\Woo\MooWoo-Desk-18\dashboard\dist\`**, including its
 `index.html`, `assets/` and `data/`, through Qoder Sites. Select this generated
 folder, not the repository, `dashboard/`, or `public/`. This task does not publish
 it. The relative Vite base supports static hosting; no server or browser secrets
-are required. Re-export, rebuild and republish to update the snapshot. `check:data`
+are required. Without a remote feed, re-export, rebuild and republish to update the snapshot. `check:data`
 asserts the complete Nov 17–18 snapshot; a deliberately earlier `--until` export
 will not satisfy its latest-position assertions.
 
@@ -60,9 +60,60 @@ removed so Vite cannot accidentally publish old or fictional files. The original
 fixture logs remain in `fixtures/`. `--include-fixtures` explicitly adds them for
 demonstration and labels the resulting combined totals as unsuitable for real-ledger use.
 
+## Publish once with an updating feed
+
+Create a **public** GitHub repository dedicated to scrubbed dashboard data, for
+example `xxycoc/MooWoo-Desk-feed`. It may be empty; the publisher creates `main`.
+Use a fine-grained GitHub token limited to that repository with **Contents: read
+and write** (Metadata read is implicit). Keep the private ledger token separate.
+
+In the deployment `.env`, set `GITHUB_FEED_TOKEN` and `FEED_REPO_URL`, for example
+`FEED_REPO_URL=https://github.com/xxycoc/MooWoo-Desk-feed`. The URL may instead go
+in deployment settings JSON; the token must stay in `.env`. Apply the updated
+coordinator/auditor templates and schedules with `scripts/qca_deploy.py` after
+the implementation is merged and the deployment revision is pinned. It passes
+both values to sessions; dry runs never read or print secrets. Missing feed
+configuration disables publication without affecting trading.
+
+Build the site with the **public raw data directory URL**, including `data/`:
+
+```powershell
+$env:VITE_FEED_URL = 'https://raw.githubusercontent.com/xxycoc/MooWoo-Desk-feed/main/data/'
+cd dashboard
+npm run build
+```
+
+Publish `dashboard/dist/` to Qoder Sites **once**. Keep the bundled `data/` in
+the site as the offline fallback. No token belongs in Vite variables or the
+browser. With `VITE_FEED_URL` configured, the dashboard fetches the index and
+its JSONL files with cache-busting queries every 60 seconds. A failed, invalid,
+or stalled feed falls back to the complete bundled snapshot. The top bar names
+the source and shows its latest event timestamp, not the fetch time. Raw GitHub
+CDN propagation can still delay updates. Clearing `VITE_FEED_URL` preserves the
+original bundled-only behavior.
+
+After each scheduled run's successful finish, abort, or saved calendar skip,
+the runner starts `scripts/publish_feed.py --runtime runtime`. It exports only
+the same scrubbed run logs, replaces `data/` in a temporary feed checkout, and
+pushes a normal commit on `main`. It does not rewrite history. Publication is
+best effort with a 30-second runner limit and a `feedPublished` boolean in the
+phase JSON; failures cannot undo the completed save/unlock. The Git token is
+passed in a child environment HTTP header, never a URL or command argument.
+
+For a local export without Git or network access:
+
+```powershell
+.venv/Scripts/python scripts/export_dashboard.py --runtime runtime --out dashboard/public/data
+```
+
+Both export modes write `index.json` and `meta.json`. Metadata contains
+`generatedAt` (export time), `latestEventTs` (latest included event or null),
+and `logs` (the ordered filenames). The feed contains public, scrubbed data;
+never point it at the private ledger repository.
+
 ## Data flow
 
-1. `public/data/index.json` lists the JSONL logs to load.
+1. The remote feed, when configured, or `public/data/index.json` lists the JSONL logs to load.
 2. `src/data/load.ts` fetches each file, parses one event per line and assigns a
    global `gseq` after sorting events chronologically across the corpus. Parse
    failures are collected, not hidden.

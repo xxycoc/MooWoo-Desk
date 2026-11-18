@@ -25,3 +25,10 @@ def pytest_configure(config):
         # pytest creates only the last path component; a fresh clone has no parent yet.
         (ROOT / ".pytest_tmp").mkdir(exist_ok=True)
         config.option.basetemp = str(ROOT / ".pytest_tmp" / f"run-{os.getpid()}")
+
+
+@pytest.fixture(autouse=True)
+def disable_live_feed(monkeypatch):
+    # Cloud setup runs tests with deployed credentials in the environment.
+    monkeypatch.delenv("FEED_REPO_URL", raising=False)
+    monkeypatch.delenv("GITHUB_FEED_TOKEN", raising=False)

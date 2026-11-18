@@ -496,6 +496,11 @@ button:disabled {
   white-space: nowrap;
 }
 
+.feed-status {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .meta-item code {
   color: var(--text);
 }

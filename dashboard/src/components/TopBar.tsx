@@ -62,12 +62,16 @@ function nextRunAt(now: Date): number {
 
 export function TopBar({
   state,
+  source,
+  latestEventTs,
   verifyOpen,
   verifyBusy,
   verifyTone,
   onToggleVerify,
 }: {
   state: DeskState;
+  source?: "feed" | "bundled" | "bundled-fallback";
+  latestEventTs?: string | null;
   verifyOpen: boolean;
   verifyBusy: boolean;
   verifyTone: "ok" | "fail" | "unchecked";
@@ -155,6 +159,10 @@ export function TopBar({
         </div>
 
         <div className="topbar-meta">
+          <span className="meta-item feed-status" role="status">
+            {source === "feed" ? "Remote feed" : source === "bundled-fallback" ? "Bundled fallback (feed unavailable)" : "Bundled snapshot"}
+            {" | Updated "}{latestEventTs ?? state.asOf?.ts ?? "no events"}
+          </span>
           <span className="meta-item">
             config{" "}
             <Trace events={[state.runConfigEv]} note="configHash from run_started">

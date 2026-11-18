@@ -48,6 +48,17 @@ def invoke(script, *arguments):
         return dict(message=result.stdout.strip())
 
 
+def publish_feed(root):
+    """Run only after save/unlock. Failure cannot enter trading recovery paths."""
+    try:
+        completed = subprocess.run(
+            [sys.executable, str(ROOT / 'scripts/publish_feed.py'), '--runtime', str(root)],
+            cwd=ROOT, stdin=subprocess.DEVNULL, capture_output=True, text=True, timeout=30)
+        return completed.returncode == 0 and json.loads(completed.stdout).get('published') is True
+    except Exception:
+        return False
+
+
 def run(args, now=None):
     injected_now = now
     now = calendar.local_time(now or datetime.now(timezone.utc))
@@ -65,7 +76,7 @@ def run(args, now=None):
         if skipped:
             saved = store.save("Calendar skip", lock["holder"])
             control.unlink()
-            return restored | skipped | saved
+            return restored | skipped | saved | dict(feedPublished=publish_feed(root))
         inputs = root / "inputs" / run_id
         inputs.mkdir(parents=True, exist_ok=True)
         log.append("reflection_note", dict(prompt="Session runner", text=f"Started {args.kind} phase runner"), ts=calendar.utc_stamp(now))
@@ -101,7 +112,7 @@ def run(args, now=None):
         log.append("reflection_note", dict(prompt="Session runner", text="Session aborted; retained all evidence", skipped=True))
         saved = store.save("Abort session; preserve evidence", holder)
         control.unlink()
-        return saved
+        return saved | dict(feedPublished=publish_feed(root))
     require_owned(store, holder, injected_now)
     # Recording a receipt and persisting evidence remain mandatory if the clock crosses close.
     if args.phase not in ("record", "reconcile", "grade_calls", "score_hypotheses", "finish"):
@@ -109,7 +120,7 @@ def run(args, now=None):
         if skipped:
             saved = store.save("Calendar skip during session", holder)
             control.unlink()
-            return skipped | saved
+            return skipped | saved | dict(feedPublished=publish_feed(root))
     previous = context["phase"]
     allowed = {"preflight": {"start"}, "plan": {"baseline"}, "prepare": {"plan"},
                "record": {"prepare", "record"}, "reconcile": {"preflight", "record", "reconcile"},
@@ -143,7 +154,7 @@ def run(args, now=None):
             log.append("reflection_note", dict(prompt="Execution calendar", text="No orders in first five minutes", skipped=True))
             saved = store.save("First-five-minute skip", holder)
             control.unlink()
-            return saved | dict(skipped=True, orders=[], reason="first five minutes; refresh plan in a new run")
+            return saved | dict(feedPublished=publish_feed(root), skipped=True, orders=[], reason="first five minutes; refresh plan in a new run")
         manifest = read_json(tickets)
         validate_dispatch(manifest, now)
         result = invoke("execute_tickets.py", "prepare", "--tickets", tickets, "--log", log.path)
@@ -179,11 +190,11 @@ def run(args, now=None):
                     tickets=[p.relative_to(root).as_posix() for p in sorted((root / "tickets").glob("*.json"))], inputs=inputs.relative_to(root).as_posix()))
         result.update(store.save(f"Finish {args.kind} session", holder))
         control.unlink()
-        return result
+        return result | dict(feedPublished=publish_feed(root))
     if result.get("skipped") is True:
         saved = store.save("Skipped deterministic phase", holder)
         control.unlink()
-        return result | saved
+        return result | saved | dict(feedPublished=publish_feed(root))
     context["phase"] = next_phase
     atomic_json(root / f"receipts/{run_id}/{args.phase}-{uuid.uuid4().hex}.json", result)
     # Persist prepared attempts before handing exact arguments to the executor.
@@ -210,15 +221,17 @@ def main():
     except (ValueError, KeyError, TypeError, OSError, LedgerError) as exc:
         # Ledger errors are deliberately free of git output; no broker payloads are echoed.
         from persist_ledger import redact_error
+        feed_result = {}
         recovery = "local copy retained; run --phase abort to persist evidence when ownership permits"
         if args.phase != "renew" and not isinstance(exc, LedgerError):
             try:
                 args.phase = "abort"
-                run(args)
+                aborted = run(args)
+                feed_result = dict(feedPublished=aborted["feedPublished"])
                 recovery = "failure evidence saved and lock released"
             except (ValueError, KeyError, TypeError, OSError, LedgerError):
                 pass
-        print(json.dumps(dict(halted=True, reason=redact_error(exc), recovery=recovery)))
+        print(json.dumps(dict(halted=True, reason=redact_error(exc), recovery=recovery, **feed_result)))
         return 2
 
 

@@ -252,11 +252,13 @@ def test_runner_requires_sequence_and_lease(tmp_path, remote):
 def test_dry_schedule_payload_and_autonomy(monkeypatch):
     validate_approval(ROOT / "config/rule-ledger.jsonl")
     monkeypatch.setenv("GITHUB_LEDGER_TOKEN", "DO_NOT_PRINT_TOKEN")
+    monkeypatch.setenv("GITHUB_FEED_TOKEN", "DO_NOT_PRINT_FEED_TOKEN")
     result = subprocess.run([sys.executable, "scripts/qca_deploy.py", "--stage", "schedules",
         "--executor-approval", "allow", "--approval-log", "config/rule-ledger.jsonl"],
         cwd=ROOT, capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     assert "DO_NOT_PRINT_TOKEN" not in result.stdout + result.stderr
+    assert "DO_NOT_PRINT_FEED_TOKEN" not in result.stdout + result.stderr
     manifest = json.loads(result.stdout)
     assert manifest["approvalDecisionVerified"]
     schedules = [op["body"] for op in manifest["operations"] if op["key"].startswith("schedule.")]
@@ -270,6 +272,7 @@ def test_dry_schedule_payload_and_autonomy(monkeypatch):
         assert "scripts/run_session.py --kind" in body["initial_events"][0]["content"]
         assert body["sinks"] == []
         assert body["environment_variables"]["GITHUB_LEDGER_TOKEN"] == "${secret.GITHUB_LEDGER_TOKEN}"
+        assert body["environment_variables"]["GITHUB_FEED_TOKEN"] == "${secret.GITHUB_FEED_TOKEN}"
 
 
 def test_executor_dry_stage_and_apply_refusal():

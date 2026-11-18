@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 API = "https://api.qoder.com/api/v1"
 ROLES = ("analyst", "executor", "auditor", "coordinator")
 SETTING_KEYS = {"MOOMOO_MCP_URL", "MOOMOO_ACCOUNT_ID", "MOOMOO_MARKET", "MOOMOO_CHALLENGE_TITLE",
-                "REPO_REVISION", "IDENTITY_ID", "SLACK_CHANNEL_PAIRING_ID", "moomoo_tool_names"}
+                "FEED_REPO_URL", "REPO_REVISION", "IDENTITY_ID", "SLACK_CHANNEL_PAIRING_ID", "moomoo_tool_names"}
 
 
 def read_json(path):
@@ -64,12 +64,15 @@ def check_settings(settings, *, complete=False, stage="schedules"):
         parts = urllib.parse.urlsplit(url)
         if parts.scheme != "https" or not parts.hostname or parts.username or parts.password or parts.query or parts.fragment:
             raise ValueError("MCP endpoint must be HTTPS without credentials, query or fragment")
+    if settings.get("FEED_REPO_URL"):
+        from publish_feed import validate_repo_url
+        validate_repo_url(settings["FEED_REPO_URL"])
     revision = settings.get("REPO_REVISION")
     if revision and not re.fullmatch(r"[0-9a-f]{40}", revision):
         raise ValueError("REPO_REVISION must be a pinned 40-character commit SHA")
     if settings.get("MOOMOO_MARKET", "100") != "100":
         raise ValueError("only US market is permitted")
-    required = SETTING_KEYS - {"SLACK_CHANNEL_PAIRING_ID"}
+    required = SETTING_KEYS - {"SLACK_CHANNEL_PAIRING_ID", "FEED_REPO_URL"}
     if complete and required - settings.keys():
         raise ValueError("apply requires all nonsecret settings, including verified MCP inventory")
 
@@ -142,6 +145,8 @@ def build_payloads(settings=None, root=ROOT, *, executor_approval="ask"):
     environment_variables = {k: "${" + k + "}" for k in
                              ("MOOMOO_ACCOUNT_ID", "MOOMOO_MARKET", "MOOMOO_CHALLENGE_TITLE")}
     environment_variables["GITHUB_LEDGER_TOKEN"] = "${secret.GITHUB_LEDGER_TOKEN}"
+    environment_variables["GITHUB_FEED_TOKEN"] = "${secret.GITHUB_FEED_TOKEN}"
+    environment_variables["FEED_REPO_URL"] = settings.get("FEED_REPO_URL", "")
     for role in ("coordinator", "auditor"):
         template = {k: deepcopy(v) for k, v in agents[role].items()
                     if k in {"name", "description", "model", "system", "tools", "skills", "mcp_servers", "multiagent", "metadata"}}
@@ -208,7 +213,7 @@ def build_payloads(settings=None, root=ROOT, *, executor_approval="ask"):
     }, settings)
 
 
-def load_secret(path, key):
+def load_secret(path, key, *, required=True):
     """Only --apply reads this file. Never expand shell expressions or echo it."""
     for line in Path(path).read_text(encoding="utf-8").splitlines():
         name, sep, value = line.strip().partition("=")
@@ -216,7 +221,9 @@ def load_secret(path, key):
             value = value.strip().strip("\"'")
             if value:
                 return value
-    raise ValueError(f"{key} is missing from .env")
+    if required:
+        raise ValueError(f"{key} is missing from .env")
+    return ""
 
 
 def load_pat(path):
@@ -266,7 +273,7 @@ def load_receipts(path):
 
 
 def apply_payloads(manifest, settings, token, request=api_request, *, stage="resources", prior=None,
-                   receipt_path=None, update=False, ledger_token=None):
+                   receipt_path=None, update=False, ledger_token=None, feed_token=None):
     if stage not in ("resources", "schedules"):
         raise ValueError("stage must be resources or schedules")
     if update and stage != "resources":
@@ -332,6 +339,7 @@ def apply_payloads(manifest, settings, token, request=api_request, *, stage="res
             if not ledger_token:
                 raise ValueError("GITHUB_LEDGER_TOKEN required for session environment; never put it in settings JSON")
             body = resolve(body, {"secret.GITHUB_LEDGER_TOKEN": ledger_token})
+        body = resolve(body, {"secret.GITHUB_FEED_TOKEN": feed_token or ""})
         if re.search(r"\$\{[A-Za-z0-9_.-]+\}", json.dumps(body)):
             raise ValueError(f"unresolved reference in {op['key']}")
         endpoint = op["path"] + "/" + bindings[op["key"] + ".id"] if update else op["path"]
@@ -383,6 +391,10 @@ def main():
     if args.update and (not args.apply or args.stage != "resources"):
         parser.error("--update requires --apply --stage resources")
     settings = read_json(args.settings) if args.settings else {}
+    if args.apply and not settings.get("FEED_REPO_URL"):
+        feed_url = load_secret(ROOT / ".env", "FEED_REPO_URL", required=False)
+        if feed_url:
+            settings["FEED_REPO_URL"] = feed_url
     manifest = build_payloads(settings, executor_approval=args.executor_approval)
     if args.executor_approval == "allow" and args.approval_log:
         validate_approval(args.approval_log)
@@ -395,7 +407,8 @@ def main():
         prior = load_receipts(args.receipts) if args.receipts.exists() else None
         apply_payloads(manifest, settings, load_pat(ROOT / ".env"), stage=args.stage,
                        prior=prior, receipt_path=args.receipts, update=args.update,
-                       ledger_token=load_secret(ROOT / ".env", "GITHUB_LEDGER_TOKEN"))
+                       ledger_token=load_secret(ROOT / ".env", "GITHUB_LEDGER_TOKEN"),
+                       feed_token=load_secret(ROOT / ".env", "GITHUB_FEED_TOKEN", required=False))
     else:
         if args.stage == "schedules":
             manifest["operations"] = [op for op in manifest["operations"] if op["key"].startswith("schedule.")]

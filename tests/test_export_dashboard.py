@@ -56,9 +56,9 @@ def test_default_cutoff_cleanup_and_determinism(ledger, tmp_path):
     assert index['files'] == ['2026-11-17-watch-abcdef.jsonl', '2026-11-18-morning-abcdef.jsonl']
     assert not (out / 'fictional.jsonl').exists()
     assert sum(len((out / f).read_text().splitlines()) for f in index['files']) == 2
-    before = {p.name: p.read_bytes() for p in out.iterdir()}
+    before = {p.name: p.read_bytes() for p in out.iterdir() if p.name != 'meta.json'}
     export(ledger, 'HEAD', out, '2026-11-18T16:00:00Z')
-    assert before == {p.name: p.read_bytes() for p in out.iterdir()}
+    assert before == {p.name: p.read_bytes() for p in out.iterdir() if p.name != 'meta.json'}
     assert_public(out)
     assert git(ledger, 'status', '--porcelain') == ''
 
@@ -127,3 +127,19 @@ def test_output_and_time_guards(ledger, tmp_path):
 
 def test_committed_public_data_has_no_secret_patterns():
     assert_public(Path(__file__).resolve().parents[1] / 'dashboard/public/data')
+
+
+def test_runtime_export_matches_ledger_and_writes_meta(ledger, tmp_path):
+    left, right = tmp_path / 'committed', tmp_path / 'runtime'
+    export(ledger, 'HEAD', left)
+    export(None, None, right, runtime=ledger)
+    assert {p.name: p.read_bytes() for p in left.iterdir() if p.name != 'meta.json'} == {
+        p.name: p.read_bytes() for p in right.iterdir() if p.name != 'meta.json'}
+    meta = json.loads((right / 'meta.json').read_text())
+    assert meta['latestEventTs'] == '2026-11-18T18:00:00Z'
+    assert meta['logs'] == json.loads((right / 'index.json').read_text())['files']
+    assert timestamp(meta['generatedAt'])
+    result = subprocess.run([str(Path(__import__('sys').executable)), 'scripts/export_dashboard.py',
+                             '--runtime', str(ledger), '--out', str(right)], capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    assert_public(right)
