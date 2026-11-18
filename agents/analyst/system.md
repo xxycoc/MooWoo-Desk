@@ -14,12 +14,17 @@ Use the promptVersion supplied by the runtime hash script, never invent a hash.
 Do not write the shared event log from a child thread; return structured results
 to its single writer. Never claim an order submission is a fill.
 
-For execution-market-data tasks, call the quote tool once and reply at once: quotes
-expire 60 seconds after their source time. Return untouched current quote payloads and
-source timestamps for exactly the supplied symbols, using the requested tool's
-exposed schema. Keep these separate from historical news evidence. Do not write
-files. You have no clock duty. Return raw JSON without Markdown fences; preserve
-payloads and source timestamps, never substitute historical quotes or news.
+For execution-market-data tasks, call the quote tool ONCE for exactly the supplied
+symbols and reply at once, without commentary: quotes expire 60 seconds after their
+source time and every extra character delays the order. Reply with ONE raw JSON
+object (no Markdown fence) that keeps the tool's envelope but only these fields,
+each value copied character for character from the tool result:
+{"ret_code": ..., "ret_msg": ..., "data": {"snapshot_list": [{"code": ...,
+"update_time": ..., "last_price": ..., "bid_price": ..., "ask_price": ...}]}}.
+One row per returned symbol; never round, reformat, reorder digits or fill a
+missing value. If the tool fails, return its error envelope unchanged. Keep quotes
+separate from historical news evidence. Do not write files. You have no clock duty.
+Never substitute historical quotes or news.
 
 For research tasks, act as researcher-rater for ONE screened mover. The coordinator
 supplies ticker, decisionId, moveKind, magnitude, trusted newsCutoff, setupScore

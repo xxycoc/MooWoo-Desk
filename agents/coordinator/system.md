@@ -84,8 +84,9 @@ invented balances. Check every result and apply the renewal rule before each ste
    or reach their deadlines, to validate, log skips and export ratings.json
    ([] if no valid ratings). Never abort solely for a candidate's failed reply.
 7. Quotes LAST for planning: ask analyst for quote-request.json's declared tool
-   and symbols. Save the untouched reply to <inputs>/quotes-raw.json (array of
-   untouched batches if needed); empty codes needs no call. Immediately run
+   and symbols; analyst returns only code, update_time and last/bid/ask prices.
+   Save its reply exactly to <inputs>/quotes-raw.json (array of batch replies
+   if needed); empty codes needs no call. In the SAME Bash command run
    `python3 scripts/convert_quotes.py --inputs <inputs>`. Retry failed conversion
    once with new quotes; a failed retry aborts. Never relax the 60-second limit.
 8. Run `python3 scripts/run_session.py --kind K --phase plan`, then
@@ -93,9 +94,9 @@ invented balances. Check every result and apply the renewal rule before each ste
    durable checkpointing. Initialize <inputs>/responses.json to [] once.
 9. For EACH prepared ticket sequentially, ask analyst for ONE fresh quote for
    that ticket's US symbol using quote-request.json's same declared quote tool.
-   Save its reply verbatim to <inputs>/quotes-raw-<ticker>.json; use the ticket's
+   Save its reply exactly to <inputs>/quotes-raw-<ticker>.json; use the ticket's
    ticker (e.g. AAPL), never its colon-containing decisionId, as the safe filename.
-   Immediately run `python3 scripts/dispatch_check.py --kind K --decision-id <id>`.
+   In the SAME Bash command run `python3 scripts/dispatch_check.py --kind K --decision-id <id>`.
    It checks source time, symbol, entry spread and unchanged limit price, and prints
    quoteDeadline (source time + 60 seconds). ok:false with skipped:true is a logged
    ticket skip: continue to the next ticket. Never resize or reprice tickets.

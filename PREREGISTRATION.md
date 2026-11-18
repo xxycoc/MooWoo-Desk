@@ -394,3 +394,23 @@ order has been placed in the competition account, and no rating was ever accepte
   and null; the coordinator waits up to 10 minutes per pick instead of marking running calls unavailable;
   renewal reports when the 120-minute cap is reached; audits require a competition trading day; on the entry
   day, exit checks use only the close, because that day's open, high and low may precede the fill.
+
+## 20. Addendum 2026-11-18: short quote replies; the 18 November run used the wrong code revision
+
+Written on 18 November 2026 at about 00:05 Singapore on 19 November (11:05 New York), during the
+18 November session. No order has been placed in the competition account.
+
+- promptVersion `5524e3574e7b0675b94bba0ffacf7bc3c9e07b6c8a35cd0d4c42071f9e20e028`, computed by
+  `scripts/hash_prompts.py`. It replaces `3776d9e1...`.
+- What happened: the scheduled 09:35 run (`2026-11-18-morning-8a3264191cb9`) ran the addendum 19 prompts on
+  the previous code revision `8ee921d`, because the deployment's pinned `REPO_REVISION` was not updated. The
+  cloud setup's prompt-hash check therefore failed. The old ingestion expected manager and quick files, so all
+  five single-rater replies (ACM, NKE, ED, UNH, CRM) were skipped, and two quote batches were 173 to 196 seconds
+  old at conversion, so the run aborted safely with no order. Its evidence and log are kept in the ledger.
+- Why the quotes were old: the analyst copied the full snapshot (dozens of fields per symbol) into its reply in
+  about 100 seconds, and the coordinator copied it again into a file in about 75 seconds.
+- Change: for quote tasks the analyst returns only the envelope status and, per symbol, `code`, `update_time`,
+  `last_price`, `bid_price` and `ask_price`, each copied exactly from the tool result; the coordinator saves
+  it and converts or checks it in the same command. These are the only fields the converter and dispatch check
+  read. The 60-second rule is unchanged. No rule, class, sizing, risk limit, horizon, grading or hypothesis
+  changes. A rerun on the correct revision today is off-schedule and is logged as such.
