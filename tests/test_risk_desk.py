@@ -231,6 +231,8 @@ def test_sizing_classification_halving_minimum_and_stops(desk):
     rating = dict(ticker="AAA", decisionId=p["decisionId"], **{"class": "explained_up"}, confidence=1., tier="debate")
     normal = propose_entry(rating, b, quote, 100000)
     assert normal["status"] == "proposal", normal
+    assert propose_entry(rating | dict(tier="single"), b, quote, 100000) == normal
+    assert propose_entry(rating | dict(tier="single"), b, quote, 100000, "reduced") == propose_entry(rating, b, quote, 100000, "reduced")
     assert normal["signalAtr"] > 0 and normal["stop"] < normal["limitPrice"]
     quick = propose_entry(rating | dict(tier="quick"), b, quote, 100000)
     reduced = propose_entry(rating, b, quote, 100000, "reduced")

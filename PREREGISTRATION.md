@@ -368,3 +368,29 @@ has been placed in the competition account.
 - Change: the analyst answers quote requests with a single tool call and an immediate reply; the coordinator
   runs at most 10 child calls at once. The 60-second freshness rule is unchanged. No rule, class, sizing,
   risk limit, horizon, grading or hypothesis changes.
+
+## 19. Addendum 2026-11-18: three agents, one rater per pick, fresh quote per order
+
+Written on 18 November 2026 at about 14:45 Singapore (01:45 New York), before the 18 November session. No
+order has been placed in the competition account, and no rating was ever accepted under the debate design.
+
+- promptVersion `3776d9e16c6afff1f14e4e5c36297178f2522c2f1920e470298bed93be1f932f`, computed by
+  `scripts/hash_prompts.py`. It replaces `02487d0b...`.
+- Why: all 13 attempts on 17 November halted before an order. Most later failures came from the coordinator
+  relaying briefs between seven agents (25 child calls a morning): briefs sent as file paths, batched calls,
+  model timeouts as its context grew past 180k characters, and Qoder's 25-agent concurrency cap. The
+  organisers advised starting with two or three agents that communicate in one direction.
+- Rule change TOPOLOGY-01 (rule ledger): the morning uses three agents. The analyst researches each pick and
+  returns one rating in a new tier `single`, sized exactly like the former `debate` tier; no risk limit
+  changes. Bull, bear, manager and quick are retired, so there is no debate and no quick second opinion. The
+  hypotheses are tested on `single` ratings; claims about debate versus quick, and about second opinions, are
+  dropped. Historical `debate` and `quick` tiers stay valid in the schema.
+- Execution: before each order the analyst fetches one fresh quote for that symbol, and `dispatch_check.py`
+  requires its source time to be at most 60 seconds old and the code-derived limit price to be unchanged.
+  Before this change dispatch measured ticket age, so a quote could reach about 110 seconds. The 60-second
+  rule itself is unchanged. Each receipt is recorded immediately; abort records saved receipts and releases
+  reservations of tickets never handed to the executor.
+- Fixes with no rule change: ingestion enforces `PICK_COUNT` and fills `model` only when the key is present
+  and null; the coordinator waits up to 10 minutes per pick instead of marking running calls unavailable;
+  renewal reports when the 120-minute cap is reached; audits require a competition trading day; on the entry
+  day, exit checks use only the close, because that day's open, high and low may precede the fill.

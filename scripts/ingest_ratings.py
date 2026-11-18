@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 
 import _common  # noqa: F401
-from moowoo.desk_data import instant
+from moowoo import config as C
 from moowoo.events import ValidationError
 from moowoo.ledger import EventLog
 from moowoo.rating_schema import FIELDS, OPTIONAL_FIELDS, log_rating, parse_rating, validate_rating
@@ -27,7 +27,7 @@ AGENTS = Path(__file__).resolve().parents[1] / "agents"
 def with_configured_model(obj, path):
     # Agents cannot see their own deployment model id and reply model=null (17 Nov rerun 12).
     # Provenance then comes from the deployed agent definition, never from a guess.
-    if isinstance(obj, dict) and obj.get("model") is None:
+    if isinstance(obj, dict) and "model" in obj and obj["model"] is None:
         role = Path(path).name.rsplit(".", 2)[-2]
         obj["model"] = json.loads((AGENTS / role / "agent.json").read_text(encoding="utf-8"))["model"]
     return obj
@@ -40,74 +40,34 @@ def read_reply(path):
         raise ValidationError("missing, unreadable or malformed reply") from exc
 
 
-def brief_and_arguments(inputs, candidate, debate):
-    decision = candidate["decisionId"]
-    brief = read_reply(inputs / "replies" / f"{decision}.analyst.json")
-    require(isinstance(brief, dict) and brief.get("decisionId") == decision
-            and brief.get("ticker") == candidate["ticker"]
-            and brief.get("newsCutoff") == candidate["newsCutoff"], "analyst identity or cutoff mismatch")
-    require(isinstance(brief.get("items"), list), "analyst items must be an array")
-    eligible = set()
-    for item in brief["items"]:
-        require(isinstance(item, dict), "invalid analyst item")
-        for field in ("id", "headline", "source", "publishedAt", "summary"):
-            require(isinstance(item.get(field), str) and bool(item[field].strip()), "incomplete analyst item")
-        require(item["id"] not in eligible, "duplicate analyst item id")
-        require(item["publishedAt"].endswith("Z")
-                and instant(item["publishedAt"]) <= instant(candidate["newsCutoff"]),
-                "analyst evidence after cutoff or not UTC")
-        eligible.add(item["id"])
-    arguments = {}
-    if debate:
-        for role in ("bull", "bear"):
-            argument = read_reply(inputs / "replies" / f"{decision}.{role}.json")
-            require(isinstance(argument, dict)
-                    and set(argument) == {"decisionId", "stance", "argument", "itemIds"},
-                    "invalid debate fields")
-            require(argument["decisionId"] == decision and argument["stance"] == role,
-                    "debate identity or stance mismatch")
-            require(isinstance(argument["argument"], str) and bool(argument["argument"].strip())
-                    and len(argument["argument"].split()) <= 150, "invalid debate argument")
-            require(isinstance(argument["itemIds"], list)
-                    and all(isinstance(item, str) and item in eligible for item in argument["itemIds"]),
-                    "debate cites evidence outside the brief")
-            arguments[role + "_output"] = argument
-    return arguments
-
-
-def ingest_candidate(log, inputs, candidate, bars, session, second_opinion, rank):
+def ingest_candidate(log, inputs, candidate, bars, session, rank):
     ticker = candidate["ticker"]
     decision = f"{log.runId}:{ticker}"
-    debate = rank <= 5 and not second_opinion
-    role = "manager" if debate else "quick"
-    reference = f"replies/{decision}.{role}.json"
+    reference = f"replies/{decision}.analyst.json"
     try:
         require(type(candidate.get("rank")) is int and candidate["rank"] == rank,
                 "candidate rank differs from picked order")
         require(candidate.get("decisionId") == decision, "candidate decision identity mismatch")
         require(candidate.get("barsAsOf") == session["barsAsOf"], "candidate barsAsOf mismatch")
-        require(candidate.get("primaryAgent") == ("manager" if rank <= 5 else "quick"),
-                "candidate primaryAgent contradicts rank")
-        require(candidate.get("quickSecondOpinionRequired") is (rank <= 5),
-                "candidate second opinion flag contradicts rank")
+        require(candidate.get("primaryAgent") == "analyst", "candidate primaryAgent must be analyst")
+        require(candidate.get("tier") == "single", "candidate tier must be single")
         require(ticker in bars, "missing, invalid or stale candidate bars")
         score = setup_score(bars[ticker])["total"]
-        arguments = brief_and_arguments(inputs, candidate, debate)
         rating = validate_rating(with_configured_model(read_reply(inputs / reference), reference),
                                  candidate["newsCutoff"])
         require(rating["decisionId"] == decision and rating["ticker"] == ticker,
                 "rating differs from screened decision")
-        require(rating["tier"] == ("debate" if debate else "quick"), "rating tier contradicts role")
+        require(rating["tier"] == "single", "rating tier contradicts role")
         require(rating["promptVersion"] == candidate["promptVersion"], "rating promptVersion mismatch")
         rating.pop("quickSecondOpinion", None)
     except (ValueError, KeyError, TypeError, OverflowError, RecursionError):
         return log.append("halt", dict(ticker=ticker, scope="ticker",
-            reason="missing or invalid candidate, bars, analyst, debate or rating reply",
-            disposition="skip", stage="rating_validation", secondOpinion=second_opinion,
+            reason="missing or invalid candidate, bars or analyst rating reply",
+            disposition="skip", stage="rating_validation", secondOpinion=False,
             transcriptRef=reference), decisionId=decision)
     return log_rating(log, rating, candidate["newsCutoff"], decision_id=decision,
         ticker=ticker, transcriptRef=reference, credits=None, creditsMissingReason=CREDITS_MISSING,
-        setupScore=score, second_opinion=second_opinion, **arguments)
+        setupScore=score, second_opinion=False)
 
 
 def ingest(inputs):
@@ -118,7 +78,7 @@ def ingest(inputs):
     require(inputs.name == run_id and inputs.parent.name == "inputs" and session["kind"] == "morning",
             "expected this morning run's inputs directory")
     candidates = read_reply(inputs / "candidates.json")
-    require(isinstance(candidates, list) and len(candidates) <= 15, "expected at most fifteen candidates")
+    require(isinstance(candidates, list) and len(candidates) <= C.PICK_COUNT, f"expected at most {C.PICK_COUNT} candidates")
     tickers = set()
     for candidate in candidates:
         require(isinstance(candidate, dict), "candidate must be an object")
@@ -141,16 +101,15 @@ def ingest(inputs):
         accepted = []
         for rank, candidate in enumerate(candidates, 1):
             decision = f"{run_id}:{candidate['ticker']}"
-            for second_opinion in ([False, True] if rank <= 5 else [False]):
-                key = (decision, second_opinion)
-                if key not in outcomes:
-                    outcomes[key] = ingest_candidate(log, inputs, candidate, bars, session, second_opinion, rank)
+            key = (decision, False)
+            if key not in outcomes:
+                outcomes[key] = ingest_candidate(log, inputs, candidate, bars, session, rank)
             primary = outcomes[(decision, False)]
             if primary and primary["type"] == "rating":
                 rating = {field: primary[field] for field in FIELDS}
                 validate_rating(rating, candidate["newsCutoff"])
-                require(rating["tier"] == ("debate" if rank <= 5 else "quick"),
-                        "replay tier contradicts rank")
+                require(rating["tier"] == "single",
+                        "replay tier must be single")
                 require(rating["promptVersion"] == candidate["promptVersion"], "replay promptVersion mismatch")
                 rating.update({field: primary[field] for field in OPTIONAL_FIELDS if field in primary})
                 rating["setupScore"] = primary["setupScore"]

@@ -25,7 +25,7 @@ CUTOFF = "2026-11-17T21:00:00Z"
 NOW = "2026-11-18T15:00:00Z"
 
 
-def rating(ticker, tier="debate"):
+def rating(ticker, tier="single"):
     return dict(decisionId=f"{RUN}:{ticker}", ticker=ticker,
         **{"class": "explained_up"}, confidence=.8, tier=tier,
         reason="Synthetic earnings evidence.", evidence=[], newsCutoff=CUTOFF,
@@ -44,25 +44,17 @@ def inputs(tmp_path):
     atomic_json(path / "session.json", dict(runId=RUN, kind="morning", barsAsOf=ASOF))
     candidates, bars = [], {}
     dates = pd.bdate_range(end=ASOF, periods=65)
-    for rank in range(1, 16):
+    for rank in range(1, 6):
         ticker = f"T{rank}"
-        obj = rating(ticker, "debate" if rank <= 5 else "quick")
+        obj = rating(ticker)
         candidates.append(dict(ticker=ticker, decisionId=obj["decisionId"], rank=rank,
             newsCutoff=CUTOFF, barsAsOf=ASOF, promptVersion=obj["promptVersion"],
-            primaryAgent="manager" if rank <= 5 else "quick",
-            quickSecondOpinionRequired=rank <= 5, setupScore=-1))
+            primaryAgent="analyst", tier="single", setupScore=-1))
         bars[ticker] = [dict(date=day.date().isoformat(), open=100, high=102,
                             low=99, close=101, volume=10000) for day in dates]
         # Write verbatim text, not atomic_json: Windows treats ':' paths as NTFS
         # streams. Production Linux stores ordinary files with these exact names.
-        reply(path, ticker, "analyst").write_text(json.dumps(dict(
-            decisionId=obj["decisionId"], ticker=ticker, newsCutoff=CUTOFF, items=[])), encoding="utf-8")
-        reply(path, ticker, "quick").write_text(json.dumps(rating(ticker, "quick")), encoding="utf-8")
-        if rank <= 5:
-            reply(path, ticker, "manager").write_text(json.dumps(obj), encoding="utf-8")
-            for role in ("bull", "bear"):
-                reply(path, ticker, role).write_text(json.dumps(dict(decisionId=obj["decisionId"],
-                    stance=role, argument="Synthetic argument.", itemIds=[])), encoding="utf-8")
+        reply(path, ticker, "analyst").write_text(json.dumps(obj), encoding="utf-8")
     atomic_json(path / "candidates.json", candidates)
     atomic_json(path / "bars.json", bars)
     return path
@@ -80,28 +72,28 @@ def events(inputs):
 
 
 def test_full_batch_replay_projection_and_real_planner(inputs):
-    assert cli("ingest_ratings.py", "--inputs", inputs) == dict(accepted=15, skipped=0)
+    assert cli("ingest_ratings.py", "--inputs", inputs) == dict(accepted=5, skipped=0)
     log = events(inputs)
     rows = log.read()
-    assert len(rows) == 20 and verify(log.path).ok
-    assert sum(row["secondOpinion"] for row in rows) == 5
+    assert len(rows) == 5 and verify(log.path).ok
+    assert sum(row["secondOpinion"] for row in rows) == 0
     exported = read_json(inputs / "ratings.json")
     bars, _ = load_bars(inputs / "bars.json", ASOF)
     for index, obj in enumerate(exported, 1):
         assert FIELDS <= obj.keys()
         assert obj["ticker"] == f"T{index}"
-        assert obj["tier"] == ("debate" if index <= 5 else "quick")
+        assert obj["tier"] == "single"
         assert obj["setupScore"] == setup_score(bars[obj["ticker"]])["total"]
         assert "secondOpinion" not in obj and "credits" not in obj
     assert all(row["credits"] is None and row["creditsMissingReason"].strip() for row in rows)
     before = log.path.read_bytes()
     output = (inputs / "ratings.json").read_bytes()
-    assert cli("ingest_ratings.py", "--inputs", inputs)["accepted"] == 15
+    assert cli("ingest_ratings.py", "--inputs", inputs)["accepted"] == 5
     assert log.path.read_bytes() == before and (inputs / "ratings.json").read_bytes() == output
     database = inputs.parent.parent / "projection.sqlite"
     build_sqlite([log.path], database)
     with sqlite3.connect(database) as db:
-        assert db.execute("SELECT COUNT(*) FROM decisions WHERE credits IS NULL AND creditsMissingReason IS NOT NULL").fetchone()[0] == 20
+        assert db.execute("SELECT COUNT(*) FROM decisions WHERE credits IS NULL AND creditsMissingReason IS NOT NULL").fetchone()[0] == 5
     state = inputs.parent.parent / "state.json"
     atomic_json(state, PortfolioState(cash=100000).to_dict())
     atomic_json(inputs / "quotes.json", dict(now=NOW, sessionDate="2026-11-18",
@@ -110,39 +102,72 @@ def test_full_batch_replay_projection_and_real_planner(inputs):
         "--bars", inputs / "bars.json", "--bars-asof", ASOF, "--quotes", inputs / "quotes.json",
         "--log", log.path, "--run-id", RUN, "--tickets-dir", inputs.parent.parent / "tickets")
     assert Path(result["tickets"]).is_file() and verify(log.path).ok
-    assert len([row for row in log.read() if row["type"] == "reflection_note" and row.get("source") == "entry"]) == 15
+    assert len([row for row in log.read() if row["type"] == "reflection_note" and row.get("source") == "entry"]) == 5
     after_plan = log.path.read_bytes()
     cli("ingest_ratings.py", "--inputs", inputs)
     assert log.path.read_bytes() == after_plan
 
 
-@pytest.mark.parametrize("ticker,role,accepted", [("T2", "manager", 14), ("T8", "quick", 14),
-    ("T3", "bull", 14), ("T4", "analyst", 14), ("T1", "quick", 15)])
-def test_missing_replies_are_terminal_skips(inputs, ticker, role, accepted):
-    reply(inputs, ticker, role).unlink()
-    assert cli("ingest_ratings.py", "--inputs", inputs)["accepted"] == accepted
+@pytest.mark.parametrize("ticker", ["T1", "T3", "T5"])
+def test_missing_replies_are_terminal_skips(inputs, ticker):
+    reply(inputs, ticker, "analyst").unlink()
+    assert cli("ingest_ratings.py", "--inputs", inputs) == dict(accepted=4, skipped=1)
     log = events(inputs)
     skipped = [row for row in log.read() if row["type"] == "halt"]
-    assert skipped and all(row["disposition"] == "skip" for row in skipped)
+    assert len(skipped) == 1 and skipped[0]["disposition"] == "skip"
     before = log.path.read_bytes()
     cli("ingest_ratings.py", "--inputs", inputs)
     assert before == log.path.read_bytes()
 
 
-@pytest.mark.parametrize("damage", ["malformed", "identity", "lookahead", "version"])
-def test_bad_quick_never_invalidates_manager(inputs, damage):
-    obj = rating("T1", "quick")
+@pytest.mark.parametrize("damage", ["prose", "malformed", "identity", "lookahead", "version", "model_absent", "tier"])
+def test_invalid_analyst_is_local_skip(inputs, damage):
+    obj = rating("T1")
     if damage == "identity":
         obj["decisionId"] = "other:T1"
     elif damage == "lookahead":
         obj["newsCutoff"] = "2026-11-18T21:00:00Z"
     elif damage == "version":
         obj["promptVersion"] = "wrong"
-    reply(inputs, "T1", "quick").write_text("not JSON" if damage == "malformed" else json.dumps(obj))
-    assert cli("ingest_ratings.py", "--inputs", inputs)["accepted"] == 15
+    elif damage == "model_absent":
+        del obj["model"]
+    elif damage == "tier":
+        obj["tier"] = "debate"
+    text = json.dumps(obj)
+    if damage == "prose":
+        text = "Here is the rating: " + text
+    elif damage == "malformed":
+        text = "not JSON"
+    reply(inputs, "T1", "analyst").write_text(text)
+    assert cli("ingest_ratings.py", "--inputs", inputs) == dict(accepted=4, skipped=1)
     rows = [row for row in events(inputs).read() if row["ticker"] == "T1"]
-    assert rows[0]["type"] == "rating" and rows[0]["class"] == "explained_up"
-    assert rows[1]["type"] == "halt" and rows[1]["secondOpinion"]
+    assert len(rows) == 1 and rows[0]["type"] == "halt"
+
+
+def test_null_model_uses_configured_analyst(inputs):
+    obj = rating("T1") | {"model": None}
+    reply(inputs, "T1", "analyst").write_text(json.dumps(obj))
+    assert cli("ingest_ratings.py", "--inputs", inputs)["accepted"] == 5
+    assert read_json(inputs / "ratings.json")[0]["model"] == read_json(ROOT / "agents/analyst/agent.json")["model"]
+
+
+def test_no_usable_replies_exports_empty_array(inputs):
+    for index in range(1, 6):
+        reply(inputs, f"T{index}", "analyst").write_text("unusable")
+    assert cli("ingest_ratings.py", "--inputs", inputs) == dict(accepted=0, skipped=5)
+    assert read_json(inputs / "ratings.json") == []
+
+
+def test_pick_count_enforced(inputs):
+    from moowoo import config as C
+    from ingest_ratings import ingest
+    candidates = read_json(inputs / "candidates.json")
+    assert len(candidates) == C.PICK_COUNT == 5
+    candidates.append(candidates[-1] | {"ticker": "T6"})
+    atomic_json(inputs / "candidates.json", candidates)
+    with pytest.raises(ValidationError, match="at most 5"):
+        ingest(inputs)
+    assert not events(inputs).path.exists()
 
 
 @pytest.mark.parametrize("field,value", [("rank", "bad"), ("newsCutoff", "bad"),
@@ -151,7 +176,7 @@ def test_bad_candidate_is_local_skip(inputs, field, value):
     candidates = read_json(inputs / "candidates.json")
     candidates[0][field] = value
     atomic_json(inputs / "candidates.json", candidates)
-    assert cli("ingest_ratings.py", "--inputs", inputs) == dict(accepted=14, skipped=1)
+    assert cli("ingest_ratings.py", "--inputs", inputs) == dict(accepted=4, skipped=1)
 
 
 def test_export_failure_replays_without_duplicate_events(inputs, monkeypatch):
@@ -166,7 +191,7 @@ def test_export_failure_replays_without_duplicate_events(inputs, monkeypatch):
     log = events(inputs)
     before = log.path.read_bytes()
     assert not (inputs / "ratings.json").exists()
-    assert cli("ingest_ratings.py", "--inputs", inputs)["accepted"] == 15
+    assert cli("ingest_ratings.py", "--inputs", inputs)["accepted"] == 5
     assert log.path.read_bytes() == before
 
 
@@ -174,13 +199,13 @@ def test_primary_cutoff_and_missing_bars_are_local_skips(inputs):
     obj = rating("T1")
     obj["evidence"] = [dict(id="later", headline="Later news", source="test",
                             publishedAt="2026-11-18T00:00:00Z")]
-    reply(inputs, "T1", "manager").write_text(json.dumps(obj))
+    reply(inputs, "T1", "analyst").write_text(json.dumps(obj))
     bars = read_json(inputs / "bars.json")
-    del bars["T7"]
+    del bars["T5"]
     atomic_json(inputs / "bars.json", bars)
-    assert cli("ingest_ratings.py", "--inputs", inputs) == dict(accepted=13, skipped=2)
+    assert cli("ingest_ratings.py", "--inputs", inputs) == dict(accepted=3, skipped=2)
     assert {row["ticker"] for row in read_json(inputs / "ratings.json")} == {
-        f"T{index}" for index in range(2, 16) if index != 7}
+        f"T{index}" for index in range(2, 6) if index != 5}
 
 
 def test_single_cli_null_credits_and_invalid_quick(tmp_path):

@@ -91,7 +91,7 @@ def validate_rating(obj, cutoff):
     _require(obj["decisionId"].endswith(":" + obj["ticker"]) and
              len(obj["decisionId"]) > len(obj["ticker"]) + 1, "decisionId must be runId:TICKER")
     _require(obj["class"] in CLASSES, "invalid class")
-    _require(obj["tier"] in ("debate", "quick"), "invalid tier")
+    _require(obj["tier"] in ("debate", "quick", "single"), "invalid tier")
     confidence = obj["confidence"]
     _require(type(confidence) in (int, float) and 0 <= confidence <= 1 and
              math.isfinite(confidence), "confidence must be a finite number from 0 to 1")

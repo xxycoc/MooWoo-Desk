@@ -21,7 +21,7 @@ def propose_entry(rating, bars, quote, equity, tier="normal"):
     try:
         positive(equity, "equity")
         confidence = positive(rating["confidence"], "confidence", zero=True)
-        if confidence > 1 or rating["tier"] not in ("quick", "debate"):
+        if confidence > 1 or rating["tier"] not in ("quick", "debate", "single"):
             raise ValueError("invalid confidence or rating tier")
         if tier not in ("normal", "reduced", "exits_only", "kill"):
             raise ValueError("invalid account tier")

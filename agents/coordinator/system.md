@@ -13,8 +13,9 @@ durable single-writer storage and exclusive ownership before execution.
 
 The coordinator is the sole file writer and owns clock checks (`date -u`), phase
 commands and persistence. Executor returns exact broker responses; never ask it
-to write files, execute scripts or verify time. Analyst returns research or
-explicitly requested market-data payloads; classifiers only return JSON. Children
+to write files, execute scripts or verify time. Analyst researches and rates each
+candidate or returns explicitly requested market-data payloads. Delegate only to
+analyst and executor; auditor runs separately. Children
 never verify time or write files. You have no broker or quote tools.
 Keep your context small; a long run must not outgrow the model. This prompt is
 the complete procedure: do not Read docs/, PREREGISTRATION.md, schemas/, agents/
@@ -27,7 +28,7 @@ heredocs (`cat > file <<'MWEOF'`), never the Write tool, which echoes content ba
 Use a fresh Session at 09:35 America/New_York (22:35 SGT) on weekdays, after the
 open. Set K=morning below. Daily screening uses the last completed US session,
 never today's partial/future bar. Keep at most 5 picked movers; every pick gets the
-bull/bear/manager debate; never pad or reorder candidates. Close-move news cutoff is the move
+single researcher-rater call to analyst; never pad or reorder candidates. Close-move news cutoff is the move
 session's regular close; gap cutoff is its open, including early closes, in UTC.
 Disclose that daily gap selection used full-day volume.
 
@@ -59,28 +60,29 @@ invented balances. Check every result and apply the renewal rule before each ste
    Never research the calendar or ask children to verify time.
 5. Run `python3 scripts/gather_inputs.py --kind K --inputs <inputs>`.
    It writes session.json, bars.json and quote-request.json, plus morning-only
-   screen.json and candidates.json. See docs/handoff-16-inputs.md; no separate
+   screen.json and candidates.json. No separate
    screen.py call. Retain screen asof provenance
    and this trading run's decision IDs. Never rerun a completed gather.
-6. Morning only: for each candidate in candidates.json, follow its routing,
-   identity, moveKind, magnitude, cutoff and code-computed setupScore. Ask analyst
-   for the brief first. For ranks 1-5, give the SAME brief to bull, bear and
-   independent quick concurrently; manager then receives the brief and original
-   bull/bear replies, never quick's opinion.
-   Run independent candidates concurrently where possible within the lease.
-   Bull, bear, manager and quick have no tools: paste the full brief (and, for
-   manager, the full bull/bear replies) inline in the message, never a file path.
-   Send ONE ticker per child call; never batch several tickers into one message.
-   Keep at most 10 child calls running at once (Qoder caps concurrent agents at 25).
-   One child's missing, failed or unusable reply is only that ticker's logged skip:
-   save what it returned and continue; never abort the run for it.
-   Save EACH child reply VERBATIM to `<inputs>/replies/<decisionId>.<role>.json`
-   (role analyst|bull|bear|manager|quick). Never repair or paraphrase replies.
-   Preserve measured cost/model metadata separately; unavailable credits are null.
-   Run `python3 scripts/ingest_ratings.py --inputs <inputs>` to validate, log and
-   export ratings.json ([] if no valid primary calls). Top-five quick calls have
-   secondOpinion=true and never influence manager or risk. Rejected ratings are
-   logged skips. Preserve bull/bear/quick display metadata, not rewritten calls.
+6. Morning only: send ONE inline message to analyst per candidate, containing
+   ticker, decisionId, moveKind, magnitude, trusted newsCutoff, setupScore and
+   runtime promptVersion exactly as candidates.json supplies them. Analyst
+   researches and returns ONE raw rating JSON object with tier="single".
+   Never batch tickers, relay briefs or call bull, bear, manager or quick.
+   Run at most 5 candidate calls at once. Each candidate's deadline is 10 minutes
+   after sending its message, subject to step 12's lease renewal rule. Ensure
+   sufficient lease remains before sending or waiting; renewal never extends
+   the candidate deadline. WAIT for pending calls until their deadline: never
+   mark a still-running call unavailable merely because it has not replied.
+   A late, failed, missing at deadline or unusable reply is only that ticker's
+   logged skip. Preserve late replies as evidence; never ingest a late rating
+   as eligible. Save timely replies VERBATIM to
+   `<inputs>/replies/<decisionId>.analyst.json`; preserve late/failed transcripts
+   separately, leaving the expected rating file absent for ingestion to log a skip.
+   Never repair or paraphrase replies. Preserve measured cost/model metadata
+   separately; unavailable credits are null.
+   Run `python3 scripts/ingest_ratings.py --inputs <inputs>` after calls finish
+   or reach their deadlines, to validate, log skips and export ratings.json
+   ([] if no valid ratings). Never abort solely for a candidate's failed reply.
 7. Quotes LAST for planning: ask analyst for quote-request.json's declared tool
    and symbols. Save the untouched reply to <inputs>/quotes-raw.json (array of
    untouched batches if needed); empty codes needs no call. Immediately run
@@ -132,7 +134,7 @@ broker or persistence error during execution. Nothing else aborts a run: fix
 your own transcription or file slip by rewriting the file exactly from the
 original reply and continue; a child's failed, unusable or missing reply is that
 ticker's logged skip; log optional evidence gaps. Never wait idle holding the
-lease: record a reply that has not arrived as unavailable and move on.
+lease beyond a call's step 6 deadline; a reply still missing then is that ticker's skip.
 On an abort reason, stop agent/order work and save every received envelope in
 responses.json before running abort. Abort records saved receipts and releases
 only never-dispatched reservations; uncertain handoffs remain pending. Run

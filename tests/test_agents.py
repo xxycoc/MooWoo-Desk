@@ -165,7 +165,8 @@ def test_permissions():
         assert b'\r' not in prompt_bytes
         assert agent['system'] == prompt_bytes.decode('utf-8')
         configs = next(t['configs'] for t in agent['tools'] if t['type'] == 'mcp_toolset')
-        assert configs == policy['agents'][role]['configs']
+        if role in policy['agents']:
+            assert configs == policy['agents'][role]['configs']
         by_name = {c['name']: c for c in configs}
         for name in policy['real_money_deny']:
             assert by_name[name]['permission_policy']['type'] == 'always_deny'
@@ -207,9 +208,9 @@ def test_deploy_offline(monkeypatch):
     monkeypatch.setattr(qca_deploy, 'load_pat', lambda *a: pytest.fail('secret read in dry run'))
     result = build_payloads({'moomoo_tool_names': ['new_unknown_order_tool']})
     ops = {o['key']: o['body'] for o in result['operations']}
-    assert len([k for k in ops if k.startswith('agent.')]) == 8
+    assert len([k for k in ops if k.startswith('agent.')]) == 4
     roster = ops['agent.coordinator']['multiagent']['agents']
-    assert len(roster) == 6
+    assert len(roster) == 2
     assert all('auditor' not in r['id'] for r in roster)
     assert ops['schedule.morning']['trigger_policy'] == {'type':'cron','expression':'35 9 * * 1-5','timezone':'America/New_York'}
     assert ops['schedule.audit']['execution']['session_mode'] == 'new_session'
@@ -262,11 +263,11 @@ def test_apply_payload_resolution_with_mock_api(tmp_path):
     receipt_path = tmp_path/'receipts.jsonl'
     receipts = apply_payloads(build_payloads(settings), settings, 'fake-token', request=fake, receipt_path=receipt_path,
                               ledger_token='fake-ledger-token')
-    assert len(receipts) == len(calls) == 11
+    assert len(receipts) == len(calls) == 7
     receipts = apply_payloads(build_payloads(settings), settings, 'fake-token', request=fake,
                               stage='schedules', prior=load_receipts(receipt_path), receipt_path=receipt_path,
                               ledger_token='fake-ledger-token')
-    assert len(receipts) == len(calls) == 16
+    assert len(receipts) == len(calls) == 12
     assert next(b for p,b in calls if p=='/forward/templates')['vaults'] == {'vault_test':{'enabled':True}}
 
 
@@ -298,7 +299,9 @@ def test_evals_and_diff(tmp_path, good):
     assert evaluate(tmp_path, mode='single')['passed'] == 3
 
 
-def test_schema_accepts_valid_and_rejects_structural_errors(good):
+@pytest.mark.parametrize("tier", ["single", "debate", "quick"])
+def test_schema_accepts_valid_and_rejects_structural_errors(good, tier):
+    good["tier"] = tier
     jsonschema = pytest.importorskip('jsonschema')
     schema = json.loads((ROOT/'schemas/rating.schema.json').read_text())
     jsonschema.Draft202012Validator.check_schema(schema)
@@ -331,7 +334,29 @@ def test_coordinator_runtime_handoffs():
     for command in commands:
         cursor = steps.index(command, cursor) + len(command)
     assert 'Skip only step 6' in prompt
-    assert '<inputs>/replies/<decisionId>.<role>.json' in steps
+    assert '<inputs>/replies/<decisionId>.analyst.json' in steps
     assert 'Only if it prints ok:true' in steps
     assert '--phase renew' in steps and '--phase abort' in steps
     assert 'current US session has not opened' not in prompt
+
+
+@pytest.mark.parametrize("tier", ["single", "debate", "quick"])
+def test_all_rating_tiers_remain_valid(good, tmp_path, tier):
+    good["tier"] = tier
+    validate_rating(good, CUTOFF)
+    log = EventLog(tmp_path / "ratings.jsonl", runId="2026-11-17-us")
+    event = log_rating(log, good, CUTOFF, decision_id=good["decisionId"], ticker=good["ticker"],
+                       transcriptRef="analyst.json", credits=0, setupScore=3)
+    validate_event(event)
+    assert event["tier"] == tier
+
+
+def test_active_roster():
+    from qca_deploy import ROLES
+    active = {"coordinator", "analyst", "executor", "auditor"}
+    assert set(ROLES) == active
+    policy = json.loads((ROOT / "agents/permissions.json").read_text())
+    assert set(policy["agents"]) == active
+    coordinator = json.loads((ROOT / "agents/coordinator/agent.json").read_text())
+    assert {a["id"] for a in coordinator["multiagent"]["agents"]} == {
+        "${agent.analyst.id}", "${agent.executor.id}"}

@@ -22,7 +22,7 @@ from moowoo.rules import AUTONOMY_CHANGE
 
 ROOT = Path(__file__).resolve().parents[1]
 API = "https://api.qoder.com/api/v1"
-ROLES = ("analyst", "bull", "bear", "manager", "quick", "executor", "auditor", "coordinator")
+ROLES = ("analyst", "executor", "auditor", "coordinator")
 SETTING_KEYS = {"MOOMOO_MCP_URL", "MOOMOO_ACCOUNT_ID", "MOOMOO_MARKET", "MOOMOO_CHALLENGE_TITLE",
                 "REPO_REVISION", "IDENTITY_ID", "SLACK_CHANNEL_PAIRING_ID", "moomoo_tool_names"}
 

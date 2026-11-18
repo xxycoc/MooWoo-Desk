@@ -54,8 +54,8 @@ def test_update_existing_resources_and_pin_new_children(tmp_path, capsys, monkey
     destination = tmp_path / "receipts.jsonl"
     result = apply_payloads(manifest, settings, "not-a-token", request=request, prior=prior,
                             receipt_path=destination, update=True, ledger_token="fake-ledger-token")
-    assert len(calls) == len(result) == 11
-    assert len(replacements) >= 12
+    assert len(calls) == len(result) == 7
+    assert len(replacements) >= 8
     assert load_receipts(destination)["receipts"] == result
     assert {row["id"] for row in result} == {row["id"] for row in receipts}
     assert "existing-" not in capsys.readouterr().out

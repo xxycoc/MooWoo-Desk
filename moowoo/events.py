@@ -167,7 +167,7 @@ def validate_event(event: dict) -> None:
             _require(event["credits"] >= 0, "credits must be nonnegative")
             _require(event.get("creditsMissingReason") is None, "measured credits cannot have a missing reason")
         _enum(event["class"], ("explained_up", "explained_down", "unexplained_up", "unexplained_down"), "class")
-        _enum(event["tier"], ("debate", "quick"), "tier")
+        _enum(event["tier"], ("debate", "quick", "single"), "tier")
         _require(0 <= event["confidence"] <= 1, "confidence must be between 0 and 1")
         _require(event["setupScore"] <= 5, "setupScore must be between 0 and 5")
         _utc(event["newsCutoff"], "newsCutoff")
