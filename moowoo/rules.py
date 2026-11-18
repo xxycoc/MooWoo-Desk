@@ -19,3 +19,12 @@ TOPOLOGY_CHANGE = dict(
     after="single researcher-rater tier sized as debate",
     reason="approved by Siang Woo 18 Nov: cut agents 7->3 to stop coordinator relay failures",
     effectiveFrom="first session after 18 Nov 05:00 SGT", triggerDecisionIds=[])
+
+SIZING_CHANGE = dict(
+    type="rule_change", ruleId="SIZING-01", date="2026-11-19",
+    before=dict(CORE_WEIGHT=0.50, SATELLITE_CAP=0.25, SATELLITE_CAP_STEP_UP=0.40, PER_NAME_CAP=0.08,
+                MAX_SPREAD=0.0015),
+    after=dict(CORE_WEIGHT=0.30, SATELLITE_CAP=0.60, SATELLITE_CAP_STEP_UP=0.60, PER_NAME_CAP=0.20,
+               MAX_SPREAD=0.005),
+    reason="decided by Siang Woo 19 Nov: move capital from the defensive core to satellite trades for the remaining six sessions; stops, drawdown tiers, kill switch, regime cap, cash floor and long-only unchanged",
+    effectiveFrom="first session after 19 Nov 01:00 SGT", triggerDecisionIds=[])

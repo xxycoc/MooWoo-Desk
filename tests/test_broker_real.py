@@ -24,7 +24,7 @@ def test_positions_wrapped_string_numbers(monkeypatch):
     monkeypatch.setenv("MOOMOO_ACCOUNT_ID", "synthetic-paper-account")
     monkeypatch.setenv("MOOMOO_MARKET", "100")
     reply = dict(ret_code=0, ret_msg="success", data=dict(positions=[dict(
-        symbol="US.AAPL", qty="10", avg_cost="190.5", market_price="191.2",
+        symbol="US.AAPL", qty="10", cost_price="190.5", cur_price="191.2",
         acc_id="synthetic-paper-account", market=100)]))
     position = parse_positions(reply)[0]
     assert position["ticker"] == "AAPL"
@@ -34,11 +34,11 @@ def test_positions_wrapped_string_numbers(monkeypatch):
 
 
 @pytest.mark.parametrize("field,value", [("qty", "1.5"), ("qty", "-1"), ("qty", "NaN"),
-    ("avg_cost", "Infinity"), ("market_price", "0"), ("qty", True)])
+    ("cost_price", "Infinity"), ("cur_price", "0"), ("qty", True)])
 def test_positions_invalid_numeric_fields(field, value, monkeypatch):
     monkeypatch.setenv("MOOMOO_ACCOUNT_ID", "synthetic-paper-account")
     monkeypatch.setenv("MOOMOO_MARKET", "100")
-    row = dict(symbol="US.AAPL", qty="10", avg_cost="190.5", market_price="191.2")
+    row = dict(symbol="US.AAPL", qty="10", cost_price="190.5", cur_price="191.2")
     row[field] = value
     with pytest.raises(ValueError):
         parse_positions(dict(ret_code=0, ret_msg="success", data=dict(positions=[row])))
@@ -229,3 +229,16 @@ def test_record_and_reconcile_commands(context, tmp_path):
         assert completed.returncode == 0, completed.stdout + completed.stderr
     assert any(event.get("orderId") == "3164623" for event in log.read())
     assert not any(event["type"] in ("fill", "halt") for event in log.read())
+
+
+def test_positions_live_shape_18_nov(monkeypatch):
+    # Field names as returned by the live position tool after the first fill (18 Nov; ids masked).
+    monkeypatch.setenv("MOOMOO_ACCOUNT_ID", "synthetic-paper-account")
+    monkeypatch.setenv("MOOMOO_MARKET", "100")
+    reply = dict(ret_code=0, ret_msg="success", data=dict(positions=[dict(
+        buy_avg_price="90.62", cost_price="90.62", cur_price="90.64", market=100, mv="19759.52",
+        profit="4.36", pstn_id="000000", pstn_type=0, qty="218", qty_avbl="218", realized_profit=None,
+        stock_name="iShares 7-10 Year Treasury Bond ETF", symbol="IEF", today_buy_avg_price=None,
+        today_profit=None, today_turnover="4.36", unrealized_profit=None)]))
+    position = parse_positions(reply)[0]
+    assert (position["ticker"], position["qty"], position["avgCost"], position["marketPrice"]) == ("IEF", 218, 90.62, 90.64)

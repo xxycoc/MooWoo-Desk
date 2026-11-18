@@ -435,3 +435,22 @@ by the broker and not yet filled at reconciliation.
   run executes was not affected.
 - Observed: the coordinator reported text in Qoder agent notifications asking it to create a one-time schedule.
   It is not in the session event log or in any agent reply, and the coordinator ignored it as untrusted data.
+
+## 22. Addendum 2026-11-19: more capital to satellite trades (SIZING-01); live position fields
+
+Written on 19 November 2026 at about 01:20 Singapore (18 November, 12:20 New York), during the 18 November
+session. Holdings: 218 IEF bought at 90.62 (core), filled after the rerun's reconciliation.
+
+- promptVersion `5524e3574e7b0675b94bba0ffacf7bc3c9e07b6c8a35cd0d4c42071f9e20e028`, unchanged; this addendum
+  changes configuration and code only.
+- Rule change SIZING-01 (rule ledger), decided by Siang Woo with six sessions left: core weight 0.50 to 0.30;
+  satellite cap 0.25 to 0.60 and its step-up cap 0.40 to 0.60; per-name cap, which also sets each entry's
+  size, 0.08 to 0.20 of equity; maximum entry spread 0.15% to 0.5% of the midpoint. Unchanged: stops and
+  trailing stops, horizons, drawdown tiers, the daily loss halt, the kill switch, the 0.20 regime satellite
+  cap, the 10% cash floor, long-only, classes and grading. The defensive core cannot reach the leaderboard's
+  returns, so capital moves to the rated movers. This raises risk and is reported separately from results
+  under the original sizing. Effective from the first session after 19 November 01:00 Singapore.
+- Fix: the first live position snapshot names average cost `cost_price` and the current price `cur_price`,
+  not the provisional `avg_cost` and `market_price`, so the 00:30 Singapore watcher halted at preflight with
+  nothing changed. The mapping now uses the live names. Replaying that watcher's inputs offline reconciles with
+  no difference and no halt.

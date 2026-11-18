@@ -5,8 +5,8 @@ ACCOUNT_LIST = dict(rows=None, required=dict(accountId="account_id", market="mar
     intraAccountId="intra_account_id"))
 CASH_INFO = dict(rows=None, required=dict(cash="balance", equity="total_asset", reserved="hold"),
                  optional=dict(accountId="acc_id", market="market"))
-POSITION_LIST = dict(rows="positions", required=dict(ticker="symbol", qty="qty", avgCost="avg_cost",
-    marketPrice="market_price"), optional=dict(decisionId="text", accountId="acc_id", market="market"))
+POSITION_LIST = dict(rows="positions", required=dict(ticker="symbol", qty="qty", avgCost="cost_price",
+    marketPrice="cur_price"), optional=dict(decisionId="text", accountId="acc_id", market="market"))
 ORDER_HISTORY = dict(rows="orders", required=dict(orderId="order_id", ticker="symbol",
     decisionId="text", side="side", qty="qty", limitPrice="price", filledQty="cum_qty",
     avgPrice="avg_fill_price", status="status"), optional=dict(accountId="acc_id",

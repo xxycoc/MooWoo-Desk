@@ -44,7 +44,7 @@ def test_freeze_cli_is_complete_and_repeatable(tmp_path):
 
 def test_live_defaults_match_preregistered_rules():
     assert (config.MOVE_MODE, config.K_drift, config.R_drift, config.K_bounce) == ("abnormal", 3, 2, 2)
-    assert config.CORE_WEIGHT + config.SATELLITE_CAP_STEP_UP + config.CASH_FLOOR == 1
+    assert config.CORE_WEIGHT + config.SATELLITE_CAP_STEP_UP + config.CASH_FLOOR == pytest.approx(1)
     assert config.CORE_ETFS == ("USMV", "XLP", "XLV", "IEF", "GLD")
     assert config.SETUP_SCORE_USE == "log_only"
 
@@ -85,10 +85,10 @@ def test_preregistration_matches_frozen_artifact():
     )
     namespace = {}
     exec(committed_config, namespace)
-    from moowoo.rules import PICKS_CHANGE
+    from moowoo.rules import PICKS_CHANGE, SIZING_CHANGE
     for key, value in namespace.items():
         if not key.startswith("_"):
-            assert getattr(config, key) == PICKS_CHANGE["after"].get(key, value)
+            assert getattr(config, key) == (PICKS_CHANGE["after"] | SIZING_CHANGE["after"]).get(key, value)
     additions = next(json.loads(line)["after"] for line in (ROOT / "config/rule-ledger.jsonl").read_text().splitlines()
                      if json.loads(line)["ruleId"] == "FEES-01")
     assert {k: v for k, v in vars(config).items() if not k.startswith("_") and k not in namespace} == additions
@@ -103,7 +103,7 @@ def test_topology_addendum_is_exact_and_preserves_frozen_config(tmp_path, monkey
     directory.mkdir()
     (directory / "frozen-2026-11-17.json").write_bytes((ROOT / "config/frozen-2026-11-17.json").read_bytes())
     lines = (ROOT / "config/rule-ledger.jsonl").read_bytes().splitlines()
-    assert lines[-1] == canonical_bytes(TOPOLOGY_CHANGE)
+    assert canonical_bytes(TOPOLOGY_CHANGE) in lines
     assert TOPOLOGY_CHANGE["ruleId"] == "TOPOLOGY-01"
     assert TOPOLOGY_CHANGE["date"] == "2026-11-18"
     assert TOPOLOGY_CHANGE["effectiveFrom"] == "first session after 18 Nov 05:00 SGT"

@@ -171,8 +171,8 @@ captures use `<ORDINARY_PAPER_ACC>` and prove no competition-account eligibility
 - Account-list root-list envelope (`provisional_accounts.json`).
 - Legacy offline fixtures retain normalized root `cash`/`equity` and a positions
   list under `data`; these are not claims about live envelopes.
-- Nonempty rows under `data.positions`: `symbol`, `qty`, `avg_cost`,
-  `market_price`, optional entry `text`, `acc_id`, `market` remain provisional,
+- Nonempty rows under `data.positions`: `symbol`, `qty`, `cost_price`,
+  `cur_price` (observed live 18 Nov), optional entry `text`, `acc_id`, `market` remain provisional,
   including average-cost and strategy-identity semantics.
 - Filled/partial values and average-fill-price behavior, whole-share assumptions
   beyond the one-share capture (`provisional_history_filled.json`), and fees.

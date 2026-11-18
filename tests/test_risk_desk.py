@@ -101,8 +101,8 @@ def test_every_rule_independently_in_order(desk, rule):
         p["qty"] = 240
         expected = "resize"
     elif rule == "satellite_cap":
-        s.positions["BBB"] = position(qty=220)
-        s.cash = 78000
+        s.positions["BBB"] = position(qty=570)
+        s.cash = 43000
         expected = "resize"
     elif rule == "cash_floor":
         s.positions["USMV"] = position("core", qty=870)
@@ -122,13 +122,13 @@ def test_every_rule_independently_in_order(desk, rule):
 def test_resizes_minimum_and_cash_fees(desk):
     p, s, m = desk
     p["qty"] = 240
-    assert check(p, s, m)["qtyAfter"] == 80
-    s.positions["AAA"] = position(qty=61)
-    s.cash = 93900
+    assert check(p, s, m)["qtyAfter"] == 200
+    s.positions["AAA"] = position(qty=181)
+    s.cash = 81900
     r = check(p, s, m)
     assert r["verdict"] == "veto" and r["firedRule"] == "per_name_cap"
-    s.positions["AAA"]["qty"] = 80
-    s.cash = 92000
+    s.positions["AAA"]["qty"] = 200
+    s.cash = 80000
     assert check(p, s, m)["qtyAfter"] == 0
     s.positions = {"USMV": position("core", qty=850)}
     s.cash = 15000
@@ -150,14 +150,17 @@ def test_invalidation_precedes_oversized_resize(desk):
 
 def test_regime_cap_stepup_and_invalidation(desk):
     p, s, m = desk
-    s.positions["BBB"] = position(qty=180)
-    s.cash = 82000
+    s.positions["BBB"] = position(qty=530)
+    s.cash = 47000
     s.stepUp = dict(enabled=True, effectiveFrom="2026-11-18")
     assert check(p, s, m)["verdict"] == "approve"
     p["qty"] = 80
     assert check(p, s, m)["qtyAfter"] == 70
     m["sessionDate"] = "2026-11-18"
-    assert check(p, s, m)["qtyAfter"] == 80
+    # SIZING-01 sets the step-up cap equal to the base cap, so stepping up adds no room.
+    assert check(p, s, m)["qtyAfter"] == 70
+    s.positions["BBB"]["qty"] = 180
+    s.cash = 82000
     m["bars"]["SPY"].iloc[-1] = [50, 51, 49, 50, 2_000_000]
     assert check(p, s, m)["qtyAfter"] == 20
     assert check(p, s, m)["firedRule"] == "regime"
@@ -297,13 +300,13 @@ def test_time_exits_and_final_day_hold(kind, horizon):
 def test_core_weights_band_and_risk_exemption(desk):
     p, s, m = desk
     target = weights(m["bars"])
-    assert sum(target.values()) == pytest.approx(.5)
+    assert sum(target.values()) == pytest.approx(C.CORE_WEIGHT)
     assert len(propose_core(s, m["bars"], m["quotes"], m["prices"], RUN)) == 5
     ticker = C.CORE_ETFS[0]
     p.update(ticker=ticker, decisionId=f"{RUN}:{ticker}", sleeve="core", kind="core", qty=100)
     assert check(p, s, m)["verdict"] == "approve"
     s.positions = {t: position("core", qty=w*1000) for t, w in target.items()}
-    s.cash = 50000
+    s.cash = 100000 * (1 - C.CORE_WEIGHT)
     assert propose_core(s, m["bars"], m["quotes"], m["prices"], RUN) == []
     removed = s.positions[ticker]["qty"]*.25
     s.positions[ticker]["qty"] -= removed
@@ -471,7 +474,8 @@ def test_pending_tickets_consume_entry_capacity(desk):
     ticket = OrderTicket.from_proposal(p, check(p, s, m), "a"*64, NOW)
     s.reserve(ticket)
     p["decisionId"] = "later:AAA"
-    assert check(p, s, m)["qtyAfter"] == 30
+    p["qty"] = 200
+    assert check(p, s, m)["qtyAfter"] == 150
     s.ordersPlacedThisSession = 29
     assert check(p, s, m)["firedRule"] == "max_orders"
 
