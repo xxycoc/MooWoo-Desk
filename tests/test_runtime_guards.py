@@ -502,8 +502,9 @@ def test_quote_source_cannot_gain_another_ticket_lifetime(prepared):
 
 def test_sell_keeps_existing_exit_spread_exemption(prepared):
     from moowoo.tickets import to_sim_order
+    from moowoo.fees import estimate_fees
     args, ticket, log, order, lock = prepared
-    sell = OrderTicket(**(ticket.to_dict() | dict(side="SELL", ticketHash="")))
+    sell = OrderTicket(**(ticket.to_dict() | dict(side="SELL", estFees=estimate_fees("SELL", ticket.qty), ticketHash="")))
     atomic_json(args.dir / f"tickets/{RUN}.json", dict(runId=RUN, configHash=ticket.configHash, tickets=[sell.to_dict()]))
     order["args"] = to_sim_order(sell)
     atomic_json(args.dir / f"receipts/{RUN}/prepare-test.json", dict(orders=[order]))
