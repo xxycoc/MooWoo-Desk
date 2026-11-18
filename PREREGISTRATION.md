@@ -397,7 +397,7 @@ order has been placed in the competition account, and no rating was ever accepte
 
 ## 20. Addendum 2026-11-18: short quote replies; the 18 November run used the wrong code revision
 
-Written on 18 November 2026 at about 00:05 Singapore on 19 November (11:05 New York), during the
+Written on 18 November 2026 at about 23:50 Singapore (10:50 New York), during the
 18 November session. No order has been placed in the competition account.
 
 - promptVersion `5524e3574e7b0675b94bba0ffacf7bc3c9e07b6c8a35cd0d4c42071f9e20e028`, computed by
