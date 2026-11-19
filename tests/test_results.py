@@ -129,3 +129,81 @@ def test_complete_series_metrics_bootstrap_and_spy(tmp_path):
     assert results["spy"]["end"] == "2026-11-19 close"
     text = (out / "results.md").read_text(encoding="utf-8")
     assert "Annualised ratios over about eight sessions are unstable" in text
+
+
+def reports(ledger, values):
+    (ledger / "reports").mkdir()
+    for day, equity in values.items():
+        (ledger / "reports" / f"{day}.json").write_text(json.dumps(
+            {"equity": equity, "reconciliationVerified": True}), encoding="utf-8")
+
+
+def test_halted_day_rebuilds_close_from_cash_and_positions(tmp_path):
+    ledger = tmp_path / "ledger"
+    (ledger / "logs").mkdir(parents=True)
+    reports(ledger, {"2026-11-17": 100000, "2026-11-19": 100100})
+    run = "2026-11-18-watch-halted"
+    inputs = ledger / "inputs" / run
+    inputs.mkdir(parents=True)
+    (inputs / "cash.json").write_text(json.dumps({"ret_code": 0, "ret_msg": "success", "data": {
+        "balance": "50000.00", "total_asset": "100220.00", "hold": "0.00",
+        "acc_id": "7654321"}}), encoding="utf-8")
+    (inputs / "positions.json").write_text(json.dumps({"ret_code": 0, "ret_msg": "success", "data": {
+        "positions": [{"symbol": "US.IEF", "qty": "500", "cost_price": "99.00",
+                       "cur_price": "100.44", "acc_id": "7654321"},
+                      {"symbol": "US.GLD", "qty": "0", "cost_price": "0",
+                       "cur_price": "0"}]}}), encoding="utf-8")
+    EventLog(ledger / "logs" / f"{run}.jsonl", runId=run).append(
+        "run_started", dict(universe=["IEF"], equity=100220, cash=50000, tier="normal",
+                            configHash="a" * 64, promptVersion="test-v0", trdEnv="SIMULATE"),
+        ts="2026-11-18T20:04:00Z")
+    bars = ledger / "inputs" / "2026-11-19-morning-bars"
+    bars.mkdir(parents=True)
+    (bars / "bars.json").write_text(json.dumps({"IEF": [
+        {"date": "2026-11-18", "open": 99.9, "high": 100.5, "low": 99.8, "close": 100.10}]}),
+        encoding="utf-8")
+    out = tmp_path / "docs"
+    results = build_results.build(ledger, out)
+    day = {row["day"]: row for row in results["days"]}["2026-11-18"]
+    assert day["equity"] == pytest.approx(100050.0)
+    assert day["equity"] != 100220
+    assert day["source"] == "rebuilt close (snapshot 15:04 ET cash and positions × session close)"
+    assert results["missingDays"] == []
+    payload = (out / "results.json").read_text(encoding="utf-8")
+    assert "7654321" not in payload and "acc_id" not in payload
+
+
+def test_metrics_report_per_metric_availability(tmp_path):
+    ledger = tmp_path / "ledger"
+    (ledger / "logs").mkdir(parents=True)
+    reports(ledger, {"2026-11-17": 100000, "2026-11-18": 100500})
+    out = tmp_path / "docs"
+    results = build_results.build(ledger, out)
+    assert results["metricsUnavailableReason"] is None
+    assert results["metrics"]["sharpe"] is not None
+    assert results["metrics"]["sortino"] is None
+    assert results["metrics"]["calmar"] is None
+    assert results["metricsNotes"]["sortino"] == "unavailable (no down days)"
+    assert results["metricsNotes"]["calmar"] == "unavailable (no down days)"
+    text = (out / "results.md").read_text(encoding="utf-8")
+    assert "Metrics unavailable" not in text
+    assert text.count("unavailable (no down days)") == 2
+    assert "Annualised ratios over about eight sessions are unstable" in text
+
+
+def test_spy_close_must_match_latest_equity_day(tmp_path):
+    ledger = tmp_path / "ledger"
+    (ledger / "logs").mkdir(parents=True)
+    reports(ledger, {"2026-11-17": 100000, "2026-11-18": 100500})
+    bars = ledger / "inputs" / "bars-run"
+    bars.mkdir(parents=True)
+    (bars / "bars.json").write_text(json.dumps({"SPY": [
+        {"date": "2026-11-17", "open": 400.0, "close": 404.0},
+        {"date": "2026-11-18", "open": 405.0}]}), encoding="utf-8")
+    out = tmp_path / "docs"
+    results = build_results.build(ledger, out)
+    assert results["latestDataDay"] == "2026-11-18"
+    assert results["spy"]["returnPct"] is None
+    assert results["spy"]["reason"] == "unavailable for 2026-11-18"
+    text = (out / "results.md").read_text(encoding="utf-8")
+    assert "- SPY return: unavailable for 2026-11-18." in text

@@ -60,8 +60,20 @@ def verified_report(ledger: Path, day: date) -> float | None:
     return float(equity)
 
 
-def broker_total(ledger: Path, run_id: str) -> float | None:
-    """Only the numeric total_asset is read; the raw payload never leaves this function."""
+def parse_number(raw: object, *, allow_zero: bool = False) -> float | None:
+    if isinstance(raw, bool) or not isinstance(raw, (str, int, float)):
+        return None
+    try:
+        value = float(str(raw).replace(",", "").replace("$", "").strip())
+    except ValueError:
+        return None
+    if not math.isfinite(value) or value < 0 or (value == 0 and not allow_zero):
+        return None
+    return value
+
+
+def broker_snapshot(ledger: Path, run_id: str) -> dict | None:
+    """Only balance and total_asset are read; the raw payload never leaves this function."""
     path = ledger / "inputs" / run_id / "cash.json"
     if not path.is_file():
         return None
@@ -70,14 +82,81 @@ def broker_total(ledger: Path, run_id: str) -> float | None:
     except (OSError, ValueError):
         return None
     data = payload.get("data") if isinstance(payload, dict) else None
-    raw = data.get("total_asset") if isinstance(data, dict) else None
-    if not isinstance(raw, str):
+    if not isinstance(data, dict):
+        return None
+    cash = parse_number(data.get("balance"), allow_zero=True)
+    total = parse_number(data.get("total_asset"))
+    if cash is None and total is None:
+        return None
+    return dict(cash=cash, totalAsset=total)
+
+
+def held_quantities(ledger: Path, run_id: str) -> dict[str, float] | None:
+    """Positions rows use the broker's symbol/qty fields; account fields are never read."""
+    path = ledger / "inputs" / run_id / "positions.json"
+    if not path.is_file():
         return None
     try:
-        value = float(raw.replace(",", "").replace("$", "").strip())
-    except ValueError:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
         return None
-    return value if math.isfinite(value) and value > 0 else None
+    data = payload.get("data") if isinstance(payload, dict) else None
+    rows = data.get("positions") if isinstance(data, dict) else data
+    if not isinstance(rows, list):
+        return None
+    held = {}
+    for row in rows:
+        if not isinstance(row, dict) or not isinstance(row.get("symbol"), str):
+            return None
+        qty = parse_number(row.get("qty"), allow_zero=True)
+        if qty is None:
+            return None
+        symbol = row["symbol"]
+        name = symbol[3:] if symbol.startswith("US.") else symbol
+        if qty > 0:
+            held[name] = held.get(name, 0) + qty
+    return held
+
+
+def load_bars(ledger: Path) -> list[dict]:
+    datasets = []
+    for folder in sorted((ledger / "inputs").glob("*")):
+        path = folder / "bars.json"
+        if not path.is_file():
+            continue
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(data, dict):
+            datasets.append(data)
+    return datasets
+
+
+def session_close(datasets: list[dict], name: str, day: date) -> float | None:
+    for data in datasets:
+        try:
+            return price(data, name, day.isoformat(), "close")
+        except ValueError:
+            continue
+    return None
+
+
+def rebuild_equity(ledger: Path, run_id: str, day: date, datasets: list[dict],
+                   snapshot: dict) -> float | None:
+    """Cash plus each held quantity at the session close; only when every close exists."""
+    if snapshot["cash"] is None:
+        return None
+    held = held_quantities(ledger, run_id)
+    if held is None:
+        return None
+    value = snapshot["cash"]
+    for name, qty in held.items():
+        close = session_close(datasets, name, day)
+        if close is None:
+            return None
+        value += qty * close
+    return round(value, 2)
 
 
 def run_starts(events: list[dict]) -> dict[str, dict]:
@@ -91,16 +170,35 @@ def run_starts(events: list[dict]) -> dict[str, dict]:
     return latest
 
 
-def latest_data_day(ledger: Path, starts: dict[str, dict]) -> date | None:
+def latest_data_day(ledger: Path, starts: dict[str, dict], datasets: list[dict]) -> date | None:
     days = {day for day in calendar.TRADING_DAYS if verified_report(ledger, day) is not None}
     for run_id, event in starts.items():
         local = calendar.local_time(event["ts"])
-        if local.date() in calendar.TRADING_DAYS and broker_total(ledger, run_id) is not None:
+        if local.date() not in calendar.TRADING_DAYS:
+            continue
+        snapshot = broker_snapshot(ledger, run_id)
+        if snapshot is None:
+            continue
+        if snapshot["totalAsset"] is not None or rebuild_equity(
+                ledger, run_id, local.date(), datasets, snapshot) is not None:
             days.add(local.date())
     return max(days) if days else None
 
 
-def daily_rows(ledger: Path, starts: dict[str, dict], latest: date | None) -> tuple[list[dict], list[str]]:
+def day_snapshots(ledger: Path, starts: dict[str, dict], day: date) -> list[tuple]:
+    snapshots = []
+    for run_id, event in starts.items():
+        local = calendar.local_time(event["ts"])
+        if local.date() != day:
+            continue
+        snapshot = broker_snapshot(ledger, run_id)
+        if snapshot is not None:
+            snapshots.append((instant(event["ts"]), run_id, local, snapshot))
+    return sorted(snapshots, key=lambda row: (row[0], row[1]))
+
+
+def daily_rows(ledger: Path, starts: dict[str, dict], latest: date | None,
+               datasets: list[dict]) -> tuple[list[dict], list[str]]:
     rows, missing = [], []
     for day in sorted(calendar.TRADING_DAYS):
         if latest is None or day > latest:
@@ -110,17 +208,21 @@ def daily_rows(ledger: Path, starts: dict[str, dict], latest: date | None) -> tu
         if report is not None:
             equity, source = report, "audit report"
         else:
-            snapshots = []
-            for run_id, event in starts.items():
-                local = calendar.local_time(event["ts"])
-                if local.date() != day:
-                    continue
-                value = broker_total(ledger, run_id)
-                if value is not None:
-                    snapshots.append((instant(event["ts"]), run_id, value, local))
+            snapshots = day_snapshots(ledger, starts, day)
             if snapshots:
-                _, _, equity, local = max(snapshots, key=lambda row: (row[0], row[1]))
-                source = f"last broker snapshot {local.strftime('%H:%M')} ET"
+                _, run_id, local, snapshot = snapshots[-1]
+                rebuilt = rebuild_equity(ledger, run_id, day, datasets, snapshot)
+                if rebuilt is not None:
+                    equity = rebuilt
+                    source = (f"rebuilt close (snapshot {local.strftime('%H:%M')} ET "
+                              "cash and positions × session close)")
+                else:
+                    priced = [(run_local, value["totalAsset"])
+                              for _, _, run_local, value in snapshots
+                              if value["totalAsset"] is not None]
+                    if priced:
+                        run_local, equity = priced[-1]
+                        source = f"last broker snapshot {run_local.strftime('%H:%M')} ET"
         rows.append(dict(day=day.isoformat(), equity=equity, source=source))
         if equity is None:
             missing.append(day.isoformat())
@@ -153,31 +255,15 @@ def bootstrap(returns: list[float] | None) -> dict:
     return result
 
 
-def spy_comparison(ledger: Path) -> dict:
-    bars = []
-    for folder in sorted((ledger / "inputs").glob("*")):
-        path = folder / "bars.json"
-        if not path.is_file():
-            continue
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        if isinstance(data, dict):
-            bars.append(data)
+def spy_comparison(datasets: list[dict], latest: date | None) -> dict:
     result = dict(start=f"{SPY_START_DAY} regular-session open", end=None, returnPct=None,
                   reason="unavailable: no SPY bars in inputs/")
-    if not bars:
+    if not datasets:
         return result
-    closes = {}
-    for day in sorted(calendar.TRADING_DAYS):
-        for data in bars:
-            try:
-                closes[day] = price(data, "SPY", day.isoformat(), "close")
-            except ValueError:
-                continue
+    if latest is None:
+        return result | dict(reason="unavailable: no equity data day")
     start = None
-    for data in bars:
+    for data in datasets:
         try:
             start = price(data, "SPY", SPY_START_DAY, "open")
             break
@@ -185,11 +271,11 @@ def spy_comparison(ledger: Path) -> dict:
             continue
     if start is None:
         return result | dict(reason="unavailable: missing SPY 17 Nov regular-session open")
-    if not closes:
-        return result | dict(reason="unavailable: missing SPY session close")
-    end = max(closes)
-    return dict(start=result["start"], end=f"{end.isoformat()} close",
-                returnPct=closes[end] / start - 1, reason=None)
+    close = session_close(datasets, "SPY", latest)
+    if close is None:
+        return result | dict(reason=f"unavailable for {latest.isoformat()}")
+    return dict(start=result["start"], end=f"{latest.isoformat()} close",
+                returnPct=close / start - 1, reason=None)
 
 
 def hypothesis_summary(events: list[dict]) -> dict:
@@ -300,6 +386,10 @@ def ratio(value: float | None) -> str:
     return "unavailable" if value is None else f"{value:.2f}"
 
 
+def metric_text(name: str, value: str, notes: dict) -> str:
+    return notes.get(name) if value == "unavailable" else value
+
+
 def quantity(value: float | None) -> str:
     return "unavailable" if value is None else f"{value:g}"
 
@@ -332,15 +422,16 @@ def markdown(results: dict) -> str:
         lines.append("No missing days: every session has a reconciled audit report or a broker snapshot.")
 
     metrics = results["metrics"]
+    notes = results["metricsNotes"]
     lines += ["", "## Account metrics", ""]
     if results["metricsUnavailableReason"]:
         lines.append("Metrics unavailable: " + results["metricsUnavailableReason"] + ".")
     lines += [
-        f"- Total return: {percent(metrics['totalReturn'])}",
-        f"- Sharpe (annualised): {ratio(metrics['sharpe'])}",
-        f"- Sortino (annualised): {ratio(metrics['sortino'])}",
-        f"- Calmar (annualised): {ratio(metrics['calmar'])}",
-        f"- Max drawdown: {percent(metrics['maxDrawdown'])}",
+        f"- Total return: {metric_text('totalReturn', percent(metrics['totalReturn']), notes)}",
+        f"- Sharpe (annualised): {metric_text('sharpe', ratio(metrics['sharpe']), notes)}",
+        f"- Sortino (annualised): {metric_text('sortino', ratio(metrics['sortino']), notes)}",
+        f"- Calmar (annualised): {metric_text('calmar', ratio(metrics['calmar']), notes)}",
+        f"- Max drawdown: {metric_text('maxDrawdown', percent(metrics['maxDrawdown']), notes)}",
         "",
         "Annualised ratios over about eight sessions are unstable and descriptive only.",
     ]
@@ -416,10 +507,12 @@ def build(ledger: Path, out: Path) -> dict:
     events = [event for event in read_events(sorted((ledger / "logs").glob("*.jsonl")))
               if not event["drill"]]
     starts = run_starts(events)
-    latest = latest_data_day(ledger, starts)
-    rows, missing = daily_rows(ledger, starts, latest)
+    datasets = load_bars(ledger)
+    latest = latest_data_day(ledger, starts, datasets)
+    rows, missing = daily_rows(ledger, starts, latest, datasets)
     returns = daily_returns(rows)
     metrics_values = dict(totalReturn=None, sharpe=None, sortino=None, calmar=None, maxDrawdown=None)
+    metrics_notes = {}
     reason = None
     if not rows:
         reason = "no equity data"
@@ -428,8 +521,17 @@ def build(ledger: Path, out: Path) -> dict:
     else:
         calculated = audit.metrics([START_EQUITY, *[row["equity"] for row in rows]])
         metrics_values = {key: calculated[key] for key in metrics_values}
-        if any(value is None for value in metrics_values.values()):
-            reason = "insufficient observations or zero denominator"
+        if metrics_values["totalReturn"] is None:
+            metrics_notes["totalReturn"] = "unavailable"
+        if metrics_values["sharpe"] is None:
+            metrics_notes["sharpe"] = "unavailable (zero volatility)"
+        if metrics_values["sortino"] is None:
+            metrics_notes["sortino"] = "unavailable (no down days)"
+        if metrics_values["calmar"] is None:
+            metrics_notes["calmar"] = ("unavailable (no down days)"
+                                       if metrics_values["maxDrawdown"] == 0 else "unavailable")
+        if metrics_values["maxDrawdown"] is None:
+            metrics_notes["maxDrawdown"] = "unavailable"
     results = dict(
         schemaVersion=1,
         returnUnit="fraction unless a field ends in Pct",
@@ -438,9 +540,10 @@ def build(ledger: Path, out: Path) -> dict:
         days=rows,
         missingDays=missing,
         metrics=metrics_values,
+        metricsNotes=metrics_notes,
         metricsUnavailableReason=reason,
         dailyMean=bootstrap(returns),
-        spy=spy_comparison(ledger),
+        spy=spy_comparison(datasets, latest),
         hypotheses=hypothesis_summary(events),
         trades=trade_rows(events),
         counts=action_counts(events),
