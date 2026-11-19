@@ -530,3 +530,30 @@ Written on 19 November 2026 at about 23:10 Singapore (10:10 New York), during th
   - The close audit ends with a fixed summary written by code from the daily report (commit `bade87f`, agent
     version 31), and the audit schedules deliver it to a paired Slack channel. Only the auditor, which has no
     order tools, is connected to Slack.
+
+## 27. Addendum 2026-11-20: more of the account invested (SIZING-02, CORE-REBALANCE-02, SLEEVE-01)
+
+Written on 20 November 2026 at about 00:30 Singapore (19 November, 11:30 New York), during the session.
+Holdings: ACM 130 (satellite), IEF 218 and XLP 40 (core); cash about 66% of equity.
+
+- promptVersion `0aa06321a360d35237eb970b08c39070e2993935b9a66893a524687402e2811e` (coordinator prompt changed:
+  order of processing, and when core and SPY buys may use existing cash).
+- Why: after three sessions the account held about 66% cash. Stock signals are rare (one satellite entry so far),
+  the weak-regime cap of 20% was full after one entry (DIS and TGT were vetoed on 19 November), and the core
+  rebalance failed on both 18 and 19 November because core buys waited for an IEF sell. Siang Woo decided that,
+  for the remaining six sessions, keeping capital in the market matters more than waiting for signals.
+- Rule changes (rule ledger), decided by Siang Woo on 19 November, effective from the first session after
+  20 November 00:00 Singapore:
+  - SIZING-02: in a weak regime satellites may use up to 40% of equity instead of 20%.
+  - CORE-REBALANCE-02: core buys are authorized from existing cash when the 10% cash floor holds, without waiting
+    for the same session's core sells. Until those sells fill, the core may exceed 30% by their value; an unfilled
+    sell is trimmed by the next morning rebalance. If cash does not cover a buy, it still waits for reconciled sells.
+  - SLEEVE-01: a new sleeve holds SPY at 30% of equity at all times, rebalanced each morning with the core band.
+    It is bought only from cash left after core and satellite tickets, never sold to fund satellites, and has no
+    stop, like the core. Drawdown tiers, exits-only, the kill switch and the daily loss halt treat it like the core.
+- Unchanged: core 30% and its five ETFs, the 60% normal satellite cap, the 20% per-name cap, the 10% cash floor,
+  stops and trailing stops, horizons, drawdown tiers, the daily loss halt, the kill switch and long-only.
+- Consequence: the account becomes roughly 30% core, 30% SPY and up to 30% satellites, so daily returns now
+  follow the market much more closely. SPY is also the comparison benchmark, so excess return over SPY will be
+  smaller in size by construction. Results are reported separately before and after this addendum, as for
+  SIZING-01. Code: commits `3f015ad` and `59ffd3e`.
