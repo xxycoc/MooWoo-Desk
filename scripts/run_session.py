@@ -41,7 +41,11 @@ def invoke(script, *arguments):
             atomic_json(log_path.parent.parent / f"receipts/commands/{uuid.uuid4().hex}.json",
                         dict(script=script, returncode=result.returncode,
                              stdout=redact_error(result.stdout), stderr=redact_error(result.stderr)))
-        raise ValueError(f"{script} failed; inspect persisted logs; no further order work")
+        try:
+            detail = json.loads(result.stdout).get("reason", "see persisted command receipt")
+        except (ValueError, AttributeError):
+            detail = "see persisted command receipt"
+        raise ValueError(f"{script} failed: {redact_error(detail)}; no further order work")
     try:
         return json.loads(result.stdout)
     except json.JSONDecodeError:
@@ -109,7 +113,7 @@ def run(args, now=None):
                 state = PortfolioState.from_dict(read_json(state_path))
                 release_undispatched(tickets, state, log)
                 atomic_json(state_path, state.to_dict())
-        log.append("reflection_note", dict(prompt="Session runner", text="Session aborted; retained all evidence", skipped=True))
+        log.append("reflection_note", dict(prompt="Session runner", text="Session aborted: " + getattr(args, "reason", "operator abort; reason not supplied"), skipped=True))
         saved = store.save("Abort session; preserve evidence", holder)
         control.unlink()
         return saved | dict(feedPublished=publish_feed(root))
@@ -214,6 +218,7 @@ def main():
     parser.add_argument("--phase", choices=PHASES, default="start")
     parser.add_argument("--dir", default="runtime")
     parser.add_argument("--remote", default=REMOTE)
+    parser.add_argument("--reason", default="operator abort; reason not supplied")
     args = parser.parse_args()
     try:
         print(json.dumps(run(args)))
@@ -225,6 +230,7 @@ def main():
         recovery = "local copy retained; run --phase abort to persist evidence when ownership permits"
         if args.phase != "renew" and not isinstance(exc, LedgerError):
             try:
+                args.reason = f"{args.phase}: {redact_error(exc)}"
                 args.phase = "abort"
                 aborted = run(args)
                 feed_result = dict(feedPublished=bool(aborted.get("feedPublished"))) if isinstance(aborted, dict) else {}

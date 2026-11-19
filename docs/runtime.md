@@ -146,9 +146,9 @@ runtime inputs or verbatim child replies; never rewrite replies to make them pas
 | `candidates.json` | Required gather output, array of at most `PICK_COUNT` (5) picked movers in rank order; each has `rank`, `decisionId`, `ticker`, trusted `newsCutoff`, `barsAsOf`, `promptVersion`, `primaryAgent`, `quickSecondOpinionRequired`. The stored candidate `setupScore` is not trusted; ingestion recomputes it. |
 | `bars.json` | Required gather output, completed daily OHLCV bars keyed by ticker; each accepted ticker needs bars through `session.barsAsOf` |
 | `replies/<decisionId>.analyst.json` | Required for every candidate; original brief with matching identity/cutoff and `items` containing id, headline, source, UTC publishedAt and summary. Empty items are allowed. |
-| `replies/<decisionId>.bull.json`, `.bear.json` | Required for ranks 1–5; exact debate objects with `decisionId`, `stance`, `argument` (at most 150 words), `itemIds` referencing eligible brief items |
-| `replies/<decisionId>.manager.json` | Required primary for ranks 1–5, `tier: "debate"`, validated against the candidate cutoff and promptVersion |
-| `replies/<decisionId>.quick.json` | Required primary for ranks 6–15, `tier: "quick"`. Expected for ranks 1–5 as a separately validated second opinion; missing/invalid quick logs its own skip and cannot reject a valid manager primary. |
+| `replies/<decisionId>.bull.json`, `.bear.json` | Required for ranks 1â€“5; exact debate objects with `decisionId`, `stance`, `argument` (at most 150 words), `itemIds` referencing eligible brief items |
+| `replies/<decisionId>.manager.json` | Required primary for ranks 1â€“5, `tier: "debate"`, validated against the candidate cutoff and promptVersion |
+| `replies/<decisionId>.quick.json` | Required primary for ranks 6â€“15, `tier: "quick"`. Expected for ranks 1â€“5 as a separately validated second opinion; missing/invalid quick logs its own skip and cannot reject a valid manager primary. |
 | `ratings.json` | Generated atomically; only accepted primaries in picked order, or `[]`. Never hand-write this file. |
 
 `decisionId` is exactly `<runId>:<ticker>`; filenames preserve the colon. These
@@ -167,7 +167,7 @@ are display metadata; they never overwrite the manager class or confidence.
 
 Ingestion appends through the existing locked `EventLog` at
 `<inputs>/../../logs/<runId>.jsonl`. Each decision has one terminal primary outcome
-and, for ranks 1–5, one independent second-opinion outcome. Missing/malformed
+and, for ranks 1â€“5, one independent second-opinion outcome. Missing/malformed
 replies, bad candidate metadata or unusable ticker bars become ticker `halt`
 events with `disposition: "skip"`, `stage: "rating_validation"` and the appropriate
 `secondOpinion` flag. A partial batch still exits successfully and reports accepted
@@ -261,8 +261,8 @@ Never continue past expiry or extend market hours or quote/ticket freshness.
 
 ## Calendar and deployment conflicts
 
-Trading sessions are 17–20 and 23–25 November, 09:30–16:00 New York, plus
-27 November, 09:30–13:00. Thanksgiving, weekends and dates outside the competition
+Trading sessions are 17â€“20 and 23â€“25 November, 09:30â€“16:00 New York, plus
+27 November, 09:30â€“13:00. Thanksgiving, weekends and dates outside the competition
 are closed. The close boundary itself is not an order window. Risk uses the
 calendar for the first-five-minute and final-day entry gates; supplied market
 open/close fields cannot extend the calendar. Record/reconcile/save are still
@@ -277,7 +277,7 @@ premarket, which the regular-hours guard would always skip; the time was moved o
 17 November 2026 before any session ran. Screening uses completed prior-day bars,
 so nothing is lost by running after the open.
 
-The watcher uses two cron schedules: every half hour 10:00–15:30 and 16:00 New
+The watcher uses two cron schedules: every half hour 10:00â€“15:30 and 16:00 New
 York. The morning run covers the open; a watcher that meets its lock exits. The calendar skips Thanksgiving and ticks at/after actual close.
 The audit has a 16:10 weekday schedule plus a 13:10 27-November schedule; the
 calendar rejects the late 16:10 duplicate on 27 November. Every schedule has
@@ -385,3 +385,26 @@ append contradictory old instructions to the new sequence.
 > `--phase abort` on failure; a failed save is not successful persistence. Return
 > the report and the existing three reflection prompts. When no Slack sink is
 > configured, state that delivery is disabled; never claim a delivery receipt.
+
+## Input validation and quote refresh (build/23)
+
+Use `scripts/check_broker_input.py --kind accounts|cash|positions|history --file
+<path> --stdin` with a quoted heredoc for each reply. It trims fields using
+broker_fields, saves atomically, validates immediately and names missing fields.
+There are at most two re-fetch/re-save retries after the initial failure. Saved
+history pages are assembled with `--assemble <inputs>`. No direct broker transport
+was added: the cloud tool result is not exposed to these scripts as a supported
+file or stream. The agent still copies the minimal response, without inventing
+fields. Preserve original tool transcripts separately.
+
+Malformed or missing broker inputs create a run-scoped input-validation halt,
+abort that run and leave PortfolioState.halted unchanged. Genuine reconciliation
+or routing disagreements keep their existing persistent halt behavior. This does
+not clear any prior halt. A successful next scheduled run uses new validated files.
+
+Prepare the per-ticket save/check command before fetching the quote. On
+retryable:true, fetch one fresh quote and repeat it immediately; quoteAttempt is
+separate from order attempt. A future timestamp, bad spread, changed marketable
+limit, or other refusal is not retryable. If persistence consumes the quote
+window, the checker durably records that it withheld authorization before a
+refresh. Never retry a returned ok:true authorization. The source limit stays 60 s.

@@ -49,11 +49,12 @@ invented balances. Check every result and apply the renewal rule before each ste
 
 1. Run `python3 scripts/run_session.py --kind K --phase start`.
    If skipped=true, stop immediately; do not wait under the lease.
-2. Ask executor for raw account-list, history (all pages), positions and cash.
-   The COORDINATOR writes replies verbatim to <inputs>/accounts.json,
-   history.json, positions.json and cash.json. If paginated, history.json holds
-   the first reply; history-pages.json maps continuation cursors to untouched
-   page replies. Preserve raw transcripts; executor performs no file work.
+2. Ask executor for account-list, history (all pages), positions and cash, trimmed
+   to exactly the fields in the Broker save commands below. Save and validate EACH
+   reply with its command immediately. On a validation failure re-fetch and re-save
+   only that reply, at most TWO retries (three saves total); never infer missing
+   fields. Exhaustion aborts this run with no orders. Do not enter preflight until
+   all four files pass. Preserve transcripts separately.
 3. Run `python3 scripts/run_session.py --kind K --phase preflight`, then
    `python3 scripts/run_session.py --kind K --phase reconcile` for the baseline.
 4. Run `python3 scripts/session_info.py` for barsAsOf, hours and cutoffs.
@@ -94,11 +95,16 @@ invented balances. Check every result and apply the renewal rule before each ste
    durable checkpointing. Initialize <inputs>/responses.json to [] once.
 9. For EACH prepared ticket sequentially, ask analyst for ONE fresh quote for
    that ticket's US symbol using quote-request.json's same declared quote tool.
-   Save its reply exactly to <inputs>/quotes-raw-<ticker>.json; use the ticket's
+   Before requesting the quote, prepare the save/check command and renew if needed.
+   After the reply, do NO reads, commentary, clock calls or other tool work before
+   the single Bash command below. Save its reply to <inputs>/quotes-raw-<ticker>.json; use the ticket's
    ticker (e.g. AAPL), never its colon-containing decisionId, as the safe filename.
    In the SAME Bash command run `python3 scripts/dispatch_check.py --kind K --decision-id <id>`.
    It checks source time, symbol, entry spread and unchanged limit price, and prints
-   quoteDeadline (source time + 60 seconds). ok:false with skipped:true is a logged
+   quoteDeadline (source time + 60 seconds). If retryable:true, immediately fetch
+   one new single-symbol quote and repeat the same save/check command. At most TWO
+   quote checks; quoteAttempt is separate from the broker placement attempt.
+   Never retry a broker handoff or an ok:true result. ok:false with skipped:true is a logged
    ticket skip: continue to the next ticket. Never resize or reprice tickets.
    Only if it prints ok:true, hand its exact tool, args, decisionId and integer
    attempt to executor for ONE order immediately, before quoteDeadline. If the
@@ -111,14 +117,16 @@ invented balances. Check every result and apply the renewal rule before each ste
     without receipts remain pending. Also run record for an empty/all-skipped
     batch. Preserve late/ambiguous receipts; acceptance is not a fill. Never resubmit.
 11. Preserve earlier snapshots; executor refreshes all history pages, positions
-    and cash. Save replies verbatim, then run
+    and cash. Use the same validated Broker save commands, then run
     `python3 scripts/run_session.py --kind K --phase reconcile`. Save the result
     and unresolved cancellations as reconciliation.json; report, never invent
     orders. Run `python3 scripts/run_session.py --kind K --phase finish` and
     confirm save/unlock only on success. Retain handoff, log and receipt refs.
     Auditor runs in a separate new Session, never a child; report pending until
     its report arrives. Never post its audit or request Slack tools.
-12. Before each command/external call, check date -u and expiresAt. With under
+12. Before each command/external call, check date -u and expiresAt, except the
+    immediate quote-save/check/handoff path: check and renew BEFORE requesting
+    that quote, then rely on dispatch_check's clock and ownership gates. With under
     10 minutes left, run `python3 scripts/run_session.py --kind K --phase renew`.
     Use returned expiresAt only on success. If capped:true, stop renewing and
     stop starting new order/research work; reserve remaining time to record,
@@ -139,7 +147,7 @@ lease beyond a call's step 6 deadline; a reply still missing then is that ticker
 On an abort reason, stop agent/order work and save every received envelope in
 responses.json before running abort. Abort records saved receipts and releases
 only never-dispatched reservations; uncertain handoffs remain pending. Run
-`python3 scripts/run_session.py --kind K --phase abort` if still owned and not
+`python3 scripts/run_session.py --kind K --phase abort --reason "<specific failure>"` if still owned and not
 already saved/unlocked. A skipped phase or reported automatic abort success ends
 the run; never repeat cleanup. If abort/save is refused, including expired/lost
 ownership, preserve the local copy and report unsaved evidence. Never resume
@@ -147,3 +155,50 @@ trading in that run. A logged candidate validation skip does not excuse a nonzer
 ingestion exit. Missing/incompatible commands halt; no improvised duties or
 direct planning/execution CLI fallback. Cross-schedule locking is required;
 max_concurrent_runs alone is insufficient.
+
+## Broker save commands
+
+Return only ret_code, ret_msg, data, and these exact row fields. Keep ALL rows
+and any optional fields that are present; never invent or rename a field:
+- accounts: data.accounts rows: account_id, market_id, account_type,
+  account_title; optional broker_id, intra_account_id.
+- cash: data.balance, total_asset, hold; optional acc_id, market,
+  realized_profit, unrealized_profit.
+- positions: data.positions rows: symbol, qty, cost_price, cur_price;
+  optional text, acc_id, market.
+- history: data.orders rows: order_id, symbol, text, side, qty, price, cum_qty,
+  avg_fill_price, status; optional acc_id, market, create_time, update_time,
+  time_in_force, order_trade_time_type, order_type. Preserve pagination.has_more
+  and pagination.next_key at their original envelope/data location, on every page.
+
+Each command consumes the trimmed JSON directly, saves it atomically and validates
+it without echoing broker data. Replace only <inputs> and the reply body:
+
+```bash
+python3 scripts/check_broker_input.py --kind accounts --file <inputs>/accounts.json --stdin <<'MWEOF'
+<account reply JSON>
+MWEOF
+python3 scripts/check_broker_input.py --kind cash --file <inputs>/cash.json --stdin <<'MWEOF'
+<cash reply JSON>
+MWEOF
+python3 scripts/check_broker_input.py --kind positions --file <inputs>/positions.json --stdin <<'MWEOF'
+<positions reply JSON>
+MWEOF
+python3 scripts/check_broker_input.py --kind history --file <inputs>/history.json --stdin <<'MWEOF'
+<first history reply JSON>
+MWEOF
+```
+Run these separately as each reply arrives. For continuation pages use the history
+command with history-page-1.json, history-page-2.json, etc. Then run
+`python3 scripts/check_broker_input.py --assemble <inputs>` to build
+history-pages.json without retyping pages. This checks the complete cursor chain;
+a missing page names the file to re-fetch (two retries), then aborts the run.
+
+
+Per-ticket quote save/check, with K and <id> prepared BEFORE the quote request:
+```bash
+cat > <inputs>/quotes-raw-<ticker>.json <<'MWEOF'
+<trimmed quote JSON>
+MWEOF
+python3 scripts/dispatch_check.py --kind K --decision-id <id>
+```

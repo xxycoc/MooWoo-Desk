@@ -132,7 +132,8 @@ def test_dispatch_only_selected_ticket_freshness(prepared, seconds, ok):
     result = dispatch_check.run(args, NOW + timedelta(seconds=seconds))
     assert result["ok"] is ok
     if not ok:
-        assert result["skipped"] and log.read()[-1]["executionAction"] == "skip"
+        assert result["skipped"] == (seconds < 0)
+        assert log.read()[-1]["executionAction"] == ("skip" if seconds < 0 else "quote_refresh")
 
 
 @pytest.mark.parametrize("mutation,reason", [
@@ -186,7 +187,7 @@ def test_dispatch_clock_after_ownership_fetch(prepared, monkeypatch):
         nonlocal current
         current = NOW + timedelta(seconds=61)
     monkeypatch.setattr(dispatch_check, "require_owned", delayed_check)
-    assert dispatch_check.run(args)["skipped"]
+    assert dispatch_check.run(args)["retryable"]
 
 
 @pytest.mark.parametrize("moment,reason", [
@@ -443,8 +444,8 @@ def test_dispatch_rechecks_quote_after_persistence(prepared, monkeypatch):
     monkeypatch.setattr(LedgerStore, "save", save)
     monkeypatch.setattr(runlock, "datetime", Clock)
     result = dispatch_check.run(args)
-    assert result["skipped"]
-    assert log.read()[-1]["executionAction"] == "skip"
+    assert result["retryable"]
+    assert log.read()[-1]["executionAction"] == "quote_refresh"
 
 
 @pytest.mark.parametrize("received", [False, True])
@@ -476,8 +477,9 @@ def test_dispatch_stale_cli_is_successful_ticket_skip(prepared, monkeypatch, cap
                                     "--dir", str(args.dir)])
     assert dispatch_check.main() == 0
     output = json.loads(capsys.readouterr().out)
-    assert output["ok"] is False and output["skipped"]
-    assert output["quoteDeadline"] == "2026-11-17T15:01:00Z"
+    assert output["ok"] is False and output["retryable"]
+    assert dispatch_check.main() == 0
+    assert json.loads(capsys.readouterr().out)["skipped"]
 
 
 def test_dispatch_rejects_noninteger_prepared_attempt(prepared):
@@ -509,7 +511,9 @@ def test_quote_source_cannot_gain_another_ticket_lifetime(prepared):
     atomic_json(path, payload)
     # Ticket is only 55 seconds old, but its quote source is now 110 seconds old.
     result = dispatch_check.run(args, NOW + timedelta(seconds=55))
-    assert result["ok"] is False and result["skipped"]
+    assert result["ok"] is False and result["retryable"]
+    result = dispatch_check.run(args, NOW + timedelta(seconds=55))
+    assert result["skipped"]
     assert result["quoteDeadline"] == "2026-11-17T15:00:05Z"
 
 

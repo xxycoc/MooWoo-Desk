@@ -8,17 +8,18 @@ import re
 
 from . import broker_fields as fields
 from .portfolio import PortfolioState, positive
+from .input_files import InputFileError
 
 EQUITY_MARK_TOLERANCE = 0.0025
 
 
 def mapped(row, table):
     if not isinstance(row, dict):
-        raise ValueError("broker row must be an object")
+        raise InputFileError("broker row must be an object")
     result = {}
     for target, source in table["required"].items():
         if source not in row or row[source] is None:
-            raise ValueError(f"missing required broker field: {source}")
+            raise InputFileError(f"missing required broker field: {source}")
         result[target] = row[source]
     for target, source in table["optional"].items():
         if source in row and row[source] is not None:
@@ -29,7 +30,7 @@ def mapped(row, table):
 def rows(payload, table):
     values = payload if table["rows"] is None else payload.get(table["rows"])
     if not isinstance(values, list):
-        raise ValueError("missing or invalid required broker rows list")
+        raise InputFileError("missing or invalid required broker rows list")
     return [mapped(row, table) for row in values]
 
 
@@ -65,12 +66,12 @@ def parse_accounts(payload):
     result = rows(payload, fields.ACCOUNT_LIST)
     for row in result:
         if type(row["accountType"]) is not int or type(row["market"]) is not int:
-            raise ValueError("account type and market must be integers")
+            raise InputFileError("account type and market must be integers")
         if type(row["accountId"]) not in (str, int):
-            raise ValueError("account ID must be a string or integer")
+            raise InputFileError("account ID must be a string or integer")
         row["accountId"] = str(row["accountId"])
         if not row["accountId"] or not isinstance(row["title"], str):
-            raise ValueError("invalid account identity")
+            raise InputFileError("invalid account identity")
     return result
 
 
@@ -115,13 +116,13 @@ def parse_positions(payload):
 
 def successful_data(payload):
     if not isinstance(payload, dict) or type(payload.get("ret_code")) is not int:
-        raise ValueError("missing required broker field: ret_code")
+        raise InputFileError("missing required broker field: ret_code")
     if not isinstance(payload.get("ret_msg"), str):
-        raise ValueError("missing required broker field: ret_msg")
+        raise InputFileError("missing required broker field: ret_msg")
     if payload["ret_code"] != 0:
         raise ValueError(f"broker ret_code {payload['ret_code']}: {payload['ret_msg']}")
     if not isinstance(payload.get("data"), dict):
-        raise ValueError("missing required broker field: data")
+        raise InputFileError("missing required broker field: data")
     return payload["data"]
 
 
@@ -129,11 +130,11 @@ def decimal_number(value, name, *, zero=False, whole=False):
     try:
         number = Decimal(str(value))
     except InvalidOperation as exc:
-        raise ValueError(f"invalid broker decimal: {name}") from exc
+        raise InputFileError(f"invalid broker decimal: {name}") from exc
     if not number.is_finite() or number < 0 or (not zero and number == 0):
-        raise ValueError(f"invalid broker decimal: {name}")
+        raise InputFileError(f"invalid broker decimal: {name}")
     if whole and number != number.to_integral_value():
-        raise ValueError(f"broker {name} requires whole shares")
+        raise InputFileError(f"broker {name} requires whole shares")
     converted = int(number) if whole else float(number)
     positive(converted, name, zero=zero)
     return converted
@@ -149,7 +150,7 @@ def parse_history(payload, fetch_page=None):
             raise ValueError("conflicting broker pagination")
         if (not isinstance(pagination, dict) or type(pagination.get("has_more")) is not bool
                 or not isinstance(pagination.get("next_key"), str)):
-            raise ValueError("missing required broker pagination fields")
+            raise InputFileError("missing required broker pagination fields")
         if not pagination["has_more"]:
             break
         cursor = pagination["next_key"]
@@ -172,7 +173,7 @@ def parse_history(payload, fetch_page=None):
             raise ValueError("unrecognized order side")
         row["side"] = fields.ORDER_SIDES[row["side"]]
         if type(row["status"]) is not int:
-            raise ValueError("broker status must be an integer")
+            raise InputFileError("broker status must be an integer")
         row["statusLabel"] = fields.ORDER_STATUS_LABELS_PROVISIONAL.get(row["status"], "unknown (provisional)")
         for name in ("qty", "limitPrice", "filledQty", "avgPrice"):
             row[name] = decimal_number(row[name], name, zero=name in ("filledQty", "avgPrice"),
@@ -184,7 +185,7 @@ def parse_history(payload, fetch_page=None):
         for name in ("createTime", "updateTime"):
             if name in row:
                 if not isinstance(row[name], str) or not row[name].isdigit():
-                    raise ValueError("broker timestamps must be microsecond strings")
+                    raise InputFileError("broker timestamps must be microsecond strings")
                 row[name] = int(row[name])
     return result
 

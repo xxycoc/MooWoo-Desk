@@ -20,6 +20,10 @@ from persist_ledger import redact_error
 from run_session import validate_dispatch
 
 
+class StaleQuote(ValueError):
+    pass
+
+
 def run(args, now=None):
     store = LedgerStore(args.dir)
     root = store.directory
@@ -46,11 +50,16 @@ def run(args, now=None):
     attempt = attempts[-1]["attempt"]
     if type(attempt) is not int or not 1 <= attempt <= 2:
         raise ValueError("prepared attempt must be integer 1 or 2")
+    withheld = [event for event in events if event.get("executionAction") == "dispatch_withheld"]
+    last_withheld = withheld[-1]["seq"] if withheld else -1
     if any(event["type"] == "order_submitted" or event.get("executionAction") == "skip"
-           or (event.get("executionAction") == "dispatch_authorized" and event["attempt"] == attempt)
+           or (event.get("executionAction") == "dispatch_authorized" and event["attempt"] == attempt
+               and event["seq"] > last_withheld)
            or (event.get("executionAction") == "placement_failed" and event["attempt"] == attempt)
            for event in events):
         raise ValueError("prepared attempt is already resolved or skipped")
+    quote_attempt = 1 + sum(event.get("executionAction") == "quote_refresh"
+                            for event in events)
     orders = []
     for path in (root / "receipts" / run_id).glob("prepare-*.json"):
         orders.extend(order for order in read_json(path).get("orders", [])
@@ -73,8 +82,9 @@ def run(args, now=None):
         validate_dispatch(dict(tickets=selected), current)
         if symbol != ticket.ticker:
             raise ValueError("fresh quote symbol mismatch")
-        if not 0 <= (calendar.local_time(current) - stamp).total_seconds() <= config.STALE_PRICE_SECONDS:
-            raise ValueError("stale or future quote timestamp")
+        age = (calendar.local_time(current) - stamp).total_seconds()
+        if age < 0:
+            raise ValueError("future quote timestamp")
         if (ticket.side == "BUY" and (quote["ask"] - quote["bid"]) /
                 ((quote["ask"] + quote["bid"]) / 2) > config.MAX_SPREAD + 1e-12):
             raise ValueError("fresh quote spread exceeds frozen limit")
@@ -83,8 +93,19 @@ def run(args, now=None):
         fresh = limit_price(quote, ticket.side)
         if (fresh > ticket.limitPrice) if ticket.side == "BUY" else (fresh < ticket.limitPrice):
             raise ValueError("fresh quote moved past the ticket limit price")
+        if age > config.STALE_PRICE_SECONDS:
+            raise StaleQuote("stale quote timestamp")
 
-    def skip_quote(exc):
+    def skip_quote(exc, *, before_authorization=False):
+        if isinstance(exc, StaleQuote) and quote_attempt < 2:
+            if not before_authorization:
+                # No ok:true was returned, so this authorization never reached the caller.
+                note(log, ticket, "dispatch_withheld", attempt=attempt, reason="quote expired during checkpoint")
+            note(log, ticket, "quote_refresh", attempt=attempt, quoteAttempt=quote_attempt,
+                 reason="stale quote; fetch one fresh quote before rechecking")
+            store.save("Checkpoint quote refresh", context["holder"], release=False)
+            return dict(ok=False, skipped=False, retryable=True, quoteAttempt=quote_attempt,
+                        attempt=attempt, decisionId=ticket.decisionId, reason="stale quote timestamp")
         reason = safe_reason(str(exc)) if isinstance(exc, ValueError) else "invalid or missing fresh quote"
         note(log, ticket, "skip", attempt=attempt, reason=reason, quoteDeadline=deadline)
         store.save("Skip ticket at dispatch", context["holder"], release=False)
@@ -95,7 +116,7 @@ def run(args, now=None):
     try:
         check_quote()
     except (ValueError, KeyError, TypeError, OSError, OverflowError) as exc:
-        return skip_quote(exc)
+        return skip_quote(exc, before_authorization=True)
     note(log, ticket, "dispatch_authorized", attempt=attempt, ticketHash=ticket.ticketHash,
          quoteDeadline=deadline, quoteFile=quote_path.relative_to(root).as_posix())
     store.save("Checkpoint dispatch before broker handoff", context["holder"], release=False)
