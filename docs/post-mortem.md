@@ -53,6 +53,14 @@ Only paper trading, US stocks and ETFs, long only.
 - **Performance and hypothesis grading:** to be filled from
   `docs/results.md` and the final audit. No interim number is extrapolated.
 
+- **19 November, 11:47 New York:** with about 66% of the account in cash, Siang Woo
+  asked to invest it the same day, so the morning schedule was started by hand on
+  agent version 33 (Addendum 27). It re-rated the movers, then stopped before
+  planning because the 14-symbol quote batch failed the 60-second freshness check
+  twice: at midday, quieter ETFs had last-update times 60 to 150 seconds old. No
+  order was prepared. The 60-second limit was kept, and the next attempt is the
+  scheduled 09:35 run on 20 November.
+
 ## What went right
 
 - The model boundary held: no model-sized or discretionary order was placed, and
