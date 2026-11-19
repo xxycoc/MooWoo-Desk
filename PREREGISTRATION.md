@@ -484,3 +484,30 @@ session.
   order for its decision and either the handoff record says it was not submitted or its quote deadline is more
   than 15 minutes past. It logs a ticket skip and never re-dispatches that decision. Anything that may have
   reached the broker stays pending. No strategy rule changes.
+
+## 25. Addendum 2026-11-19: input mistakes stop one run, core sells fund core buys, a working daily report
+
+Written on 19 November 2026 at about 09:50 Singapore (18 November, 20:50 New York), between sessions.
+
+- promptVersion `e90c070c64e7ab5cb57e4d675111d58425978ba01906bc96465ec5b0b4d594b5` (coordinator, executor and
+  auditor prompts changed).
+- Why: on 18 November the 15:04 New York watcher stopped with `missing required broker field: qty` because the
+  coordinator dropped one field while copying order history; the broker reply was correct. The halt was saved,
+  so every later run, including the close audit, refused to start until an operator restart (19 November,
+  ledger commit `aadaa94`). Both close audits (17 and 18 November) produced no daily report because the
+  completed bars were never saved. The core held 2 of its 5 ETFs: the rebalance sell of IEF was skipped on a
+  stale quote and the core budget then vetoed the XLV and GLD buys. The 16:00 watcher always skipped itself
+  because the session counts as closed at 16:00.
+- Changes:
+  - Broker replies are saved trimmed to the fields the parser needs and checked right after saving; the agent
+    may re-fetch a bad reply twice. A malformed or missing input file now aborts only that run, with its reason
+    logged, and does not set the persistent halt. Genuine broker/book disagreements still halt exactly as before.
+  - A quote that fails only for age may be fetched once more and checked again. The 60-second limit and the
+    duplicate-order protections are unchanged.
+  - CORE-REBALANCE-01 (rule ledger): core buys may be sized after the planned core sells of the same session,
+    but are authorized only after those sells have fully filled and been reconciled, and after the post-sell
+    core and cash limits pass. An unfilled or partly filled sell funds nothing. The 30% core target and all
+    other limits are unchanged.
+  - The auditor fetches completed daily bars with one command, every audit abort logs its reason, and the report
+    keeps what it can compute and lists what is missing instead of inventing numbers.
+  - The close watcher moves to 15:55 New York, and to 12:55 on the 27 November early close.

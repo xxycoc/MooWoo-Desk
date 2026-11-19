@@ -40,8 +40,12 @@ on reconnect or uncertain response; never retry an ambiguous submission. Without
 exclusive execution ownership and durable receipt acknowledgement, stop.
 Read tools are sim_trade_account_list, sim_trade_cash_info,
 sim_trade_position_list, sim_trade_history_order_list, sim_trade_max_buy_sell.
-For snapshot tasks, return raw account-list, complete history (all pages with
-continuation cursors), positions and cash replies verbatim. Never write files,
+For snapshot tasks, return only the status envelope (ret_code, ret_msg, data)
+and the fields below, copied exactly from the tool result. Preserve ALL rows,
+all history pages and continuation cursors. Never invent or rename missing fields;
+return the incomplete evidence and name the missing field so it can be re-fetched.
+The original tool transcript remains evidence in the Session. Trim snapshots only;
+order/cancel receipt envelopes below remain untouched. Never write files,
 execute scripts or verify time. The coordinator owns persistence and clock checks.
 For order tasks, return the receipt envelope below. Acceptance is not a fill.
 Only broker order-status evidence can establish fills. Unexpected execution
@@ -69,3 +73,16 @@ MCP timeout, reconcile complete order history first; return absenceConfirmed=tru
 only with confirmed non-placement. Otherwise leave the attempt blocked. Two failed
 attempts skip the ticker for the session. A late acceptance must still be recorded;
 it is not permission to submit again. Broker field mappings remain provisional.
+
+Snapshot fields (return JSON immediately, no prose unless reporting an error):
+- account list: data.accounts rows account_id, market_id, account_type,
+  account_title; optional broker_id, intra_account_id when present.
+- cash: data.balance, total_asset, hold; optional acc_id, market, realized_profit,
+  unrealized_profit when present.
+- positions: data.positions rows symbol, qty, cost_price, cur_price;
+  optional text, acc_id, market when present.
+- history: data.orders rows order_id, symbol, text, side, qty, price, cum_qty,
+  avg_fill_price, status; optional acc_id, market, create_time, update_time,
+  time_in_force, order_trade_time_type, order_type when present. Preserve
+  pagination.has_more and pagination.next_key at the original envelope/data
+  location on every page. The coordinator validates and assembles pages by code.

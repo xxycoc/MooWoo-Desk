@@ -41,7 +41,11 @@ def invoke(script, *arguments):
             atomic_json(log_path.parent.parent / f"receipts/commands/{uuid.uuid4().hex}.json",
                         dict(script=script, returncode=result.returncode,
                              stdout=redact_error(result.stdout), stderr=redact_error(result.stderr)))
-        raise ValueError(f"{script} failed; inspect persisted logs; no further order work")
+        try:
+            detail = json.loads(result.stdout).get("reason", "see persisted command receipt")
+        except (ValueError, AttributeError):
+            detail = "see persisted command receipt"
+        raise ValueError(f"{script} failed: {redact_error(detail)}; no further order work")
     try:
         return json.loads(result.stdout)
     except json.JSONDecodeError:
@@ -109,7 +113,10 @@ def run(args, now=None):
                 state = PortfolioState.from_dict(read_json(state_path))
                 release_undispatched(tickets, state, log)
                 atomic_json(state_path, state.to_dict())
-        log.append("reflection_note", dict(prompt="Session runner", text="Session aborted; retained all evidence", skipped=True))
+        if args.kind == "audit":
+            from audit_report import write
+            write(root, context, log, getattr(args, "reason", "operator abort; reason not supplied"))
+        log.append("reflection_note", dict(prompt="Session runner", text="Session aborted: " + getattr(args, "reason", "operator abort; reason not supplied"), skipped=True))
         saved = store.save("Abort session; preserve evidence", holder)
         control.unlink()
         return saved | dict(feedPublished=publish_feed(root))
@@ -169,6 +176,8 @@ def run(args, now=None):
         result = invoke("reconcile.py", *command)
         if previous == "preflight":
             next_phase = "baseline"
+        elif previous == "record" and getattr(args, "continue_orders", False):
+            next_phase = "record"
     elif args.phase == "grade_calls":
         metadata = read_json(inputs / "session.json")
         if metadata["barsAsOf"] != run_id[:10]:
@@ -180,6 +189,9 @@ def run(args, now=None):
         result["hypotheses"] = invoke("score_hypotheses.py", "--logs", root / "logs/*.jsonl",
                                        "--out", root / "hypotheses/latest.json")
     elif args.phase == "finish":
+        if args.kind == "audit":
+            from audit_report import write
+            result.update(write(root, context, log))
         summaries = {}
         logs = index_logs(existing_log(source) for source in sorted((root / "logs").glob("*.jsonl")))
         for source_log in logs.values():
@@ -214,6 +226,8 @@ def main():
     parser.add_argument("--phase", choices=PHASES, default="start")
     parser.add_argument("--dir", default="runtime")
     parser.add_argument("--remote", default=REMOTE)
+    parser.add_argument("--continue-orders", action="store_true", help="reconcile fills mid-batch and return to record phase")
+    parser.add_argument("--reason", default="operator abort; reason not supplied")
     args = parser.parse_args()
     try:
         print(json.dumps(run(args)))
@@ -222,9 +236,17 @@ def main():
         # Ledger errors are deliberately free of git output; no broker payloads are echoed.
         from persist_ledger import redact_error
         feed_result = {}
+        try:
+            context = read_json(Path(args.dir) / ".session.json")
+            failure_log = EventLog(Path(args.dir) / f"logs/{context['runId']}.jsonl", runId=context["runId"])
+            failure_log.append("reflection_note", dict(prompt="Session failure", text=redact_error(exc),
+                               failedPhase=args.phase, aborted=True))
+        except (ValueError, KeyError, TypeError, OSError):
+            pass
         recovery = "local copy retained; run --phase abort to persist evidence when ownership permits"
         if args.phase != "renew" and not isinstance(exc, LedgerError):
             try:
+                args.reason = f"{args.phase}: {redact_error(exc)}"
                 args.phase = "abort"
                 aborted = run(args)
                 feed_result = dict(feedPublished=bool(aborted.get("feedPublished"))) if isinstance(aborted, dict) else {}

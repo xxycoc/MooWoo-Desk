@@ -40,3 +40,58 @@ def propose_core(state, bars, quotes, prices, run_id):
                                   reason="core initial buy" if actual == 0 else "core rebalance band",
                                   sizing=dict(targetWeight=target, actualWeight=actual)))
     return sorted(proposals, key=lambda proposal: proposal["side"] != "SELL")
+
+
+def projected_core_state(state, tickets):
+    """Conditional sizing only: never persist projected cash or position changes."""
+    from .portfolio import PortfolioState
+    projected = PortfolioState.from_dict(state.to_dict())
+    dependencies = []
+    for ticket in tickets:
+        if ticket["sleeve"] != "core" or ticket["side"] != "SELL":
+            continue
+        held = projected.positions[ticket["ticker"]]
+        if ticket["qty"] > held["qty"]:
+            raise ValueError("conditional core sell exceeds holding")
+        held["qty"] -= ticket["qty"]
+        if not held["qty"]:
+            del projected.positions[ticket["ticker"]]
+        projected.cash += ticket["qty"] * ticket["limitPrice"] - ticket["estFees"]
+        dependencies.append(ticket["decisionId"])
+    return projected, dependencies
+
+
+def require_core_fills(ticket, manifest, state, logs, prices):
+    """No credit for unfilled sells: require reconciled full fills and actual budgets."""
+    if ticket.sleeve != "core" or ticket.side != "BUY":
+        return
+    from . import config as C
+    by_id = {t["decisionId"]: t for t in manifest["tickets"]}
+    # Derive dependencies as well as checking the manifest, so removing metadata cannot bypass the gate.
+    expected = {t["decisionId"] for t in manifest["tickets"] if t["sleeve"] == "core" and t["side"] == "SELL"}
+    dependencies = set(manifest.get("coreSellDependencies", {}).get(ticket.decisionId, []))
+    if dependencies != expected:
+        raise ValueError("core sell dependency manifest mismatch")
+    events = logs.read()
+    for decision in dependencies:
+        sell = by_id[decision]
+        orders = [e for e in events if e["type"] == "order_submitted" and not e["drill"] and e["decisionId"] == decision]
+        if len(orders) != 1:
+            raise ValueError("core buy requires recorded and reconciled sell fills")
+        fill = state.execution.get("fills", {}).get(orders[0]["orderId"], {})
+        if fill.get("filledQty") != sell["qty"] or any(t["decisionId"] == decision for t in state.pendingTickets):
+            raise ValueError("core buy requires full reconciled sell fills")
+    if state.halted or state.tier in ("kill", "exits_only") or state.dailyLossHalted:
+        raise ValueError("core buy blocked by current account halt/tier")
+    if not any(t["decisionId"] == ticket.decisionId and t["qty"] == ticket.qty for t in state.pendingTickets):
+        raise ValueError("core buy reservation missing or changed")
+    equity = state.equity(prices)
+    # All pending buys remain reserved. Include their fees in equity after execution.
+    fees = sum(t["estFees"] for t in state.pendingTickets if t["side"] == "BUY")
+    effective_equity = equity - fees
+    if state.exposure(prices, sleeve="core") > C.CORE_WEIGHT * effective_equity + 1e-9:
+        raise ValueError("core target exceeded on reconciled post-sell state")
+    if state.cash - state.reservedCash < C.CASH_FLOOR * effective_equity - 1e-9:
+        raise ValueError("cash floor exceeded on reconciled post-sell state")
+    if equity <= state.sessionStartEquity * (1-C.DAILY_LOSS_HALT) + 1e-9:
+        raise ValueError("core buy blocked by current daily loss")

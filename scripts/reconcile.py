@@ -7,6 +7,7 @@ from _execution import atomic_json, command, frozen_config, read_json
 from moowoo.broker import parse_cash, parse_history, parse_positions
 from moowoo.execution import load_tickets, reconcile
 from moowoo.portfolio import PortfolioState
+from moowoo.input_files import InputFileError, read_input, broker_input
 from moowoo.runtime_logs import existing_log, index_logs
 
 
@@ -51,19 +52,19 @@ def run(args, log):
         log = RuntimeLogs(logs, log)
     else:
         tickets = load_tickets(read_json(args.tickets), log, config_hash)
-    history = read_json(args.history)
-    pages = read_json(args.history_pages) if getattr(args, "history_pages", None) else {}
+    history = read_input(args.history)
+    pages = read_input(args.history_pages) if getattr(args, "history_pages", None) else {}
     def fetch_page(cursor):
         if cursor not in pages:
-            raise ValueError("history incomplete: missing page for next_key")
+            raise InputFileError("history-pages.json: missing page for next_key")
         return pages[cursor]
-    rows = parse_history(history, fetch_page)
+    rows = broker_input(args.history, parse_history, fetch_page)
     if getattr(args, "runtime", None):
         submitted = {event["orderId"] for event in log.read() if event["type"] == "order_submitted" and not event["drill"]}
         if any(row["orderId"] not in submitted for row in rows):
             raise ValueError("account history contains an unrecorded order; record its receipt first")
     state, result = reconcile(tickets, rows,
-        parse_positions(read_json(args.positions)), parse_cash(read_json(args.cash)),
+        broker_input(args.positions, parse_positions), broker_input(args.cash, parse_cash),
         PortfolioState.from_dict(read_json(args.state)), log,
         history_complete=True, handoffs=handoffs)
     atomic_json(args.state, state.to_dict())

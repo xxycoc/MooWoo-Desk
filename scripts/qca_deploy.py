@@ -183,10 +183,12 @@ def build_payloads(settings=None, root=ROOT, *, executor_approval="ask"):
                 "The runner saves checkpoints and releases the account lock only with a successful final save. ")
     # Morning runs after the first-5-minutes rule; screening uses completed prior-day bars.
     schedule("morning", "coordinator", "35 9 * * 1-5", "America/New_York", instructions("morning"))
-    # 10:00..15:30 and 16:00 NY; the 09:35 morning run covers the open.
-    for suffix, cron in (("regular", "0,30 10-15 * * 1-5"), ("close", "0 16 * * 1-5")):
+    # 10:00..15:30 and 15:55 NY; the 09:35 morning run covers the open.
+    for suffix, cron in (("regular", "0,30 10-15 * * 1-5"), ("close", "55 15 * * 1-5")):
         schedule("watcher-" + suffix, "coordinator", cron, "America/New_York",
                  instructions("watch"))
+    schedule("watcher-early-close", "coordinator", "55 12 27 11 *", "America/New_York",
+             instructions("watch"))
     schedule("audit", "auditor", "10 16 * * 1-5", "America/New_York",
              instructions("audit"), slack=True)
     # A 16:10 cron cannot wake a session at 13:10; calendar rejects the late duplicate.

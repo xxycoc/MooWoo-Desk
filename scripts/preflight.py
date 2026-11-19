@@ -9,6 +9,8 @@ from plan_session import ROOT
 from moowoo.events import canonical_bytes
 from moowoo.execution import preflight
 from moowoo.portfolio import PortfolioState
+from moowoo.input_files import read_input, broker_input
+from moowoo.broker import parse_accounts
 
 
 def run(args, log):
@@ -16,7 +18,8 @@ def run(args, log):
     universe = read_json(ROOT / frozen["universe"]["file"])["passing"]
     if hashlib.sha256(canonical_bytes(sorted(universe))).hexdigest() != frozen["universe"]["passingSha256"]:
         raise ValueError("frozen universe hash mismatch")
-    preflight(read_json(args.accounts), PortfolioState.from_dict(read_json(args.state)),
+    broker_input(args.accounts, parse_accounts)
+    preflight(read_input(args.accounts), PortfolioState.from_dict(read_json(args.state)),
               frozen, (ROOT / "PREREGISTRATION.md").read_text(encoding="utf-8"),
               prompt_version(), universe, log)
     return dict(started=True, runId=log.runId)

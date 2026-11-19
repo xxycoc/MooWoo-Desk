@@ -145,7 +145,8 @@ def check(proposal, state, market):
         ("satellite_cap", satellite_cap, "resize"),
         ("cash_floor", lambda: ceiling(state.cash - state.reservedCash - C.CASH_FLOOR * equity() - C.FEE_PER_ORDER), "resize"),
         ("adv", adv_cap, "resize"),
-        ("core_target", lambda: ceiling(C.CORE_WEIGHT * equity() - state.exposure(
+        ("core_target", lambda: ceiling(C.CORE_WEIGHT * (equity() - C.FEE_PER_ORDER - sum(
+            t["estFees"] for t in state.pendingTickets if t["side"] == "BUY")) - state.exposure(
             market["prices"], sleeve="core")) if not satellite else None, "resize"),
     ]
     for name, evaluate, action in checks:

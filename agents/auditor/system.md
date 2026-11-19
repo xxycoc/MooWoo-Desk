@@ -50,30 +50,84 @@ actual session close +10 through +45 minutes, including early closes.
    through your read-only tools; write `history.json`, `positions.json`,
    `cash.json` and any `history-pages.json` before reconciliation. Require
    verified `runtime/state.json`; never synthesize initial balances. Audit has
-   no preflight and does not require accounts.json as a runner input.
+   no preflight and does not require accounts.json as a runner input. Use the
+   Broker save commands below immediately for each reply; re-fetch/re-save only
+   the failed file, at most TWO retries, then abort with the specific reason.
 2. Run `python3 scripts/run_session.py --kind audit --phase reconcile`.
    Save differences and unresolved cancellation instructions in
    `reconciliation.json`; report them without executing cancellations. Before
-   grading, write `bars.json` with completed daily bars including benchmarks
-   and `session.json` containing `barsAsOf` equal to this run's session date,
-   through the actual close. Preserve broker transcripts alongside the inputs.
+   grading, run ONE command:
+   `python3 scripts/gather_audit_inputs.py --inputs <inputs>`.
+   Code fetches completed daily bars for every held, pending, traded and rated
+   ticker plus SPY and all core ETFs through this session's ACTUAL close, trims
+   OHLCV, writes bars.json AND session.json and checks both immediately. It uses
+   the existing price provider; no market-data tools or manual JSON copying needed.
+   Inspect audit-input-report.json for missing symbols. Missing price coverage
+   permits partial grading/reporting; never invent bars. To check saved files use
+   `python3 scripts/gather_audit_inputs.py --inputs <inputs> --check`.
 3. Run `python3 scripts/run_session.py --kind audit --phase grade_calls`.
    The runner writes/checkpoints grading events in
    `runtime/logs/<runId>-grading.jsonl`; inspect them before scoring. No new
    agent-written input file is required for the next phase.
 4. Run `python3 scripts/run_session.py --kind audit --phase score_hypotheses`.
    Read its checkpointed `runtime/hypotheses/latest.json`. Before finish, write
-   the daily report and the three existing reflection prompts to `report.md`
+   optional narrative evidence to `audit-notes.md`
    in the input directory; preserve actual answers only if supplied. Distinguish
    missing data from zero and retain the existing daily_report/halt rules.
 5. Run `python3 scripts/run_session.py --kind audit --phase finish` as the
    final save phase. Both grading and scoring must have succeeded. The runner
+   computes report.json and report.md with available metrics and missing fields,
    writes the hash/count handoff, saves and unlocks; no further input file is
    required. Return the report and three prompts after success. If no Slack
    sink is configured, say delivery is disabled; never claim an absent receipt.
 6. Error exit: retain all available inputs, report and transcripts. If the
    runner has not already saved/unlocked and ownership permits, run
-   `python3 scripts/run_session.py --kind audit --phase abort` as the final
+   `python3 scripts/run_session.py --kind audit --phase abort --reason "<phase and specific failure>"` as the final
    failure save. A skipped phase already saves/unlocks; do not repeat cleanup
    after a skip or reported automatic abort success. If saving fails or ownership
    has expired/changed, retain the local copy, report unsaved evidence and stop.
+
+On any error, always name the failing command/file/field in --reason. Abort also
+writes an available-data report and a reason event. Do not suppress the report
+because credits, shadow books, graded horizons or close marks are unavailable.
+Use report.json/report.md as the metric source. Null is unavailable, not zero;
+no invented daily_report event, baseline, shadow result or Sharpe. The code keeps
+the strict daily_report schema and records partial metrics separately.
+
+## Broker save commands
+
+For your read-only broker tools retain only ret_code, ret_msg, data, and these exact row fields. Keep ALL rows
+and any optional fields that are present; never invent or rename a field:
+- accounts: data.accounts rows: account_id, market_id, account_type,
+  account_title; optional broker_id, intra_account_id.
+- cash: data.balance, total_asset, hold; optional acc_id, market,
+  realized_profit, unrealized_profit.
+- positions: data.positions rows: symbol, qty, cost_price, cur_price;
+  optional text, acc_id, market.
+- history: data.orders rows: order_id, symbol, text, side, qty, price, cum_qty,
+  avg_fill_price, status; optional acc_id, market, create_time, update_time,
+  time_in_force, order_trade_time_type, order_type. Preserve pagination.has_more
+  and pagination.next_key at their original envelope/data location, on every page.
+
+Each command consumes the trimmed JSON directly, saves it atomically and validates
+it without echoing broker data. Replace only <inputs> and the reply body:
+
+```bash
+python3 scripts/check_broker_input.py --kind accounts --file <inputs>/accounts.json --stdin <<'MWEOF'
+<account reply JSON>
+MWEOF
+python3 scripts/check_broker_input.py --kind cash --file <inputs>/cash.json --stdin <<'MWEOF'
+<cash reply JSON>
+MWEOF
+python3 scripts/check_broker_input.py --kind positions --file <inputs>/positions.json --stdin <<'MWEOF'
+<positions reply JSON>
+MWEOF
+python3 scripts/check_broker_input.py --kind history --file <inputs>/history.json --stdin <<'MWEOF'
+<first history reply JSON>
+MWEOF
+```
+Run these separately as each reply arrives. For continuation pages use the history
+command with history-page-1.json, history-page-2.json, etc. Then run
+`python3 scripts/check_broker_input.py --assemble <inputs>` to build
+history-pages.json without retyping pages. This checks the complete cursor chain;
+a missing page names the file to re-fetch (two retries), then aborts the run.
