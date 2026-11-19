@@ -3,28 +3,22 @@ import { feedUrl, loadCorpus, type Corpus } from "./data/load";
 import { stateAt } from "./data/state";
 import { verifyLog, type FileVerifyResult } from "./data/verify";
 import { TopBar } from "./components/TopBar";
-import { BottomTabs, SideNav, VIEWS, type ViewKey } from "./components/Nav";
+import { Tabs, viewFromHash, type ViewKey } from "./components/Nav";
 import { VerifyPanel, type VerifyState } from "./components/VerifyPanel";
 import { TraceTooltip } from "./components/Trace";
 import { DecisionDrawer } from "./components/Drawer";
-import { MissionControl } from "./views/MissionControl";
-import { RiskDesk } from "./views/RiskDesk";
-import { MoverRadar } from "./views/MoverRadar";
-import { TruthTable } from "./views/TruthTable";
-import { DebateRoom } from "./views/DebateRoom";
-
-function viewFromHash(hash: string): ViewKey | null {
-  if (hash === "#main") return null;
-  const key = hash.startsWith("#") ? hash.slice(1) : hash;
-  return VIEWS.find((item) => item.key === key)?.key ?? "mission";
-}
+import { Now } from "./views/Now";
+import { Strategy } from "./views/Strategy";
+import { healthStatus, lastRuns, nextScheduledRun, sgtTime } from "./data/dashboard";
 
 export default function App() {
   const [corpus, setCorpus] = useState<Corpus | null>(null);
   const corpusVersion = useRef(0);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [view, setView] = useState<ViewKey>(() => viewFromHash(window.location.hash) ?? "mission");
+  const [view, setView] = useState<ViewKey>(() => viewFromHash(window.location.hash));
+  const [now, setNow] = useState(() => new Date());
   const [decisionId, setDecisionId] = useState<string | null>(null);
+  const closeDecision = useCallback(() => setDecisionId(null), []);
   const [verifyOpen, setVerifyOpen] = useState(false);
   const [verify, setVerify] = useState<VerifyState>({ busy: false, ran: false, results: [], error: null });
 
@@ -55,18 +49,28 @@ export default function App() {
 
   useEffect(() => {
     const onHashChange = () => {
+      if (window.location.hash === "#main") return;
       const next = viewFromHash(window.location.hash);
-      if (!next) return;
+      if (window.location.hash !== `#${next}`) window.history.replaceState(null, "", `#${next}`);
       setView(next);
       setDecisionId(null);
       window.scrollTo({ top: 0, left: 0 });
     };
+    onHashChange();
     window.addEventListener("hashchange", onHashChange);
     return () => window.removeEventListener("hashchange", onHashChange);
   }, []);
 
   const liveSeq = corpus?.events.length ?? 0;
   const state = useMemo(() => (corpus ? stateAt(corpus.events, liveSeq) : null), [corpus, liveSeq]);
+  const runs = useMemo(() => corpus && state ? lastRuns(corpus.events, state) : [], [corpus, state]);
+  const next = useMemo(() => nextScheduledRun(now), [now]);
+  const health = useMemo(() => healthStatus(corpus?.events ?? [], runs, now), [corpus, runs, now]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 1000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   const runVerify = useCallback(async () => {
     if (!corpus) return;
@@ -121,71 +125,27 @@ export default function App() {
   }
 
   return (
-    <div className="app">
-      <a className="skip-link" href="#main">
-        Skip to content
-      </a>
-      <TopBar
-        state={state}
-        source={corpus.source}
-        latestEventTs={corpus.latestEventTs}
-        verifyOpen={verifyOpen}
-        verifyBusy={verify.busy}
-        verifyTone={verifyTone}
-        onToggleVerify={() => {
-          const opening = !verifyOpen;
-          setVerifyOpen(opening);
-          if (opening) void runVerify();
-        }}
-      />
-
-      {verifyOpen ? (
-        <div className="verify-wrap">
-          <VerifyPanel state={verify} onRun={runVerify} onClose={() => setVerifyOpen(false)} />
-        </div>
-      ) : null}
-
-      {corpus.errors.length > 0 ? (
-        <div className="load-warning" role="alert">
-          <strong>Some log lines could not be loaded.</strong> {corpus.errors.join(" · ")}
-        </div>
-      ) : null}
-
-      <div className="load-warning" role="status">
-        <strong>{corpus.events.some((event) => event.exportKind === "scrubbed") ? "Scrubbed export" : "Original logs"}</strong>
-        {" · "}As of {state.asOf?.ts ?? "no events"}. {feedUrl ? "Feed checked every 60 seconds; bundled snapshot shown if unavailable." : "Static snapshot; refresh requires a new export and publish."}
-        {corpus.events.some((event) => event.dataset === "fixture") ? " Includes FICTIONAL fixtures; combined totals are not the real ledger." : ""}
-      </div>
-      <div className="shell">
-        <SideNav view={view} />
-        <main id="main" className="main" tabIndex={-1}>
-          {view === "mission" ? (
-            <MissionControl state={state} onOpenDecision={setDecisionId} />
-          ) : view === "risk" ? (
-            <RiskDesk state={state} onOpenDecision={setDecisionId} />
-          ) : view === "radar" ? (
-            <MoverRadar state={state} onOpenDecision={setDecisionId} />
-          ) : view === "truth" ? (
-            <TruthTable state={state} />
-          ) : (
-            <DebateRoom state={state} />
-          )}
-          <footer className="app-footer">
-            <span>MooWoo Desk · Stage 2</span>
-            <span>Scrubbed event data. No API keys or broker calls.</span>
-            <span>SIMULATED FUNDS</span>
-          </footer>
-        </main>
-      </div>
-
-      <BottomTabs view={view} />
-
-      <DecisionDrawer
-        state={state}
-        decisionId={decisionId}
-        onClose={() => setDecisionId(null)}
-        onOpenDecision={setDecisionId}
-      />
+    <div className="app option-b">
+      <a className="skip-link" href="#main">Skip to content</a>
+      <TopBar state={state} next={next} verifyBusy={verify.busy} verifyTone={verifyTone} />
+      <section className={"health-banner tone-" + health.tone} role="status" aria-label="Desk health">
+        <strong><span className="health-dot" aria-hidden="true" />{health.message}</strong>
+        <span>Last run: {runs[0] ? sgtTime(runs[0].at) + " · " + runs[0].kind : "Not recorded"}</span>
+        <span>Next: {sgtTime(next.at)} · {next.kind}</span>
+      </section>
+      <Tabs view={view} />
+      <p className="feed-status"><strong>{corpus.source === "feed" ? "Public live feed" : corpus.source === "bundled-fallback" ? "Feed unavailable · bundled fallback" : "Bundled snapshot"}</strong> · Last event {sgtTime(corpus.latestEventTs)}. {feedUrl ? "Checked every 60 seconds." : "Snapshot does not update automatically."} Health reflects these logs, not a broker heartbeat.</p>
+      {corpus.errors.length > 0 && <div className="load-warning" role="alert"><strong>Some log lines could not be loaded.</strong> {corpus.errors.join(" · ")}</div>}
+      {corpus.events.some((event) => event.dataset === "fixture") && <p className="load-warning">Includes FICTIONAL fixtures. Combined totals are not the real ledger.</p>}
+      <main id="main" className="desk-main" tabIndex={-1} aria-label={view === "now" ? "Now" : "Strategy"}>
+        {view === "now" ? <Now state={state} events={corpus.events} runs={runs} onOpenDecision={setDecisionId} /> : <Strategy state={state} events={corpus.events} onOpenDecision={setDecisionId} />}
+      </main>
+      <footer className="desk-footer">
+        <div className="footer-row"><span>Scrubbed event data. No broker calls or API keys.</span><button type="button" aria-expanded={verifyOpen} aria-controls="footer-verify" onClick={() => { setVerifyOpen(!verifyOpen); if (!verifyOpen) void runVerify(); }}>Verify logs</button></div>
+        {verifyOpen && <div id="footer-verify"><VerifyPanel state={verify} onRun={runVerify} onClose={() => setVerifyOpen(false)} /></div>}
+        <p><span className="agent-label">Agents: coordinator · analyst · executor.</span> Code: screener · risk desk · watcher · auditor.</p>
+      </footer>
+      <DecisionDrawer state={state} runs={runs} decisionId={decisionId} onClose={closeDecision} onOpenDecision={setDecisionId} />
       <TraceTooltip />
     </div>
   );

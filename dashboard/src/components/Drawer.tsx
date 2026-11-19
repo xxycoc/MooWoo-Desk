@@ -9,6 +9,7 @@ import {
 } from "../data/rules";
 import { fmtDateTime, fmtNum, fmtPct, fmtRatio, fmtSignedUsd, fmtTime, fmtUsd, signClass } from "../data/format";
 import { Num, Trace } from "./Trace";
+import { sgtTime, type RunRow } from "../data/dashboard";
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -37,11 +38,13 @@ interface EvidenceItem {
 
 export function DecisionDrawer({
   state,
+  runs,
   decisionId,
   onClose,
   onOpenDecision,
 }: {
   state: DeskState;
+  runs: RunRow[];
   decisionId: string | null;
   onClose: () => void;
   onOpenDecision: (id: string) => void;
@@ -86,6 +89,19 @@ export function DecisionDrawer({
 
   if (!decisionId) return null;
   const decision = state.decisions[decisionId];
+  const run = decisionId.startsWith("run:") ? runs.find((item) => item.id === decisionId.slice(4)) : null;
+  if (run) return (
+    <div className="drawer-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }}>
+      <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="run-drawer-title" ref={panelRef}>
+        <header className="drawer-head"><div><span className="sim-badge">SIMULATED FUNDS</span><h2 id="run-drawer-title">{run.kind} run</h2><p>{sgtTime(run.at)}</p></div><button type="button" className="drawer-close" ref={closeRef} onClick={onClose} aria-label="Close decision drawer">×</button></header>
+        <div className="drawer-body">
+          <Section title="Result"><p className={`tone-${run.tone}`}>{run.result}</p><p className="tiny">Last event {sgtTime(run.lastAt)}. A run without a failure event is not proof of a completed broker reconciliation.</p></Section>
+          <Section title="Ticker decisions"><div className="run-decisions">{Object.values(state.decisions).filter((item) => item.runId === run.id).map((item) => <button type="button" key={item.id} onClick={() => onOpenDecision(item.id)}>{item.ticker}</button>)}</div>{!Object.values(state.decisions).some((item) => item.runId === run.id) && <p className="empty">No ticker decisions were recorded.</p>}</Section>
+          <Section title="Recorded events"><ol className="run-events">{run.events.map((event) => <li key={event.gseq}><time>{sgtTime(event.ts)}</time><strong>{event.type.replaceAll("_", " ")}{typeof event.ticker === "string" ? ` · ${event.ticker}` : ""}</strong>{(event.reason || event.text) ? <p>{String(event.reason ?? event.text)}</p> : null}</li>)}</ol></Section>
+        </div>
+      </aside>
+    </div>
+  );
   if (!decision) return null;
 
   const rating = decision.rating;
@@ -112,8 +128,6 @@ export function DecisionDrawer({
           : { text: "NO RISK VERDICT", tone: "none" };
 
   const evidence = Array.isArray(rating?.ev.evidence) ? (rating?.ev.evidence as EvidenceItem[]) : [];
-  const tierLabel =
-    rating?.tier === "debate" ? "Manager (debate tier)" : rating?.tier === "quick" ? "Quick classifier" : "—";
 
   const entryPrice = stop?.entry ?? entryFill?.avgPrice ?? null;
   const exitQty = exit?.filledQty ?? 0;
@@ -146,6 +160,7 @@ export function DecisionDrawer({
         <header className="drawer-head">
           <div>
             <div className="drawer-kicker">
+              <span className="sim-badge">SIMULATED FUNDS</span>
               <span className="drawer-ticker" id="drawer-title">
                 {decision.ticker}
               </span>
@@ -245,17 +260,10 @@ export function DecisionDrawer({
             )}
           </Section>
 
-          <Section title="Bull / bear">
-            <p className="empty">
-              No bull or bear events exist in the v0 event contract. Nothing is available to show;
-              this drawer does not invent a debate.
-            </p>
-          </Section>
-
           <Section title="Verdict">
             {rating ? (
               <>
-                <Row label="Called by">{tierLabel}</Row>
+                <Row label="Called by">{rating.tier === "single" ? "Analyst" : "Historical rating"}</Row>
                 <Row label="Class">
                   <span className="chip">{rating.cls}</span>
                 </Row>
@@ -274,7 +282,6 @@ export function DecisionDrawer({
                     />
                   </div>
                 </Row>
-                <Row label="Tier">{rating.tier}</Row>
                 <Row label="Setup score">
                   <Num
                     value={rating.setupScore}
@@ -282,9 +289,6 @@ export function DecisionDrawer({
                     events={[rating.ev]}
                     note="logged only; never used for sizing"
                   />
-                </Row>
-                <Row label="Credits">
-                  <Num value={rating.credits} format={(value) => fmtNum(value, 1)} events={[rating.ev]} />
                 </Row>
                 <Row label="Plan mapping">
                   {classMapsToSleeve(rating.cls)
@@ -395,6 +399,11 @@ export function DecisionDrawer({
                   )}
                 </Row>
                 <ul className="rule-list">
+                  {Array.isArray(verdict.ev.checks) && verdict.ev.checks.map((check, index) => {
+                    if (!check || typeof check !== "object") return null;
+                    const entry = check as Record<string, unknown>;
+                    return <li key={index} className="rule"><span className="rule-id">{String(entry.rule ?? "Check")}</span><span className="rule-text">{String(entry.result ?? "Not recorded")}</span></li>;
+                  })}
                   {verdict.rules.map((rule) => (
                     <li key={rule} className={rule === verdict.firedRule ? "rule fired" : "rule"}>
                       <span className="rule-id">{rule}</span>
