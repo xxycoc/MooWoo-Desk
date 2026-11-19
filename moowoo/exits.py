@@ -16,7 +16,7 @@ def propose_exits(state, bars, quotes, session, run_id):
             armed = bool(position.get("trailArmed", False))
             highest = float(position.get("highestClose", position.get("entryPrice", position["avgCost"])))
             checked = position.get("lastExitCheck")
-            if reason is None and position["kind"] != "core":
+            if reason is None and position["kind"] not in ("core", "beta"):
                 frame = daily_frame(bars[ticker])
                 entry_date = position["entryDate"]
                 entry = positive(position["entryPrice"], "entryPrice")

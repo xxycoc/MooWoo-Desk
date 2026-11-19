@@ -10,7 +10,7 @@ it cannot choose quantities, change a ticket or place discretionary orders.
    `debate` or `quick` tier. Only `explained_up` maps to drift and
    `unexplained_down` to bounce. Other classes produce logged skips.
 2. **Proposal:** exits first, then core rebalances (sells before buys), then
-   satellite entries. Code supplies whole-share quantity, cent-rounded limit,
+   satellite entries, then the 30% SPY beta sleeve from remaining cash. Code supplies whole-share quantity, cent-rounded limit,
    initial stop and fixed signal ATR. Setup score never affects sizing.
 3. **Verdict:** `risk.check(proposal, state, market)` returns `approve`, `resize`
    or `veto`, ordered `rules`, detailed `checks`, the first `firedRule`, and
@@ -80,7 +80,7 @@ spread at the risk gate; a last-only sizing quote does not waive that gate.
 
 Core ETFs are `CORE_ETFS`: USMV, XLP, XLV, IEF and GLD. Inverse sample
 volatilities over `CORE_VOLATILITY_PERIOD` = 60 daily returns (61 closes) give
-weights summing to `CORE_WEIGHT` = 0.50. Dates must align. Missing, zero or invalid
+weights summing to `CORE_WEIGHT` = 0.30. Dates must align. Missing, zero or invalid
 volatility refuses the allocation. Buy initially; rebalance when
 abs(actual weight minus target weight) / target weight >= `CORE_REBALANCE_BAND`
 = 0.25. Core proposals pass the same risk checks, except the satellite-only gates.
@@ -101,11 +101,11 @@ Missing or invalid data needed by an entry gate fails closed at that gate.
 | 7 | `duplicate_decision` | ID already in `ticketedDecisionIds` | Veto buy or sell |
 | 8 | `max_orders` | Submitted count plus current-session unsubmitted reservations >= `MAX_ORDERS_PER_SESSION` = 30 | Veto entry |
 | 9 | `stale_price` | Quote age > `STALE_PRICE_SECONDS` = 60, or future timestamp | Veto entry |
-| 10 | `spread` | (ask - bid) / midpoint > `MAX_SPREAD` = 0.0015 | Veto entry |
+| 10 | `spread` | (ask - bid) / midpoint > `MAX_SPREAD` = 0.005 | Veto entry |
 | 11 | `correlation` | Pearson correlation > `MAX_CORRELATION` = 0.80 over `CORRELATION_PERIOD` = 60 aligned daily returns against another open/pending satellite name | Veto entry |
 | 12 | `bounce_count` | A new bounce name would exceed `MAX_BOUNCE_POSITIONS` = 3, including pending buys | Veto entry |
 | 13 | `satellite_invalidated` | Thesis invalidated; block new satellite exposure | Veto entry |
-| 14 | `per_name_cap` | Satellite stock exposure > `PER_NAME_CAP` = 8% of marked equity; core ETFs exempt | Resize |
+| 14 | `per_name_cap` | Satellite stock exposure > `PER_NAME_CAP` = 20% of marked equity; core and beta ETFs exempt | Resize |
 | 15 | `satellite_cap` | `SATELLITE_CAP` = 60%, or `SATELLITE_CAP_STEP_UP` = 60% once effective; regime 40% still wins | Resize |
 | 16 | `cash_floor` | Cash after pending buys, proposed buy and fees must retain `CASH_FLOOR` = 10% of equity | Resize |
 | 17 | `adv` | Notional <= `MAX_ADV_FRACTION` = 0.005 times average close times volume over prior `VOLUME_PERIOD` = 20 completed sessions | Resize |
@@ -113,7 +113,11 @@ Missing or invalid data needed by an entry gate fails closed at that gate.
 Invalidation runs directly after bounce count, before the pure resize rules, so
 an oversized invalidated entry reports invalidation rather than a resize as its
 first failure. The earlier mixed regime gate retains its preregistered position.
-`core_target` follows these gates and prevents core buys above the 50% aggregate target. Finally,
+`core_target` follows these gates and limits core buys to the 30% aggregate target
+on the projected post-sell planning state. `beta_target` follows it and limits
+SPY buys to 30% including pending buys and fees. Both sleeves share all account
+halts, final-day restrictions and entry checks; satellite-only gates do not apply.
+Finally,
 `below_min_notional` vetoes undersized buys even when no resize was needed.
 Every resize rounds down. Below one share or below the entry floor means veto.
 A resize-triggered veto retains that resizing rule as `firedRule`.
@@ -170,7 +174,7 @@ permits 40% starting next supplied trading session. Skips count as cash outcomes
 missing paired values prevent a decision. At least 15 closed satellite trades and
 mean LLM net excess below the better of follow-all/fade-all permanently invalidate
 the satellite thesis for this window. Invalidation overrides step-up, preserves
-normal exits and never raises the core above 50%. Evidence lists counts, decision
+normal exits and never raises the core target above 30%. Evidence lists counts, decision
 IDs, missing IDs and book means. The caller supplies net, fee-inclusive outcomes.
 
 ## Tickets and partial fills
@@ -231,3 +235,21 @@ list `cancelEntryDecisionIds`; the executor must honor them before submission.
 duplicate replay, and -6% shadow equity. Each writes only a marked `drill` event
 with expected, observed and pass values. Original state is unchanged; no drill
 creates a ticket. Run all offline checks with `.venv/Scripts/python -m pytest`.
+
+## SLEEVE-01 and cash-funded rebalancing
+
+Allocation is core 30% + SPY 30% + satellites + a 10% cash floor. SPY is
+orderable only as sleeve/kind `beta`; the frozen stock universe is unchanged.
+The morning order is core sells, core buys, satellite entries, then SPY.
+`propose_beta` uses the same 25% relative target band, buys only with actual
+cash left after other pending buys and fees, and trims only above the band.
+Satellite entries never liquidate SPY or anticipate its proceeds. Core and
+SPY have no stop, trailing stop or horizon exit; kill liquidation still applies.
+
+At dispatch, the core exposure allowance is 30% of effective equity plus the
+current value of this session's planned core sells that remain unfilled.
+Filled quantities are deducted using reconciliation checkpoints. All pending
+buys and fees still reserve cash, and the 10% cash floor is unchanged. If sells
+never fill, temporary core overweight is accepted until the next morning's
+rebalance. Without sufficient actual cash, core buys still require full
+reconciled core sells. Beta buys always require actual cash and their own target.

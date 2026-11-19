@@ -22,6 +22,7 @@ FIELDS = {
     'screen': 'candidates picked asof moveMode universeDate skipped',
     'rating': 'ticker class confidence tier reason newsCutoff credits creditsMissingReason setupScore evidence expectedMove wrongIf secondOpinion model promptVersion bullSummary bearSummary quickSecondOpinion',
     'core_rebalance': 'etf side targetWeight actualWeight qty',
+    # Preserve beta explicitly so SPY is not reported as an unrated satellite.
     'order_intent': 'ticker side sleeve qty limitPrice notional stop sizing kind reason',
     'risk_verdict': 'ticker verdict rules firedRule qtyAfter checks',
     'order_submitted': 'ticker orderId qty limitPrice trdEnv attempt',

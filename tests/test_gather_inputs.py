@@ -98,11 +98,11 @@ def test_completed_bars_and_minimal_morning_request(tmp_path, provider):
     assert all(frame.index[-1] == pd.Timestamp("2026-11-17") for frame in bars.values())
     assert all(call["end"] == "2026-11-18" and not call["auto_adjust"] for call in provider)
     assert read_json(inputs / "candidates.json") == []
-    assert read_json(inputs / "quote-request.json")["codes"] == sorted("US." + x for x in C.CORE_ETFS)
+    assert read_json(inputs / "quote-request.json")["codes"] == sorted("US." + x for x in (*C.CORE_ETFS, C.BETA_ETF))
     assert not (inputs / "ratings.json").exists()
     assert not (inputs / "quotes.json").exists()
     raw_quotes(inputs)
-    assert convert_quotes.convert(inputs, NOW)["quotes"] == len(C.CORE_ETFS)
+    assert convert_quotes.convert(inputs, NOW)["quotes"] == len(C.CORE_ETFS)+1
     snapshot = read_json(inputs / "quotes.json")
     assert snapshot["now"] == NOW
     assert all(q["ts"] == NOW and q["bid"] == 99.99 for q in snapshot["quotes"].values())

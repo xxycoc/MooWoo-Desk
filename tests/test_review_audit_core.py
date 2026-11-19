@@ -51,7 +51,7 @@ def test_core_dispatch_allows_cash_funded_buys_before_sell_fills(tmp_path, fille
         log.append("order_submitted", dict(ticker="IEF", orderId="paper-order", qty=100, limitPrice=100, trdEnv="SIMULATE"), decisionId="run:IEF")
         state.execution = dict(fills={"paper-order": dict(filledQty=filled)})
     require_core_fills(ticket, manifest, state, log, {"IEF": 100})
-    state.positions["IEF"]["qty"] = 350
+    state.positions["IEF"]["qty"] = 500
     with pytest.raises(ValueError, match="core target" if filled == 100 else "reconciled"):
         require_core_fills(ticket, manifest, state, log, {"IEF": 100})
     manifest["coreSellDependencies"] = {}
@@ -73,7 +73,8 @@ def test_plan_cli_reserves_conditional_buys_without_crediting_sells(desk, tmp_pa
     assert result.returncode == 0, result.stderr
     manifest = json.loads(next((tmp_path / "tickets").glob("*.json")).read_text())
     assert manifest["tickets"][0]["ticker"] == "IEF" and manifest["tickets"][0]["side"] == "SELL"
-    buys = [t for t in manifest["tickets"] if t["side"] == "BUY"]
+    buys = [t for t in manifest["tickets"] if t["side"] == "BUY" and t["sleeve"] == "core"]
+    assert manifest["tickets"][-1]["sleeve"] == "beta"
     assert {t["ticker"] for t in buys} == set(config.CORE_ETFS)-{"IEF"}
     assert all(manifest["coreSellDependencies"][t["decisionId"]] == [manifest["tickets"][0]["decisionId"]] for t in buys)
     saved = json.loads((tmp_path / "state.json").read_text())
@@ -207,9 +208,12 @@ def test_core_dispatch_waits_when_actual_budget_needs_sell(tmp_path, constraint,
                    limitPrice=100, trdEnv="SIMULATE"), decisionId="run:IEF")
         state.execution = dict(fills={"paper-order": dict(filledQty=filled)})
     prices = {"IEF": 100, "AAA": 100}
-    # A fill checkpoint alone never supplies buying power or core room.
-    with pytest.raises(ValueError, match="reconciled"):
+    # Unfilled core sells supply planned end-state room, but never cash.
+    if constraint == "core" and filled == 0:
         require_core_fills(ticket, manifest, state, log, prices)
+    else:
+        with pytest.raises(ValueError, match="reconciled"):
+            require_core_fills(ticket, manifest, state, log, prices)
     if filled == 100:
         state.positions["IEF"]["qty"] -= filled
         state.cash += filled * 100 - 1.01

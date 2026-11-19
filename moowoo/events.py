@@ -217,7 +217,7 @@ def validate_event(event: dict) -> None:
     elif kind == "shadow":
         _enum(event["book"], ("llm", "follow", "fade", "equal_weight"), "book")
     elif kind == "order_intent":
-        _enum(event["sleeve"], ("core", "satellite"), "sleeve")
+        _enum(event["sleeve"], ("core", "beta", "satellite"), "sleeve")
     elif kind == "risk_verdict":
         _enum(event["verdict"], ("approve", "resize", "veto"), "verdict")
     elif kind == "fill":

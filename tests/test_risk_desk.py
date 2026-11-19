@@ -111,6 +111,11 @@ def test_every_rule_independently_in_order(desk, rule):
     elif rule == "adv":
         m["bars"]["AAA"]["volume"] = 6000
         expected = "resize"
+    elif rule in ("core_target", "beta_target"):
+        sleeve = "core" if rule == "core_target" else "beta"
+        ticker = "XLV" if sleeve == "core" else "SPY"
+        p.update(ticker=ticker, sleeve=sleeve, kind=sleeve, qty=400)
+        expected = "resize"
     result = check(p, s, m)
     assert result["firedRule"] == rule, result
     assert result["verdict"] == expected, result
@@ -398,8 +403,9 @@ def test_plan_session_real_cli_offline_and_replay(desk, tmp_path):
     assert first.returncode == 0, first.stderr
     output = tmp_path / "tickets" / f"{RUN}.json"
     manifest = json.loads(output.read_text())
-    assert len(manifest["tickets"]) == 7, manifest
-    assert manifest["tickets"][-1]["ticker"] == "AAA"
+    assert len(manifest["tickets"]) == 8, manifest
+    assert manifest["tickets"][-2]["ticker"] == "AAA"
+    assert manifest["tickets"][-1]["ticker"] == "SPY"
     assert manifest["tickets"][0]["side"] == "SELL"
     assert all(t["estFees"] == estimate_fees(t["side"], t["qty"]) for t in manifest["tickets"])
     state_after = json.loads((tmp_path / "state.json").read_text())

@@ -53,8 +53,19 @@ If the file becomes unreadable or the quote expires during the authorization
 checkpoint, the checker logs `dispatch_withheld` before `quote_refresh`.
 Never retry a returned `ok:true` authorization or a broker handoff.
 Valid quotes that fail the limit-price, spread, symbol, future-timestamp or
-core cash/limit checks remain immediate, non-retryable skips; when existing cash
-and core room cannot cover reserved buys, reconciled core sells are still required.
+core/beta cash and allocation checks remain immediate, non-retryable skips.
+Core buys may use existing cash while planned core sells remain unfilled:
+the core limit is 30% of effective equity plus those sells' unfilled quantities
+at current prices. The cash floor still covers all pending buys and fees.
+If actual cash is insufficient, core buys wait for full reconciled core sells.
+SPY beta buys always use actual cash left after core and satellite reservations,
+up to a 30% target; they never rely on projected sale proceeds. Process sells
+first, then core buys, satellite entries and SPY, without modifying tickets.
+Allocation is core 30% + SPY 30% + satellites + a 10% cash floor. SPY uses the
+core rebalance band and account halt/exit rules, never satellite stops or horizons.
+The broker import retains history-backed beta identities across SPY top-ups;
+unmatched broker holdings still halt reconciliation. No broker tools or stock
+universe permissions are broadened.
 
 ## Commands and files
 

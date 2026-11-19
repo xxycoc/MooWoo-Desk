@@ -6,6 +6,7 @@ import hashlib
 import os
 import re
 
+from . import config as C
 from .desk_data import instant
 from .events import canonical_bytes
 from .portfolio import positive
@@ -40,10 +41,14 @@ class OrderTicket:
         positive(self.limitPrice, "limitPrice")
         if Decimal(str(self.limitPrice)) != Decimal(str(self.limitPrice)).quantize(Decimal(".01")):
             raise ValueError("limitPrice must be rounded to cents")
-        if self.sleeve not in ("core", "satellite") or self.kind not in ("core", "drift", "bounce"):
+        if self.sleeve not in ("core", "beta", "satellite") or self.kind not in ("core", "beta", "drift", "bounce"):
             raise ValueError("invalid sleeve or kind")
         if (self.sleeve == "core") != (self.kind == "core"):
             raise ValueError("sleeve and kind disagree")
+        if (self.sleeve == "beta") != (self.kind == "beta"):
+            raise ValueError("sleeve and kind disagree")
+        if (self.ticker == C.BETA_ETF) != (self.sleeve == "beta"):
+            raise ValueError("SPY is orderable only in the beta sleeve")
         if not re.fullmatch(r"[0-9a-f]{64}", self.configHash):
             raise ValueError("configHash must be SHA-256 hex")
         if self.estFees != estimate_fees(self.side, self.qty):

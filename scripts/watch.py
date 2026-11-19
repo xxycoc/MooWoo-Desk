@@ -45,7 +45,7 @@ def run(args, log):
         raise InputFileError("bars.json: missing or invalid completed bars input") from exc
     quotes = snapshot["quotes"]
     for name, position in state.positions.items():
-        if position["kind"] == "core" and state.tier != "kill":
+        if position["kind"] in ("core", "beta") and state.tier != "kill":
             continue
         try:
             age = (now-instant(quotes[name]["ts"])).total_seconds()
@@ -53,7 +53,7 @@ def run(args, log):
             raise InputFileError(f"quotes.json: {name}: missing or invalid timestamp") from exc
         if not 0 <= age <= C.STALE_PRICE_SECONDS:
             raise InputFileError(f"quotes.json: missing or stale watcher quote: {name}")
-        if position["kind"] != "core" and name in errors:
+        if position["kind"] not in ("core", "beta") and name in errors:
             raise InputFileError(f"bars.json: {name}: invalid completed bars")
     outcome = propose_exits(state, bars, quotes, session, log.runId)
     if outcome["skipped"]:

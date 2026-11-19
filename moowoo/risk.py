@@ -10,7 +10,7 @@ from .portfolio import positive
 
 RULES = ("kill_or_halted", "exits_only", "daily_loss", "final_day", "first_minutes",
          "regime", "duplicate_decision", "max_orders", "stale_price", "spread",
-         "correlation", "bounce_count", "satellite_invalidated", "per_name_cap", "satellite_cap", "cash_floor", "adv")
+         "correlation", "bounce_count", "satellite_invalidated", "per_name_cap", "satellite_cap", "cash_floor", "adv", "core_target", "beta_target")
 
 
 def check(proposal, state, market):
@@ -18,10 +18,14 @@ def check(proposal, state, market):
     if side not in ("BUY", "SELL") or type(quantity) is not int or quantity < 1:
         raise ValueError("proposal requires BUY/SELL and positive whole shares")
     price = positive(proposal["limitPrice"], "limitPrice")
-    if proposal["sleeve"] not in ("core", "satellite"):
+    if proposal["sleeve"] not in ("core", "beta", "satellite"):
         raise ValueError("invalid sleeve")
     if proposal["sleeve"] == "core" and ticker not in C.CORE_ETFS:
         raise ValueError("core exemption is only for frozen core ETFs")
+    if (ticker == C.BETA_ETF) != (proposal["sleeve"] == "beta"):
+        raise ValueError("SPY is orderable only in the beta sleeve")
+    if (proposal["kind"] == "beta") != (proposal["sleeve"] == "beta"):
+        raise ValueError("beta sleeve and kind disagree")
     if not isinstance(proposal["decisionId"], str) or not proposal["decisionId"]:
         raise ValueError("decisionId required")
     if side == "SELL":
@@ -147,7 +151,10 @@ def check(proposal, state, market):
         ("adv", adv_cap, "resize"),
         ("core_target", lambda: ceiling(C.CORE_WEIGHT * (equity() - C.FEE_PER_ORDER - sum(
             t["estFees"] for t in state.pendingTickets if t["side"] == "BUY")) - state.exposure(
-            market["prices"], sleeve="core")) if not satellite else None, "resize"),
+            market["prices"], sleeve="core")) if proposal["sleeve"] == "core" else None, "resize"),
+        ("beta_target", lambda: ceiling(C.BETA_WEIGHT * (equity() - C.FEE_PER_ORDER - sum(
+            t["estFees"] for t in state.pendingTickets if t["side"] == "BUY")) - state.exposure(
+            market["prices"], sleeve="beta")) if proposal["sleeve"] == "beta" else None, "resize"),
     ]
     for name, evaluate, action in checks:
         if not entry and name != "duplicate_decision":

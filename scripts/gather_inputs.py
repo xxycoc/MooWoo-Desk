@@ -50,7 +50,7 @@ def gather(inputs, kind, now=None):
         raise ValueError("frozen universe hash mismatch")
     held = set(state.positions)
     pending = {ticket["ticker"] for ticket in state.pendingTickets}
-    benchmarks = {C.REGIME_BENCHMARK, *C.CORE_ETFS} if kind == "morning" else set()
+    benchmarks = {C.REGIME_BENCHMARK, C.BETA_ETF, *C.CORE_ETFS} if kind == "morning" else set()
     required = held | pending | benchmarks
     symbols = sorted(required | (set(universe["passing"]) if kind == "morning" else set()))
     asof = session["barsAsOf"]
@@ -88,7 +88,7 @@ def gather(inputs, kind, now=None):
         atomic_json(inputs / "screen.json", result)
         atomic_json(inputs / "candidates.json", candidates)
         EventLog(root / f"logs/{control['runId']}.jsonl", runId=control["runId"]).append("screen", result)
-    quote_symbols = sorted(held | (set(C.CORE_ETFS) | {row["ticker"] for row in candidates}
+    quote_symbols = sorted(held | (set(C.CORE_ETFS) | {C.BETA_ETF} | {row["ticker"] for row in candidates}
                                   if kind == "morning" else set()))
     request = dict(runId=control["runId"], kind=kind, sessionDate=session["sessionDate"],
         agent="analyst", tool="quote_market_snapshot", codes=["US." + name for name in quote_symbols],

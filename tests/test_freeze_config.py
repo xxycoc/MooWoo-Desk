@@ -91,8 +91,8 @@ def test_preregistration_matches_frozen_artifact():
             assert getattr(config, key) == (PICKS_CHANGE["after"] | SIZING_CHANGE["after"] | REGIME_SIZING_CHANGE["after"]).get(key, value)
     additions = next(json.loads(line)["after"] for line in (ROOT / "config/rule-ledger.jsonl").read_text().splitlines()
                      if json.loads(line)["ruleId"] == "FEES-01")
-    from moowoo.rules import CORE_REBALANCE_CHANGE, CORE_CASH_CHANGE
-    assert {k: v for k, v in vars(config).items() if not k.startswith("_") and k not in namespace} == additions | CORE_REBALANCE_CHANGE["after"] | CORE_CASH_CHANGE["after"]
+    from moowoo.rules import CORE_REBALANCE_CHANGE, CORE_CASH_CHANGE, BETA_CHANGE
+    assert {k: v for k, v in vars(config).items() if not k.startswith("_") and k not in namespace} == additions | CORE_REBALANCE_CHANGE["after"] | CORE_CASH_CHANGE["after"] | BETA_CHANGE["after"]
 
 
 @pytest.mark.parametrize("damage", [None, "missing", "changed", "extra"])
@@ -125,19 +125,19 @@ def test_topology_addendum_is_exact_and_preserves_frozen_config(tmp_path, monkey
 
 
 def test_core_rebalance_addendum_is_canonical_and_recognized():
-    from moowoo.rules import CORE_REBALANCE_CHANGE, CORE_CASH_CHANGE
+    from moowoo.rules import CORE_REBALANCE_CHANGE, CORE_CASH_CHANGE, BETA_CHANGE
     from plan_session import frozen_config
     assert canonical_bytes(CORE_REBALANCE_CHANGE) in (ROOT / "config/rule-ledger.jsonl").read_bytes().splitlines()
     assert CORE_REBALANCE_CHANGE["after"] == dict(CORE_REBALANCE_AFTER_FILLS=True)
     assert frozen_config()["configHash"]
 
 
-@pytest.mark.parametrize("rule_id", ["SIZING-02", "CORE-REBALANCE-02"])
+@pytest.mark.parametrize("rule_id", ["SIZING-02", "CORE-REBALANCE-02", "SLEEVE-01"])
 @pytest.mark.parametrize("damage", [None, "missing", "changed"])
 def test_more_risk_addenda_are_exact(tmp_path, monkeypatch, rule_id, damage):
     import plan_session
-    from moowoo.rules import REGIME_SIZING_CHANGE, CORE_CASH_CHANGE
-    rule = next(r for r in (REGIME_SIZING_CHANGE, CORE_CASH_CHANGE) if r["ruleId"] == rule_id)
+    from moowoo.rules import REGIME_SIZING_CHANGE, CORE_CASH_CHANGE, BETA_CHANGE
+    rule = next(r for r in (REGIME_SIZING_CHANGE, CORE_CASH_CHANGE, BETA_CHANGE) if r["ruleId"] == rule_id)
     directory = tmp_path / "config"
     directory.mkdir()
     frozen = (ROOT / "config/frozen-2026-11-17.json").read_bytes()

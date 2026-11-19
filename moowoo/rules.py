@@ -49,3 +49,11 @@ CORE_CASH_CHANGE = dict(
     after=dict(CORE_REBALANCE_CASH_FUNDED=True),
     reason="requested by Siang Woo 19 Nov: core buys funded by existing cash need not wait for core sells; cash floor and core limits unchanged",
     effectiveFrom="first session after 20 Nov 00:00 SGT", triggerDecisionIds=[])
+
+
+BETA_CHANGE = dict(
+    type="rule_change", ruleId="SLEEVE-01", date="2026-11-19",
+    before=dict(BETA_ETF=None, BETA_WEIGHT=0),
+    after=dict(BETA_ETF="SPY", BETA_WEIGHT=0.30),
+    reason="decided by Siang Woo 19 Nov: hold 30% in SPY at all times so idle cash is invested; satellites use the room left above the 10% cash floor; loss limits unchanged",
+    effectiveFrom="first session after 20 Nov 00:00 SGT", triggerDecisionIds=[])

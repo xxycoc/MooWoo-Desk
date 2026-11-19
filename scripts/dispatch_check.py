@@ -109,7 +109,7 @@ def run(args, now=None):
         fresh = limit_price(quote, ticket.side)
         if (fresh > ticket.limitPrice) if ticket.side == "BUY" else (fresh < ticket.limitPrice):
             raise ValueError("fresh quote moved past the ticket limit price")
-        if ticket.sleeve == "core" and ticket.side == "BUY":
+        if ticket.sleeve in ("core", "beta") and ticket.side == "BUY":
             state = PortfolioState.from_dict(read_json(root / "state.json"))
             prices = {name: p["marketPrice"] for name, p in state.positions.items()}
             prices[ticket.ticker] = quote["last"]

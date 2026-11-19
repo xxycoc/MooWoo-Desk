@@ -93,12 +93,12 @@ invented balances. Check every result and apply the renewal rule before each ste
 8. Run `python3 scripts/run_session.py --kind K --phase plan`, then
    `python3 scripts/run_session.py --kind K --phase prepare`. Require successful
    durable checkpointing. Initialize <inputs>/responses.json to [] once.
-9. Process prepared core SELL tickets before core BUY tickets. After recording
-   all core sell receipts, refresh validated history, positions and cash and run
+9. Process sells first, then core buys, satellite entries and the SPY sleeve.
+   After sell receipts, refresh validated history, positions and cash and run
    `python3 scripts/run_session.py --kind K --phase reconcile --continue-orders`.
-   This returns to record phase for the remaining tickets. A core buy needs ALL
-   planned core sells fully filled and reconciled; skipped, partial or unfilled
-   sells cannot fund buys. dispatch_check enforces this without changing tickets.
+   Core and SPY buys require dispatch_check authorization from existing cash
+   when the cash floor holds; otherwise wait for reconciled core sells.
+   SPY uses only remaining cash. Never change tickets or their quantities.
    For EACH prepared ticket sequentially, ask analyst for ONE fresh quote for
    that ticket's US symbol using quote-request.json's same declared quote tool.
    Before requesting the quote, prepare the save/check command and renew if needed.

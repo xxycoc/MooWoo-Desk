@@ -5,6 +5,7 @@ from dataclasses import asdict, dataclass, field
 import json
 import math
 
+from . import config as C
 from .events import canonical_bytes
 
 
@@ -50,12 +51,16 @@ class PortfolioState:
         for ticker, position in self.positions.items():
             positive(position["qty"], f"{ticker}.qty")
             positive(position["avgCost"], f"{ticker}.avgCost")
-            if position["sleeve"] not in ("core", "satellite"):
+            if position["sleeve"] not in ("core", "beta", "satellite"):
                 raise ValueError("invalid sleeve")
-            if position["kind"] not in ("core", "drift", "bounce"):
+            if position["kind"] not in ("core", "beta", "drift", "bounce"):
                 raise ValueError("invalid kind")
             if (position["kind"] == "core") != (position["sleeve"] == "core"):
                 raise ValueError("kind and sleeve disagree")
+            if (position["kind"] == "beta") != (position["sleeve"] == "beta"):
+                raise ValueError("kind and sleeve disagree")
+            if (ticker == C.BETA_ETF) != (position["sleeve"] == "beta"):
+                raise ValueError("SPY positions require the beta sleeve")
         canonical_bytes(self.to_dict())
 
     @classmethod

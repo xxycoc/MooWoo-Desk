@@ -58,11 +58,25 @@ the host badge instead of placing controls there.
 
 ## Strategy in plain words
 
+**Allocation: core 30% + SPY 30% + satellites, with a 10% cash floor.**
+
+**SPY sleeve: 30% target, subject to available cash.** SLEEVE-01 invests idle
+cash after core sells, core buys and satellite entries. SPY buys use cash above
+the 10% floor after all pending buys and fees; no projected sale proceeds.
+SPY uses the core's 25% relative rebalance band, has no stop, trailing stop or
+horizon exit, and is never sold to fund satellite entries. Account loss limits,
+kill liquidation and final-day entry restrictions apply as for core ETFs.
+Satellite caps remain 60% overall, 40% in a weak regime and 20% per name;
+held SPY naturally reduces cash available to satellites.
+
 **Core: 30% target across five ETFs.** USMV, XLP, XLV, IEF and GLD form the core.
 Weights are inverse to each ETF's daily-return volatility over 60 sessions, not
 equal weights. Rebalancing starts when a holding deviates by at least 25% of its
-target weight. Planned sells can inform buy sizing, but every required sell must
-fully fill and reconcile before the dependent buys can be authorized.
+target weight. Planned sells inform buy sizing. Dispatch permits cash-funded
+buys when the 10% floor holds and core exposure fits 30% plus the current value
+of planned, unfilled core sells. If those sells never fill, temporary overweight
+is accepted until the next morning rebalance. Buys needing sale proceeds still
+wait for full reconciled core sells.
 
 **Satellite: up to 60% in explained-move trades.** The screener uses completed
 daily bars and the frozen stock universe. It finds moves at least two standard
@@ -100,7 +114,7 @@ quote superseded values; use these sources together, not the original freeze alo
 | Control | Current rule |
 | --- | --- |
 | Account and direction | Paper account only, eligible US stocks and ETFs, long only; no naked sells |
-| Allocation | Core target 30%; satellite cap 60%; minimum cash 10%, including pending commitments |
+| Allocation | Core target 30%; SPY target 30%; satellite cap 60%; minimum cash 10%, including pending commitments |
 | Satellite concentration | At most 20% equity per name; at most three bounce names including pending entries |
 | Daily loss | At 1.5% loss from session-start equity, block entries; protective exits remain available |
 | Peak drawdown | At 2% loss, reduced sizing; at 4%, exits only; at 6%, kill tier cancels entries and liquidates |
@@ -254,7 +268,7 @@ change as live. This repository does not authorize real-money trading.
 - **Addendum 20:** the cloud checked out stale code despite updated prompts. Revision and prompt-hash alignment became essential; quote replies were trimmed to reduce copying delay.
 - **Addendum 21:** a small fresh-quote move rejected an otherwise marketable prepared limit. Dispatch now checks whether the saved limit is still marketable, without changing its price or identity.
 - **Addenda 22-24:** allocation was too small for the revised experiment, position field names were wrong, asynchronous valuation caused false halts, and never-sent authorizations reserved cash. SIZING-01 records the deliberate rule deviation; parsers use real fields; valuation tolerance scales; releases require complete history and no-handoff/expiry evidence.
-- **Addendum 25:** a copied history row lost quantity and stopped later runs; audits lacked bars; core buys could not follow sells; a close watcher fired after closing. Input errors now abort one run, audit bars and partial reports are supported, core buys require fully reconciled sells unless existing cash and core room cover all reserved buys (CORE-REBALANCE-02), and close watchers run five minutes before closing. These are implemented corrections, not a claim that every revised cloud path has been observed live.
+- **Addendum 25:** a copied history row lost quantity and stopped later runs; audits lacked bars; core buys could not follow sells; a close watcher fired after closing. Input errors now abort one run, audit bars and partial reports are supported, core buys require fully reconciled sells unless existing cash covers all reserved buys and planned end-state core exposure fits the target (CORE-REBALANCE-02), and close watchers run five minutes before closing. These are implemented corrections, not a claim that every revised cloud path has been observed live.
 
 ## Repository map and reuse
 

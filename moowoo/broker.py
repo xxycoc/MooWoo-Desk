@@ -211,6 +211,10 @@ def snapshot_to_state(positions, cash, previous, *, decisions=None):
         name = row["ticker"]
         prior = previous.positions.get(name)
         identity = row.get("decisionId") or decisions.get(name)
+        if prior and prior.get("sleeve") == "beta" and isinstance(decisions.get(name), set):
+            known = decisions[name]
+            if prior.get("decisionId") in known and (not row.get("decisionId") or row["decisionId"] in known):
+                identity = prior["decisionId"]
         if not prior or not identity or prior.get("decisionId") != identity:
             raise ValueError(f"unmatched strategy identity: {name}")
         position = deepcopy(prior)

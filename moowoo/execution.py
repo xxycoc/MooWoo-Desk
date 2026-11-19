@@ -317,7 +317,7 @@ def reconcile(tickets, history, positions, cash, state, log, *, history_complete
         if delta:
             current = expected.positions.get(ticket.ticker)
             if ticket.side == "BUY":
-                if current and current["decisionId"] != ticket.decisionId:
+                if current and current["decisionId"] != ticket.decisionId and ticket.sleeve != "beta":
                     raise ValueError("cannot merge different strategy entry identities")
                 if not current:
                     current = dict(qty=0, avgCost=0, kind=ticket.kind, sleeve=ticket.sleeve,
@@ -363,7 +363,10 @@ def reconcile(tickets, history, positions, cash, state, log, *, history_complete
         if row["side"] == "BUY" and row["filledQty"]:
             identity = submissions.get(row["orderId"], {}).get("decisionId", row["decisionId"])
             identities.setdefault(row["ticker"], set()).add(identity)
-    identities = {name: next(iter(values)) for name, values in identities.items() if len(values) == 1}
+    # SPY top-ups retain one holding identity, backed by every recorded buy.
+    identities = {name: values if expected.positions.get(name, {}).get("sleeve") == "beta"
+                  else next(iter(values)) for name, values in identities.items()
+                  if len(values) == 1 or expected.positions.get(name, {}).get("sleeve") == "beta"}
     differences = {}
     observed_cash = cash["cash"] + cash.get("reserved", 0)
     if abs(observed_cash-expected.cash) > 1:
