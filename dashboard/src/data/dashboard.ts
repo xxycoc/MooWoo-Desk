@@ -92,7 +92,12 @@ export function lastRuns(events: LoadedEvent[], state: DeskState): RunRow[] {
     let tone: RunRow["tone"] = "ok";
     if (skip) result = "calendar skip";
     if (abort) { result = `aborted: ${String(abort.reason ?? abort.text ?? "reason not recorded")}`; tone = "warn"; }
-    if (halt && !isRestart(halt)) { result = `halted: ${String(halt.reason ?? "reason not recorded")}`; tone = "halt"; }
+    if (halt && !isRestart(halt)) {
+      // Input-file aborts (disposition "abort") stop only their own run; they never persist a halt.
+      const runOnly = halt.disposition === "abort";
+      result = `${runOnly ? "aborted" : "halted"}: ${String(halt.reason ?? "reason not recorded")}`;
+      tone = runOnly ? "warn" : "halt";
+    }
     return { id, at: ordered[0].ts, lastAt: ordered[ordered.length - 1].ts, kind: runKind(ordered), result, tone, events: ordered };
   }).sort((left, right) => Date.parse(right.at) - Date.parse(left.at));
 }
@@ -100,7 +105,11 @@ export function lastRuns(events: LoadedEvent[], state: DeskState): RunRow[] {
 export function healthStatus(events: LoadedEvent[], runs: RunRow[], now: Date) {
   const ordered = [...events].sort((left, right) => Date.parse(left.ts) - Date.parse(right.ts) || left.gseq - right.gseq);
   const halt = [...ordered].reverse().find((event) => event.type === "halt");
-  if (halt && !isRestart(halt)) return { tone: "halt", message: `HALTED: ${String(halt.reason ?? "reason not recorded")}` };
+  // A halt persists only if no later run got past preflight; input-file aborts never persist.
+  const startedAfter = halt && ordered.some((event) => event.type === "run_started" && Date.parse(event.ts) > Date.parse(halt.ts));
+  if (halt && !isRestart(halt) && halt.disposition !== "abort" && !startedAfter) {
+    return { tone: "halt", message: `HALTED: ${String(halt.reason ?? "reason not recorded")}` };
+  }
   if (runs[0]?.events.some((event) => event.type === "run_aborted" || /\bsession aborted\b/i.test(String(event.text ?? "")))) {
     return { tone: "warn", message: "Latest run aborted" };
   }

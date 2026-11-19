@@ -50,6 +50,17 @@ test('only a cleared manual restart releases the latest halt', () => {
   assert.equal(health([...halted, { type: 'halt', cleared: true, reason: 'manual-restart' }, { type: 'halt', reason: 'new halt' }]).tone, 'halt');
 });
 
+test('run-only halts never show HALTED once a later run starts or when they are input aborts', () => {
+  const runHalt = { type: 'halt', reason: 'accounts.json: missing input file', ts: '2026-11-19T15:00:00Z' };
+  assert.notEqual(health([runHalt, { type: 'run_started', runId: 'watch-next', ts: '2026-11-19T15:30:00Z' }], '2026-11-19T15:31:00Z').tone, 'halt');
+  const inputAbort = { type: 'halt', reason: 'history.json: missing required broker field: qty', disposition: 'abort', stage: 'input_validation' };
+  assert.equal(health([inputAbort, { type: 'reflection_note', text: 'Session aborted: reconcile failed' }]).tone, 'warn');
+  const events = eventsOf([inputAbort]);
+  const row = lastRuns(events, stateAt(events, events.length))[0];
+  assert.equal(row.tone, 'warn');
+  assert.match(row.result, /^aborted: /);
+});
+
 test('abort and staleness are amber, but staleness only during regular hours', () => {
   assert.equal(health([{ type: 'reflection_note', text: 'Session aborted; retained all evidence' }]).tone, 'warn');
   assert.equal(health([{ type: 'run_aborted', reason: 'offline' }, { type: 'run_started', runId: 'watch-next', ts: '2026-11-19T15:30:00Z' }], '2026-11-19T15:30:00Z').tone, 'ok');
