@@ -262,7 +262,7 @@ def test_dry_schedule_payload_and_autonomy(monkeypatch):
     manifest = json.loads(result.stdout)
     assert manifest["approvalDecisionVerified"]
     schedules = [op["body"] for op in manifest["operations"] if op["key"].startswith("schedule.")]
-    assert len(schedules) == 5
+    assert len(schedules) == 6
     assert any("no IM sink" in warning for warning in manifest["warnings"])
     for body in schedules:
         assert body["execution"]["max_concurrent_runs"] == 1

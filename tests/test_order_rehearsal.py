@@ -81,6 +81,9 @@ def test_ten_order_morning(tmp_path, monkeypatch, stale_second, abort_after_seco
             data=dict(snapshot_list=[dict(code="US." + ticket.ticker, update_time=quote_time.timestamp()*1000,
                                          last_price=100, bid_price=99.99, ask_price=100)])))
         check = dispatch_check.run(Namespace(kind="morning", decision_id=ticket.decisionId, dir=tmp_path), current)
+        if check.get("retryable"):
+            # The second fetched source is still stale: exhaust the quote budget, not an order retry.
+            check = dispatch_check.run(Namespace(kind="morning", decision_id=ticket.decisionId, dir=tmp_path), current)
         if check["ok"]:
             assert check["tool"] == "sim_trade_input_order" and type(check["attempt"]) is int
             current += timedelta(seconds=20)  # Inject executor latency, without real waiting/network.

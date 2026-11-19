@@ -14,8 +14,8 @@ import pandas as pd
 
 from moowoo import config as C
 from moowoo import calendar
-from moowoo.rules import AUTONOMY_CHANGE, PICKS_CHANGE, SIZING_CHANGE, TOPOLOGY_CHANGE
-from moowoo.core import propose_core
+from moowoo.rules import AUTONOMY_CHANGE, PICKS_CHANGE, SIZING_CHANGE, TOPOLOGY_CHANGE, CORE_REBALANCE_CHANGE
+from moowoo.core import propose_core, projected_core_state
 from moowoo.desk_data import daily_frame, instant
 from moowoo.events import canonical_bytes
 from moowoo.exits import propose_exits
@@ -54,10 +54,10 @@ def frozen_config():
     expected_addendum = dict(date="2026-11-17", ruleId="FEES-01", before=None,
         after=dict(FEE_PER_ORDER=.99, FEE_PER_SHARE_SOLD=.000166, FEE_SELL_CAP=8.30, MIN_ENTRY_NOTIONAL=2000),
         reason="competition rules section 8 fees; addendum before first trade", effectiveFrom="first session")
-    if additions != [expected_addendum, AUTONOMY_CHANGE, PICKS_CHANGE, TOPOLOGY_CHANGE, SIZING_CHANGE]:
+    if additions != [expected_addendum, AUTONOMY_CHANGE, PICKS_CHANGE, TOPOLOGY_CHANGE, SIZING_CHANGE, CORE_REBALANCE_CHANGE]:
         raise ValueError("unrecognized rule addendum")
     expected = (frozen["config"] | expected_addendum["after"] | PICKS_CHANGE["after"]
-                | SIZING_CHANGE["after"])
+                | SIZING_CHANGE["after"] | CORE_REBALANCE_CHANGE["after"])
     if calculated != frozen["configHash"] or canonical_bytes(actual) != canonical_bytes(expected):
         raise ValueError("frozen configuration mismatch; planning refused")
     return frozen
@@ -153,12 +153,22 @@ def _plan(args, log):
         if result["decision"] == "invalidate":
             append("halt", dict(reason="satellite thesis failed", scope="all", sleeve="satellite"))
 
+    core_dependencies = {t["decisionId"]: [sell["decisionId"] for sell in tickets.values()
+                         if sell["sleeve"] == "core" and sell["side"] == "SELL"]
+                         for t in tickets.values() if t["sleeve"] == "core" and t["side"] == "BUY"}
+
     def consider(proposal):
         append("order_intent", {key: proposal[key] for key in
                                 ("ticker", "sleeve", "side", "qty", "limitPrice", "sizing", "stop")} |
                dict(notional=proposal["qty"]*proposal["limitPrice"], kind=proposal["kind"], reason=proposal["reason"]),
                proposal["decisionId"])
-        verdict = check(proposal, state, market)
+        risk_state = state
+        dependencies = []
+        if C.CORE_REBALANCE_AFTER_FILLS and proposal["sleeve"] == "core" and proposal["side"] == "BUY":
+            risk_state, dependencies = projected_core_state(state, tickets.values())
+        verdict = check(proposal, risk_state, market)
+        if dependencies:
+            verdict["conditionalOnFullFills"] = dependencies
         ticket = None
         if verdict["verdict"] != "veto":
             ticket = OrderTicket.from_proposal(proposal, verdict, frozen["configHash"], snapshot["now"])
@@ -167,6 +177,8 @@ def _plan(args, log):
         if ticket:
             state.reserve(ticket)
             tickets[ticket.decisionId] = ticket.to_dict()
+            if dependencies:
+                core_dependencies[ticket.decisionId] = dependencies
 
     exits = propose_exits(state, bars, quotes, session, run_id)
     for ticker, changes in exits["updates"].items():
@@ -197,6 +209,7 @@ def _plan(args, log):
     cancel = [ticket["decisionId"] for ticket in state.pendingTickets
               if ticket["side"] == "BUY" and (state.halted or state.tier == "kill")]
     manifest = dict(runId=run_id, configHash=frozen["configHash"], tickets=list(tickets.values()),
+                    coreSellDependencies=core_dependencies,
                     cancelEntryDecisionIds=cancel, executionAuthorized=False,
                     executionNote="Offline risk approval only. Executor must verify prompt freeze, current risk and account, then reconcile fills.")
     atomic_json(destination, manifest)

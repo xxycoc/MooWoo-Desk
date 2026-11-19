@@ -1,5 +1,5 @@
 {
-  "promptVersion": "e96f044a0a4fae7692deac96757da0bd7a601429e686738eefb93db76a280ec0",
+  "promptVersion": "e90c070c64e7ab5cb57e4d675111d58425978ba01906bc96465ec5b0b4d594b5",
   "executorApproval": "allow",
   "approvalDecisionRequired": true,
   "warnings": [
@@ -25,7 +25,10 @@
           "MOOMOO_ACCOUNT_ID": "${MOOMOO_ACCOUNT_ID}",
           "MOOMOO_MARKET": "${MOOMOO_MARKET}",
           "MOOMOO_CHALLENGE_TITLE": "${MOOMOO_CHALLENGE_TITLE}",
-          "GITHUB_LEDGER_TOKEN": "${secret.GITHUB_LEDGER_TOKEN}"
+          "GITHUB_LEDGER_TOKEN": "${secret.GITHUB_LEDGER_TOKEN}",
+          "GITHUB_FEED_TOKEN": "${secret.GITHUB_FEED_TOKEN}",
+          "FEED_REPO_URL": "",
+          "FEED_BRANCH": "dashboard-feed"
         },
         "initial_events": [
           {
@@ -43,7 +46,7 @@
           "session_mode": "new_session",
           "max_concurrent_runs": 1,
           "max_attempts": 1,
-          "timeout_ms": 2400000
+          "timeout_ms": 7200000
         },
         "sinks": [],
         "metadata": {
@@ -66,7 +69,10 @@
           "MOOMOO_ACCOUNT_ID": "${MOOMOO_ACCOUNT_ID}",
           "MOOMOO_MARKET": "${MOOMOO_MARKET}",
           "MOOMOO_CHALLENGE_TITLE": "${MOOMOO_CHALLENGE_TITLE}",
-          "GITHUB_LEDGER_TOKEN": "${secret.GITHUB_LEDGER_TOKEN}"
+          "GITHUB_LEDGER_TOKEN": "${secret.GITHUB_LEDGER_TOKEN}",
+          "GITHUB_FEED_TOKEN": "${secret.GITHUB_FEED_TOKEN}",
+          "FEED_REPO_URL": "",
+          "FEED_BRANCH": "dashboard-feed"
         },
         "initial_events": [
           {
@@ -107,7 +113,10 @@
           "MOOMOO_ACCOUNT_ID": "${MOOMOO_ACCOUNT_ID}",
           "MOOMOO_MARKET": "${MOOMOO_MARKET}",
           "MOOMOO_CHALLENGE_TITLE": "${MOOMOO_CHALLENGE_TITLE}",
-          "GITHUB_LEDGER_TOKEN": "${secret.GITHUB_LEDGER_TOKEN}"
+          "GITHUB_LEDGER_TOKEN": "${secret.GITHUB_LEDGER_TOKEN}",
+          "GITHUB_FEED_TOKEN": "${secret.GITHUB_FEED_TOKEN}",
+          "FEED_REPO_URL": "",
+          "FEED_BRANCH": "dashboard-feed"
         },
         "initial_events": [
           {
@@ -117,7 +126,51 @@
         ],
         "trigger_policy": {
           "type": "cron",
-          "expression": "0 16 * * 1-5",
+          "expression": "55 15 * * 1-5",
+          "timezone": "America/New_York"
+        },
+        "stop_at": "2026-11-28T06:00:00+08:00",
+        "execution": {
+          "session_mode": "new_session",
+          "max_concurrent_runs": 1,
+          "max_attempts": 1,
+          "timeout_ms": 1500000
+        },
+        "sinks": [],
+        "metadata": {
+          "window_start": "2026-11-17",
+          "window_end": "2026-11-27",
+          "requires_exchange_calendar_guard": true
+        }
+      }
+    },
+    {
+      "key": "schedule.watcher-early-close",
+      "method": "POST",
+      "path": "/forward/schedules",
+      "body": {
+        "identity_id": "${IDENTITY_ID}",
+        "template_id": "${template.coordinator.id}",
+        "name": "moowoo-watcher-early-close",
+        "environment_id": "${environment.id}",
+        "environment_variables": {
+          "MOOMOO_ACCOUNT_ID": "${MOOMOO_ACCOUNT_ID}",
+          "MOOMOO_MARKET": "${MOOMOO_MARKET}",
+          "MOOMOO_CHALLENGE_TITLE": "${MOOMOO_CHALLENGE_TITLE}",
+          "GITHUB_LEDGER_TOKEN": "${secret.GITHUB_LEDGER_TOKEN}",
+          "GITHUB_FEED_TOKEN": "${secret.GITHUB_FEED_TOKEN}",
+          "FEED_REPO_URL": "",
+          "FEED_BRANCH": "dashboard-feed"
+        },
+        "initial_events": [
+          {
+            "type": "user.message",
+            "content": "From /data/workspace/MooWoo-Desk run python3 scripts/run_session.py --kind watch --phase start. If skipped or refused, stop this session without orders. Follow the phase commands in your system prompt, retain every agent input/output under the returned inputs directory, and finish with --phase finish (or --phase abort on failure). Never continue past lease expiry. The runner saves checkpoints and releases the account lock only with a successful final save. "
+          }
+        ],
+        "trigger_policy": {
+          "type": "cron",
+          "expression": "55 12 27 11 *",
           "timezone": "America/New_York"
         },
         "stop_at": "2026-11-28T06:00:00+08:00",
@@ -148,7 +201,10 @@
           "MOOMOO_ACCOUNT_ID": "${MOOMOO_ACCOUNT_ID}",
           "MOOMOO_MARKET": "${MOOMOO_MARKET}",
           "MOOMOO_CHALLENGE_TITLE": "${MOOMOO_CHALLENGE_TITLE}",
-          "GITHUB_LEDGER_TOKEN": "${secret.GITHUB_LEDGER_TOKEN}"
+          "GITHUB_LEDGER_TOKEN": "${secret.GITHUB_LEDGER_TOKEN}",
+          "GITHUB_FEED_TOKEN": "${secret.GITHUB_FEED_TOKEN}",
+          "FEED_REPO_URL": "",
+          "FEED_BRANCH": "dashboard-feed"
         },
         "initial_events": [
           {
@@ -189,7 +245,10 @@
           "MOOMOO_ACCOUNT_ID": "${MOOMOO_ACCOUNT_ID}",
           "MOOMOO_MARKET": "${MOOMOO_MARKET}",
           "MOOMOO_CHALLENGE_TITLE": "${MOOMOO_CHALLENGE_TITLE}",
-          "GITHUB_LEDGER_TOKEN": "${secret.GITHUB_LEDGER_TOKEN}"
+          "GITHUB_LEDGER_TOKEN": "${secret.GITHUB_LEDGER_TOKEN}",
+          "GITHUB_FEED_TOKEN": "${secret.GITHUB_FEED_TOKEN}",
+          "FEED_REPO_URL": "",
+          "FEED_BRANCH": "dashboard-feed"
         },
         "initial_events": [
           {
@@ -232,7 +291,10 @@
       "MOOMOO_ACCOUNT_ID": "${MOOMOO_ACCOUNT_ID}",
       "MOOMOO_MARKET": "${MOOMOO_MARKET}",
       "MOOMOO_CHALLENGE_TITLE": "${MOOMOO_CHALLENGE_TITLE}",
-      "GITHUB_LEDGER_TOKEN": "${secret.GITHUB_LEDGER_TOKEN}"
+      "GITHUB_LEDGER_TOKEN": "${secret.GITHUB_LEDGER_TOKEN}",
+      "GITHUB_FEED_TOKEN": "${secret.GITHUB_FEED_TOKEN}",
+      "FEED_REPO_URL": "",
+      "FEED_BRANCH": "dashboard-feed"
     }
   },
   "unresolved_runtime_requirements": [

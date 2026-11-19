@@ -10,6 +10,8 @@ from _execution import frozen_config, read_json
 from hash_prompts import prompt_version
 from moowoo.execution import decision_events, execution_ready, load_tickets, safe_reason, note
 from moowoo import calendar, config
+from moowoo.core import require_core_fills
+from moowoo.portfolio import PortfolioState
 from moowoo.desk_data import limit_price
 from convert_quotes import quote_rows, parse_quote
 from moowoo.persistence import LedgerError, LedgerStore
@@ -93,6 +95,11 @@ def run(args, now=None):
         fresh = limit_price(quote, ticket.side)
         if (fresh > ticket.limitPrice) if ticket.side == "BUY" else (fresh < ticket.limitPrice):
             raise ValueError("fresh quote moved past the ticket limit price")
+        if ticket.sleeve == "core" and ticket.side == "BUY":
+            state = PortfolioState.from_dict(read_json(root / "state.json"))
+            prices = {name: p["marketPrice"] for name, p in state.positions.items()}
+            prices[ticket.ticker] = quote["last"]
+            require_core_fills(ticket, manifest, state, log, prices)
         if age > config.STALE_PRICE_SECONDS:
             raise StaleQuote("stale quote timestamp")
 

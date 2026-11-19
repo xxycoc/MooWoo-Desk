@@ -108,3 +108,68 @@ def test_save_actual_cli_reports_missing_file(tmp_path):
     result = subprocess.run([sys.executable, "scripts/check_broker_input.py", "--kind", "cash", "--file", str(tmp_path / "cash.json")], capture_output=True, text=True)
     assert result.returncode == 2
     assert "cash.json" in result.stdout and "missing input file" in result.stdout
+
+
+def test_missing_qty_in_one_of_three_history_rows_is_input_abort(baseline):
+    args, log = baseline
+    from pathlib import Path
+    history = fixture("history")
+    original = history["data"]["orders"][0]
+    history["data"]["orders"] = [original | dict(order_id=f"paper-{i}", symbol=symbol) for i, symbol in enumerate(("IEF", "GLD", "XLP"))]
+    del history["data"]["orders"][2]["qty"]
+    atomic_json(args.history, history)
+    assert command(args, cli.run, persist_halt=True) == 2
+    assert not json.loads(Path(args.state).read_text())["halted"]
+    assert "history.json" in log.read()[-1]["reason"] and "qty" in log.read()[-1]["reason"]
+
+
+def test_history_pages_are_assembled_without_retyping(tmp_path, monkeypatch):
+    from check_broker_input import assemble
+    monkeypatch.setenv("MOOMOO_ACCOUNT_ID", "synthetic-paper-account")
+    monkeypatch.setenv("MOOMOO_MARKET", "100")
+    first = dict(ret_code=0, ret_msg="ok", data=dict(orders=[]), pagination=dict(has_more=True, next_key="cursor"))
+    last = dict(ret_code=0, ret_msg="ok", data=dict(orders=[]), pagination=dict(has_more=False, next_key=""))
+    save(tmp_path / "history.json", "history", json.dumps(first))
+    with pytest.raises(InputFileError, match="history-page-1.json"):
+        assemble(tmp_path)
+    save(tmp_path / "history-page-1.json", "history", json.dumps(last))
+    assert assemble(tmp_path)["pages"] == 2
+    assert json.loads((tmp_path / "history-pages.json").read_text())["cursor"] == last
+
+
+def test_refresh_after_checkpoint_never_retries_returned_authorization(prepared, monkeypatch):
+    from moowoo.persistence import LedgerStore
+    args, ticket, log, order, lock = prepared
+    current = NOW
+    class Clock:
+        @staticmethod
+        def now(zone): return current
+    def delayed_save(*a, **k):
+        nonlocal current
+        current += timedelta(seconds=61)
+        return dict(saved=True)
+    monkeypatch.setattr(dispatch_check, "datetime", Clock)
+    monkeypatch.setattr(dispatch_check, "require_owned", lambda *a: None)
+    monkeypatch.setattr(LedgerStore, "save", delayed_save)
+    assert dispatch_check.run(args)["retryable"]
+    assert any(e.get("executionAction") == "dispatch_withheld" for e in log.read())
+    monkeypatch.setattr(LedgerStore, "save", lambda *a, **k: dict(saved=True))
+    path = args.dir / f"inputs/{RUN}/quotes-raw-AAA.json"
+    raw = json.loads(path.read_text())
+    raw["data"]["snapshot_list"][0]["update_time"] = current.isoformat()
+    atomic_json(path, raw)
+    assert dispatch_check.run(args)["ok"]
+    with pytest.raises(ValueError, match="resolved"):
+        dispatch_check.run(args)
+
+
+@pytest.mark.parametrize("bad", ["missing", "json", "shape"])
+def test_watcher_input_failure_does_not_persist_halt(tmp_path, bad):
+    import watch
+    args = Namespace(state=str(tmp_path / "state.json"), quotes=str(tmp_path / "quotes.json"), log=str(tmp_path / "watch.jsonl"))
+    atomic_json(args.state, PortfolioState(cash=100000).to_dict())
+    from pathlib import Path
+    if bad == "json": Path(args.quotes).write_text("{")
+    if bad == "shape": atomic_json(args.quotes, [])
+    assert command(args, watch.run, persist_halt=True) == 2
+    assert not json.loads(Path(args.state).read_text())["halted"]

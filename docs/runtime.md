@@ -146,9 +146,9 @@ runtime inputs or verbatim child replies; never rewrite replies to make them pas
 | `candidates.json` | Required gather output, array of at most `PICK_COUNT` (5) picked movers in rank order; each has `rank`, `decisionId`, `ticker`, trusted `newsCutoff`, `barsAsOf`, `promptVersion`, `primaryAgent`, `quickSecondOpinionRequired`. The stored candidate `setupScore` is not trusted; ingestion recomputes it. |
 | `bars.json` | Required gather output, completed daily OHLCV bars keyed by ticker; each accepted ticker needs bars through `session.barsAsOf` |
 | `replies/<decisionId>.analyst.json` | Required for every candidate; original brief with matching identity/cutoff and `items` containing id, headline, source, UTC publishedAt and summary. Empty items are allowed. |
-| `replies/<decisionId>.bull.json`, `.bear.json` | Required for ranks 1â€“5; exact debate objects with `decisionId`, `stance`, `argument` (at most 150 words), `itemIds` referencing eligible brief items |
-| `replies/<decisionId>.manager.json` | Required primary for ranks 1â€“5, `tier: "debate"`, validated against the candidate cutoff and promptVersion |
-| `replies/<decisionId>.quick.json` | Required primary for ranks 6â€“15, `tier: "quick"`. Expected for ranks 1â€“5 as a separately validated second opinion; missing/invalid quick logs its own skip and cannot reject a valid manager primary. |
+| `replies/<decisionId>.bull.json`, `.bear.json` | Required for ranks 1–5; exact debate objects with `decisionId`, `stance`, `argument` (at most 150 words), `itemIds` referencing eligible brief items |
+| `replies/<decisionId>.manager.json` | Required primary for ranks 1–5, `tier: "debate"`, validated against the candidate cutoff and promptVersion |
+| `replies/<decisionId>.quick.json` | Required primary for ranks 6–15, `tier: "quick"`. Expected for ranks 1–5 as a separately validated second opinion; missing/invalid quick logs its own skip and cannot reject a valid manager primary. |
 | `ratings.json` | Generated atomically; only accepted primaries in picked order, or `[]`. Never hand-write this file. |
 
 `decisionId` is exactly `<runId>:<ticker>`; filenames preserve the colon. These
@@ -167,7 +167,7 @@ are display metadata; they never overwrite the manager class or confidence.
 
 Ingestion appends through the existing locked `EventLog` at
 `<inputs>/../../logs/<runId>.jsonl`. Each decision has one terminal primary outcome
-and, for ranks 1â€“5, one independent second-opinion outcome. Missing/malformed
+and, for ranks 1–5, one independent second-opinion outcome. Missing/malformed
 replies, bad candidate metadata or unusable ticker bars become ticker `halt`
 events with `disposition: "skip"`, `stage: "rating_validation"` and the appropriate
 `secondOpinion` flag. A partial batch still exits successfully and reports accepted
@@ -261,8 +261,8 @@ Never continue past expiry or extend market hours or quote/ticket freshness.
 
 ## Calendar and deployment conflicts
 
-Trading sessions are 17â€“20 and 23â€“25 November, 09:30â€“16:00 New York, plus
-27 November, 09:30â€“13:00. Thanksgiving, weekends and dates outside the competition
+Trading sessions are 17–20 and 23–25 November, 09:30–16:00 New York, plus
+27 November, 09:30–13:00. Thanksgiving, weekends and dates outside the competition
 are closed. The close boundary itself is not an order window. Risk uses the
 calendar for the first-five-minute and final-day entry gates; supplied market
 open/close fields cannot extend the calendar. Record/reconcile/save are still
@@ -277,8 +277,10 @@ premarket, which the regular-hours guard would always skip; the time was moved o
 17 November 2026 before any session ran. Screening uses completed prior-day bars,
 so nothing is lost by running after the open.
 
-The watcher uses two cron schedules: every half hour 10:00â€“15:30 and 16:00 New
-York. The morning run covers the open; a watcher that meets its lock exits. The calendar skips Thanksgiving and ticks at/after actual close.
+The watcher uses three cron schedules: every half hour 10:00-15:30, 15:55 New
+York, and 12:55 on 27 November before its 13:00 early close. The morning run
+covers the open; a watcher that meets its lock exits. The calendar skips
+Thanksgiving and ticks at/after actual close.
 The audit has a 16:10 weekday schedule plus a 13:10 27-November schedule; the
 calendar rejects the late 16:10 duplicate on 27 November. Every schedule has
 `max_concurrent_runs=1` and `stop_at=2026-11-28T06:00:00+08:00`; the global lock
@@ -408,3 +410,43 @@ separate from order attempt. A future timestamp, bad spread, changed marketable
 limit, or other refusal is not retryable. If persistence consumes the quote
 window, the checker durably records that it withheld authorization before a
 refresh. Never retry a returned ok:true authorization. The source limit stays 60 s.
+
+## Close audit collection and partial reporting
+
+After audit reconcile, run `python3 scripts/gather_audit_inputs.py --inputs <inputs>`.
+It derives held, pending, traded and rated symbols from verified state/events, adds
+SPY and all five core ETFs, fetches completed OHLCV through the actual session
+close with the existing yfinance adapter, trims to date/open/high/low/close/volume,
+and writes and validates bars.json and session.json in one command. It uses no
+new broker credentials or permissions. Missing symbols are saved in
+`audit-input-report.json`; an empty valid bars object still permits a partial
+report. `--check` revalidates the saved files. Never use partial intraday bars.
+
+The normal grading/scoring phases remain mandatory. Finish writes report.json and
+report.md, and saves daily snapshots under runtime/reports. Abort also attempts a
+partial report and logs the specific reason. Partial metrics are reflection_note
+payloads plus the existing report-only audit halt, not forged daily_report events.
+No audit evidence gap sets PortfolioState.halted. Brier requires matured forecasts;
+shadow comparisons require validated matched book records and remain unavailable
+when these records do not exist. Unknown measured cost is null. Account ratios use
+contiguous session-close equity observations only, with no interpolation across
+missing audits. The SPY daily-open comparison is explicitly a proxy, not the exact
+pre-registered first-eligible-entry baseline. Exact baseline anchors, full frozen
+universe coverage, and paired metric intervals remain listed as missing when absent.
+
+## Conditional core rebalance and schedule receipts
+
+CORE-REBALANCE-01 sizes core buys on a temporary projection after approved core
+sells. Actual saved cash and holdings are unchanged. All such buys depend on all
+core sell tickets being fully filled and reconciled; partial, skipped, rejected,
+or missing sells cannot fund them. Before core buys, refresh broker snapshots and
+run `reconcile --continue-orders` through run_session. Dispatch verifies the fill
+checkpoints, reserved buys, actual marked core exposure, cash floor, daily loss
+and account tier. The target remains 30%; no credit is given to unfilled sells.
+Tickets keep their original prices and quantities. Failed dependencies skip buys.
+
+In America/New_York, recreate `schedule.watcher-close` with `55 15 * * 1-5`.
+Also create `schedule.watcher-early-close` with `55 12 27 11 *` for 27 November.
+The late ordinary close tick is skipped that day. Both keep the existing stop_at
+and cross-schedule lease. The 12:55 run has only five minutes for new orders;
+record/reconcile/save may continue after close, but order authorization may not.

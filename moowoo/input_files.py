@@ -13,6 +13,8 @@ def read_input(path):
         return json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError as exc:
         raise InputFileError(f"{path.name}: missing input file") from exc
+    except OSError as exc:
+        raise InputFileError(f"{path.name}: unreadable input file") from exc
     except (json.JSONDecodeError, UnicodeError) as exc:
         raise InputFileError(f"{path.name}: invalid JSON input") from exc
 

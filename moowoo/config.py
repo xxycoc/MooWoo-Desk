@@ -81,3 +81,6 @@ FEE_PER_ORDER = 0.99
 FEE_PER_SHARE_SOLD = 0.000166
 FEE_SELL_CAP = 8.30
 MIN_ENTRY_NOTIONAL = 2000
+
+# CORE-REBALANCE-01: conditional approvals, released only after reconciled sells.
+CORE_REBALANCE_AFTER_FILLS = True

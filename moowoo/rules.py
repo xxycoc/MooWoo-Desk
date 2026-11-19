@@ -28,3 +28,10 @@ SIZING_CHANGE = dict(
                MAX_SPREAD=0.005),
     reason="decided by Siang Woo 19 Nov: move capital from the defensive core to satellite trades for the remaining six sessions; stops, drawdown tiers, kill switch, regime cap, cash floor and long-only unchanged",
     effectiveFrom="first session after 19 Nov 01:00 SGT", triggerDecisionIds=[])
+
+CORE_REBALANCE_CHANGE = dict(
+    type="rule_change", ruleId="CORE-REBALANCE-01", date="2026-11-19",
+    before=dict(CORE_REBALANCE_AFTER_FILLS=False),
+    after=dict(CORE_REBALANCE_AFTER_FILLS=True),
+    reason="requested by Siang Woo: size conditional core buys after planned core sells, but authorize only after full reconciled fills and post-sell core/cash checks; allocation limits unchanged",
+    effectiveFrom="first session after matching prompt addendum and deployment", triggerDecisionIds=[])

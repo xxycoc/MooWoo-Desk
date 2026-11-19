@@ -11,16 +11,22 @@ from moowoo.desk_data import instant
 from moowoo.execution import require_not_halted
 from moowoo.exits import propose_exits
 from moowoo.portfolio import PortfolioState
+from moowoo.input_files import InputFileError, read_input
 from moowoo.risk import check
 from moowoo.tickets import OrderTicket
 
 
 def run(args, log):
-    snapshot = read_json(args.quotes)
-    now = calendar.local_time(snapshot["now"])
+    snapshot = read_input(args.quotes)
+    try:
+        now = calendar.local_time(snapshot["now"])
+    except (ValueError, KeyError, TypeError) as exc:
+        raise InputFileError("quotes.json: missing or invalid now/sessionDate/quotes") from exc
     skipped = calendar.skip(log, now, "watch") or calendar.skip_first_minutes(log, now, C.NO_ORDERS_FIRST_MINUTES)
     if skipped:
         return skipped
+    if not isinstance(snapshot.get("quotes"), dict) or not isinstance(snapshot.get("sessionDate"), str):
+        raise InputFileError("quotes.json: missing or invalid sessionDate/quotes")
     frozen = frozen_config()
     state = PortfolioState.from_dict(read_json(args.state))
     if state.halted and state.tier != "kill":
@@ -33,18 +39,25 @@ def run(args, log):
         raise ValueError("invalid regular-session date")
     if args.bars_asof > session or (args.bars_asof == session and now < closed):
         raise ValueError("bars-asof includes incomplete session")
-    bars, errors = load_bars(args.bars, args.bars_asof)
+    try:
+        bars, errors = load_bars(args.bars, args.bars_asof)
+    except (ValueError, KeyError, TypeError, AttributeError, FileNotFoundError) as exc:
+        raise InputFileError("bars.json: missing or invalid completed bars input") from exc
     quotes = snapshot["quotes"]
     for name, position in state.positions.items():
         if position["kind"] == "core" and state.tier != "kill":
             continue
-        if name not in quotes or not 0 <= (now-instant(quotes[name]["ts"])).total_seconds() <= C.STALE_PRICE_SECONDS:
-            raise ValueError(f"missing or stale watcher quote: {name}")
+        try:
+            age = (now-instant(quotes[name]["ts"])).total_seconds()
+        except (ValueError, KeyError, TypeError, AttributeError) as exc:
+            raise InputFileError(f"quotes.json: {name}: missing or invalid timestamp") from exc
+        if not 0 <= age <= C.STALE_PRICE_SECONDS:
+            raise InputFileError(f"quotes.json: missing or stale watcher quote: {name}")
         if position["kind"] != "core" and name in errors:
-            raise ValueError(errors[name])
+            raise InputFileError(f"bars.json: {name}: invalid completed bars")
     outcome = propose_exits(state, bars, quotes, session, log.runId)
     if outcome["skipped"]:
-        raise ValueError(str(outcome["skipped"]))
+        raise InputFileError("bars.json/quotes.json: " + str(outcome["skipped"]))
     for name, changes in outcome["updates"].items():
         if changes["stop"] < state.positions[name].get("stop", 0):
             raise ValueError("watcher attempted to loosen stop")
