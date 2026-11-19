@@ -97,7 +97,7 @@ Missing or invalid data needed by an entry gate fails closed at that gate.
 | 3 | `daily_loss` | Loss >= `DAILY_LOSS_HALT` = 1.5% from session-start equity, or latched daily halt | Veto entry |
 | 4 | `final_day` | `NO_NEW_ENTRIES_ON_FINAL_DAY`; session >= `FINAL_DAY` = 2026-11-27 | Veto entry |
 | 5 | `first_minutes` | Elapsed < `NO_ORDERS_FIRST_MINUTES` = 5; also refuse entries outside the supplied regular session | Veto entry |
-| 6 | `regime` | Bounce blocked by `REGIME_STOP_BOUNCE`; satellite ceiling `REGIME_SATELLITE_CAP` = 20% | Veto bounce; resize drift |
+| 6 | `regime` | Bounce blocked by `REGIME_STOP_BOUNCE`; satellite ceiling `REGIME_SATELLITE_CAP` = 40% | Veto bounce; resize drift |
 | 7 | `duplicate_decision` | ID already in `ticketedDecisionIds` | Veto buy or sell |
 | 8 | `max_orders` | Submitted count plus current-session unsubmitted reservations >= `MAX_ORDERS_PER_SESSION` = 30 | Veto entry |
 | 9 | `stale_price` | Quote age > `STALE_PRICE_SECONDS` = 60, or future timestamp | Veto entry |
@@ -106,7 +106,7 @@ Missing or invalid data needed by an entry gate fails closed at that gate.
 | 12 | `bounce_count` | A new bounce name would exceed `MAX_BOUNCE_POSITIONS` = 3, including pending buys | Veto entry |
 | 13 | `satellite_invalidated` | Thesis invalidated; block new satellite exposure | Veto entry |
 | 14 | `per_name_cap` | Satellite stock exposure > `PER_NAME_CAP` = 8% of marked equity; core ETFs exempt | Resize |
-| 15 | `satellite_cap` | `SATELLITE_CAP` = 25%, or `SATELLITE_CAP_STEP_UP` = 40% once effective; regime 20% still wins | Resize |
+| 15 | `satellite_cap` | `SATELLITE_CAP` = 60%, or `SATELLITE_CAP_STEP_UP` = 60% once effective; regime 40% still wins | Resize |
 | 16 | `cash_floor` | Cash after pending buys, proposed buy and fees must retain `CASH_FLOOR` = 10% of equity | Resize |
 | 17 | `adv` | Notional <= `MAX_ADV_FRACTION` = 0.005 times average close times volume over prior `VOLUME_PERIOD` = 20 completed sessions | Resize |
 

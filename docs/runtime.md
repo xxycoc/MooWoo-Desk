@@ -146,9 +146,9 @@ runtime inputs or verbatim child replies; never rewrite replies to make them pas
 | `candidates.json` | Required gather output, array of at most `PICK_COUNT` (5) picked movers in rank order; each has `rank`, `decisionId`, `ticker`, trusted `newsCutoff`, `barsAsOf`, `promptVersion`, `primaryAgent`, `quickSecondOpinionRequired`. The stored candidate `setupScore` is not trusted; ingestion recomputes it. |
 | `bars.json` | Required gather output, completed daily OHLCV bars keyed by ticker; each accepted ticker needs bars through `session.barsAsOf` |
 | `replies/<decisionId>.analyst.json` | Required for every candidate; original brief with matching identity/cutoff and `items` containing id, headline, source, UTC publishedAt and summary. Empty items are allowed. |
-| `replies/<decisionId>.bull.json`, `.bear.json` | Required for ranks 1–5; exact debate objects with `decisionId`, `stance`, `argument` (at most 150 words), `itemIds` referencing eligible brief items |
-| `replies/<decisionId>.manager.json` | Required primary for ranks 1–5, `tier: "debate"`, validated against the candidate cutoff and promptVersion |
-| `replies/<decisionId>.quick.json` | Required primary for ranks 6–15, `tier: "quick"`. Expected for ranks 1–5 as a separately validated second opinion; missing/invalid quick logs its own skip and cannot reject a valid manager primary. |
+| `replies/<decisionId>.bull.json`, `.bear.json` | Required for ranks 1â€“5; exact debate objects with `decisionId`, `stance`, `argument` (at most 150 words), `itemIds` referencing eligible brief items |
+| `replies/<decisionId>.manager.json` | Required primary for ranks 1â€“5, `tier: "debate"`, validated against the candidate cutoff and promptVersion |
+| `replies/<decisionId>.quick.json` | Required primary for ranks 6â€“15, `tier: "quick"`. Expected for ranks 1â€“5 as a separately validated second opinion; missing/invalid quick logs its own skip and cannot reject a valid manager primary. |
 | `ratings.json` | Generated atomically; only accepted primaries in picked order, or `[]`. Never hand-write this file. |
 
 `decisionId` is exactly `<runId>:<ticker>`; filenames preserve the colon. These
@@ -167,7 +167,7 @@ are display metadata; they never overwrite the manager class or confidence.
 
 Ingestion appends through the existing locked `EventLog` at
 `<inputs>/../../logs/<runId>.jsonl`. Each decision has one terminal primary outcome
-and, for ranks 1–5, one independent second-opinion outcome. Missing/malformed
+and, for ranks 1â€“5, one independent second-opinion outcome. Missing/malformed
 replies, bad candidate metadata or unusable ticker bars become ticker `halt`
 events with `disposition: "skip"`, `stage: "rating_validation"` and the appropriate
 `secondOpinion` flag. A partial batch still exits successfully and reports accepted
@@ -261,8 +261,8 @@ Never continue past expiry or extend market hours or quote/ticket freshness.
 
 ## Calendar and deployment conflicts
 
-Trading sessions are 17–20 and 23–25 November, 09:30–16:00 New York, plus
-27 November, 09:30–13:00. Thanksgiving, weekends and dates outside the competition
+Trading sessions are 17â€“20 and 23â€“25 November, 09:30â€“16:00 New York, plus
+27 November, 09:30â€“13:00. Thanksgiving, weekends and dates outside the competition
 are closed. The close boundary itself is not an order window. Risk uses the
 calendar for the first-five-minute and final-day entry gates; supplied market
 open/close fields cannot extend the calendar. Record/reconcile/save are still
@@ -437,13 +437,17 @@ universe coverage, and paired metric intervals remain listed as missing when abs
 ## Conditional core rebalance and schedule receipts
 
 CORE-REBALANCE-01 sizes core buys on a temporary projection after approved core
-sells. Actual saved cash and holdings are unchanged. All such buys depend on all
-core sell tickets being fully filled and reconciled; partial, skipped, rejected,
-or missing sells cannot fund them. Before core buys, refresh broker snapshots and
+sells. Actual saved cash and holdings are unchanged. CORE-REBALANCE-02 allows
+buys before sell fills when existing cash covers all reserved buys and fees while preserving
+the 10% cash floor and 30% core limit. Otherwise, CORE_REBALANCE_AFTER_FILLS
+retains the requirement for all core sell tickets to be fully filled and
+reconciled; projected proceeds cannot fund buys. Before core buys, refresh
+broker snapshots and
 run `reconcile --continue-orders` through run_session. Dispatch verifies the fill
 checkpoints, reserved buys, actual marked core exposure, cash floor, daily loss
 and account tier. The target remains 30%; no credit is given to unfilled sells.
-Tickets keep their original prices and quantities. Failed dependencies skip buys.
+Tickets keep their original prices and quantities. Failed dependencies skip buys
+only when actual cash or core room cannot cover them.
 
 In America/New_York, recreate `schedule.watcher-close` with `55 15 * * 1-5`.
 Also create `schedule.watcher-early-close` with `55 12 27 11 *` for 27 November.

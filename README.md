@@ -104,7 +104,7 @@ quote superseded values; use these sources together, not the original freeze alo
 | Satellite concentration | At most 20% equity per name; at most three bounce names including pending entries |
 | Daily loss | At 1.5% loss from session-start equity, block entries; protective exits remain available |
 | Peak drawdown | At 2% loss, reduced sizing; at 4%, exits only; at 6%, kill tier cancels entries and liquidates |
-| Market regime | SPY below EMA20 or SMA100, or short volatility at least twice long volatility: block new bounces and cap satellite at 20% |
+| Market regime | SPY below EMA20 or SMA100, or short volatility at least twice long volatility: block new bounces and cap satellite at 40% |
 | Entry liquidity | Spread at most 0.5% of midpoint; order notional at most 0.5% of prior 20-session average dollar volume |
 | Correlation | At most 0.80 against existing and pending satellite names, using 60 daily returns |
 | Quote age | At most 60 seconds, no future timestamps; check again before every dispatch |
@@ -254,7 +254,7 @@ change as live. This repository does not authorize real-money trading.
 - **Addendum 20:** the cloud checked out stale code despite updated prompts. Revision and prompt-hash alignment became essential; quote replies were trimmed to reduce copying delay.
 - **Addendum 21:** a small fresh-quote move rejected an otherwise marketable prepared limit. Dispatch now checks whether the saved limit is still marketable, without changing its price or identity.
 - **Addenda 22-24:** allocation was too small for the revised experiment, position field names were wrong, asynchronous valuation caused false halts, and never-sent authorizations reserved cash. SIZING-01 records the deliberate rule deviation; parsers use real fields; valuation tolerance scales; releases require complete history and no-handoff/expiry evidence.
-- **Addendum 25:** a copied history row lost quantity and stopped later runs; audits lacked bars; core buys could not follow sells; a close watcher fired after closing. Input errors now abort one run, audit bars and partial reports are supported, core buys require fully reconciled sells, and close watchers run five minutes before closing. These are implemented corrections, not a claim that every revised cloud path has been observed live.
+- **Addendum 25:** a copied history row lost quantity and stopped later runs; audits lacked bars; core buys could not follow sells; a close watcher fired after closing. Input errors now abort one run, audit bars and partial reports are supported, core buys require fully reconciled sells unless existing cash and core room cover all reserved buys (CORE-REBALANCE-02), and close watchers run five minutes before closing. These are implemented corrections, not a claim that every revised cloud path has been observed live.
 
 ## Repository map and reuse
 

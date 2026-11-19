@@ -19,7 +19,7 @@ and quotes, aligned ETF bars, validated ratings and candidate bars. Read
 3. Use `core.projected_core_state` only to size conditional core buys. Never persist projected cash or positions as actual holdings.
 4. `sizing.propose_entry` maps explained-up to drift and unexplained-down to bounce. Notional starts at 20% equity times confidence times `min(1, .02 / daily_sd)`, halved in the reduced tier, then floored to whole shares. Enforce setup eligibility and $2,000 minimum buys.
 5. Route every proposal through `moowoo/risk.py::check`. Account for existing/pending exposure, 60% satellite cap, 10% cash floor and stricter regime limits.
-6. Before a dependent core buy, `core.require_core_fills` requires every planned core sell to be fully recorded and reconciled, then checks actual post-sell budgets. A partial sell funds nothing in this mechanism.
+6. Before a core buy, `core.require_core_fills` checks actual cash and core budgets including all reserved buys and fees. CORE-REBALANCE-02 permits cash-funded buys within the cash floor and core limit; otherwise every planned core sell must be fully recorded and reconciled. Unfilled proceeds never fund buys.
 
 ## Outputs
 

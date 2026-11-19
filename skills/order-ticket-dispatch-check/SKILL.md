@@ -18,7 +18,7 @@ quote. Read `scripts/dispatch_check.py`, `scripts/execute_tickets.py`,
 2. For each ticket, obtain a fresh quote through the analyst, save/validate it and run `scripts/dispatch_check.py` using the exact arguments in the current coordinator prompt.
 3. Require owned remote lease, valid paper-account binding, current market window, unused prepared attempt and the quote-age/spread checks applicable to the order.
 4. Keep the saved limit unchanged. For a buy, the fresh required price cannot exceed that limit; for a sell it cannot fall below it. A fresh quote need not exactly equal the original quote.
-5. For conditional core buys, require all planned core sells fully filled/reconciled and actual core/cash budgets passing. Projected proceeds alone are insufficient.
+5. For core buys, allow existing cash to fund all reserved buys and fees only within the cash floor and core limit. Otherwise require all planned core sells fully filled/reconciled and actual core/cash budgets passing. Projected proceeds alone are insufficient.
 6. Only `ok:true` permits handing the exact returned arguments privately to the executor, within the quote deadline. Rechecks follow the durable checkpoint. An age-only `retryable:true` permits one quote refresh, not an order retry.
 7. Save the broker reply immediately and record it through the phase runner; reconcile before any dependent action or uncertainty recovery.
 

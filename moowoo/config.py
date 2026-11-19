@@ -74,7 +74,7 @@ REGIME_VOL_SHORT_PERIOD = 5
 REGIME_VOL_LONG_PERIOD = 20
 REGIME_VOL_MULTIPLIER = 2.0
 REGIME_STOP_BOUNCE = True
-REGIME_SATELLITE_CAP = 0.20
+REGIME_SATELLITE_CAP = 0.40
 
 # FEES-01: competition addendum; the original frozen artifact stays unchanged.
 FEE_PER_ORDER = 0.99
@@ -82,5 +82,6 @@ FEE_PER_SHARE_SOLD = 0.000166
 FEE_SELL_CAP = 8.30
 MIN_ENTRY_NOTIONAL = 2000
 
-# CORE-REBALANCE-01: conditional approvals, released only after reconciled sells.
+# CORE-REBALANCE-01/02: wait for reconciled sells unless actual cash/core budgets suffice.
 CORE_REBALANCE_AFTER_FILLS = True
+CORE_REBALANCE_CASH_FUNDED = True

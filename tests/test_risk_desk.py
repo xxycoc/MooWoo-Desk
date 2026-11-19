@@ -159,8 +159,8 @@ def test_regime_cap_stepup_and_invalidation(desk):
     m["sessionDate"] = "2026-11-18"
     # SIZING-01 sets the step-up cap equal to the base cap, so stepping up adds no room.
     assert check(p, s, m)["qtyAfter"] == 70
-    s.positions["BBB"]["qty"] = 180
-    s.cash = 82000
+    s.positions["BBB"]["qty"] = 380
+    s.cash = 62000
     m["bars"]["SPY"].iloc[-1] = [50, 51, 49, 50, 2_000_000]
     assert check(p, s, m)["qtyAfter"] == 20
     assert check(p, s, m)["firedRule"] == "regime"

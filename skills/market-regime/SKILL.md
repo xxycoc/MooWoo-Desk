@@ -16,7 +16,7 @@ windows, plus `moowoo/config.py`. Implementation:
 1. Supply bars through the valid as-of session, not an intraday partial candle.
 2. Compute SPY close versus EMA20 and SMA100, plus sample standard deviation over five and twenty daily returns.
 3. Mark the defensive regime if close is below either moving average or short volatility is at least twice long volatility.
-4. Let the risk desk veto new bounce entries and cap satellite exposure at 20% in that regime. Preserve the input bars as evidence; the function returns a boolean, not a measurement breakdown.
+4. Let the risk desk veto new bounce entries and cap satellite exposure at 40% in that regime. Preserve the input bars as evidence; the function returns a boolean, not a measurement breakdown.
 5. If required bars are missing or invalid, report unavailable input; do not silently declare a normal regime.
 
 ## Outputs

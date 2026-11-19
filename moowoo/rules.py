@@ -35,3 +35,17 @@ CORE_REBALANCE_CHANGE = dict(
     after=dict(CORE_REBALANCE_AFTER_FILLS=True),
     reason="requested by Siang Woo: size conditional core buys after planned core sells, but authorize only after full reconciled fills and post-sell core/cash checks; allocation limits unchanged",
     effectiveFrom="first session after matching prompt addendum and deployment", triggerDecisionIds=[])
+
+
+REGIME_SIZING_CHANGE = dict(
+    type="rule_change", ruleId="SIZING-02", date="2026-11-19",
+    before=dict(REGIME_SATELLITE_CAP=0.20), after=dict(REGIME_SATELLITE_CAP=0.40),
+    reason="decided by Siang Woo 19 Nov: in a weak regime allow satellites up to 40% of equity instead of 20% for the remaining sessions; all loss limits unchanged",
+    effectiveFrom="first session after 20 Nov 00:00 SGT", triggerDecisionIds=[])
+
+CORE_CASH_CHANGE = dict(
+    type="rule_change", ruleId="CORE-REBALANCE-02", date="2026-11-19",
+    before=dict(CORE_REBALANCE_CASH_FUNDED=False),
+    after=dict(CORE_REBALANCE_CASH_FUNDED=True),
+    reason="requested by Siang Woo 19 Nov: core buys funded by existing cash need not wait for core sells; cash floor and core limits unchanged",
+    effectiveFrom="first session after 20 Nov 00:00 SGT", triggerDecisionIds=[])

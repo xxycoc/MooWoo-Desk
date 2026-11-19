@@ -53,7 +53,8 @@ If the file becomes unreadable or the quote expires during the authorization
 checkpoint, the checker logs `dispatch_withheld` before `quote_refresh`.
 Never retry a returned `ok:true` authorization or a broker handoff.
 Valid quotes that fail the limit-price, spread, symbol, future-timestamp or
-reconciled-core-sell checks remain immediate, non-retryable skips.
+core cash/limit checks remain immediate, non-retryable skips; when existing cash
+and core room cannot cover reserved buys, reconciled core sells are still required.
 
 ## Commands and files
 

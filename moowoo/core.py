@@ -62,7 +62,7 @@ def projected_core_state(state, tickets):
 
 
 def require_core_fills(ticket, manifest, state, logs, prices):
-    """No credit for unfilled sells: require reconciled full fills and actual budgets."""
+    """Use actual cash/core budgets; otherwise wait for reconciled sell fills."""
     if ticket.sleeve != "core" or ticket.side != "BUY":
         return
     from . import config as C
@@ -72,15 +72,6 @@ def require_core_fills(ticket, manifest, state, logs, prices):
     dependencies = set(manifest.get("coreSellDependencies", {}).get(ticket.decisionId, []))
     if dependencies != expected:
         raise ValueError("core sell dependency manifest mismatch")
-    events = logs.read()
-    for decision in dependencies:
-        sell = by_id[decision]
-        orders = [e for e in events if e["type"] == "order_submitted" and not e["drill"] and e["decisionId"] == decision]
-        if len(orders) != 1:
-            raise ValueError("core buy requires recorded and reconciled sell fills")
-        fill = state.execution.get("fills", {}).get(orders[0]["orderId"], {})
-        if fill.get("filledQty") != sell["qty"] or any(t["decisionId"] == decision for t in state.pendingTickets):
-            raise ValueError("core buy requires full reconciled sell fills")
     if state.halted or state.tier in ("kill", "exits_only") or state.dailyLossHalted:
         raise ValueError("core buy blocked by current account halt/tier")
     if not any(t["decisionId"] == ticket.decisionId and t["qty"] == ticket.qty for t in state.pendingTickets):
@@ -89,6 +80,19 @@ def require_core_fills(ticket, manifest, state, logs, prices):
     # All pending buys remain reserved. Include their fees in equity after execution.
     fees = sum(t["estFees"] for t in state.pendingTickets if t["side"] == "BUY")
     effective_equity = equity - fees
+    cash_funded = (state.cash - state.reservedCash >= C.CASH_FLOOR * effective_equity - 1e-9
+                   and state.exposure(prices, sleeve="core") <= C.CORE_WEIGHT * effective_equity + 1e-9)
+    # Unfilled sells contribute neither cash nor room; every pending buy stays reserved.
+    if not (C.CORE_REBALANCE_CASH_FUNDED and cash_funded):
+        events = logs.read()
+        for decision in dependencies:
+            sell = by_id[decision]
+            orders = [e for e in events if e["type"] == "order_submitted" and not e["drill"] and e["decisionId"] == decision]
+            if len(orders) != 1:
+                raise ValueError("core buy requires recorded and reconciled sell fills")
+            fill = state.execution.get("fills", {}).get(orders[0]["orderId"], {})
+            if fill.get("filledQty") != sell["qty"] or any(t["decisionId"] == decision for t in state.pendingTickets):
+                raise ValueError("core buy requires full reconciled sell fills")
     if state.exposure(prices, sleeve="core") > C.CORE_WEIGHT * effective_equity + 1e-9:
         raise ValueError("core target exceeded on reconciled post-sell state")
     if state.cash - state.reservedCash < C.CASH_FLOOR * effective_equity - 1e-9:

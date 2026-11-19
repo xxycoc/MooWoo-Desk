@@ -17,6 +17,7 @@ from moowoo.tickets import OrderTicket
 from plan_session import atomic_json, frozen_config
 from test_risk_desk import desk, position
 from test_gather_inputs import provider
+from test_runtime_guards import prepared
 import gather_audit_inputs
 import audit_report
 import run_session
@@ -36,8 +37,8 @@ def test_projected_core_budget_never_mutates_holdings(desk):
     assert projected.cash == pytest.approx(89998.97)
 
 
-@pytest.mark.parametrize("filled,blocked", [(0, True), (50, True), (100, False)])
-def test_core_dispatch_needs_full_reconciled_fills(tmp_path, filled, blocked):
+@pytest.mark.parametrize("filled", [None, 0, 50, 100])
+def test_core_dispatch_allows_cash_funded_buys_before_sell_fills(tmp_path, filled):
     state = PortfolioState(cash=80000, positions={"IEF": position("core", qty=100)}, sessionStartEquity=90000)
     ticket = OrderTicket(decisionId="run:XLV", ticker="XLV", side="BUY", qty=50,
         limitPrice=100, sleeve="core", kind="core", stop=0, reason="rebalance",
@@ -46,19 +47,16 @@ def test_core_dispatch_needs_full_reconciled_fills(tmp_path, filled, blocked):
     sell = ticket.to_dict() | dict(decisionId="run:IEF", ticker="IEF", side="SELL", qty=100)
     manifest = dict(tickets=[sell, ticket.to_dict()], coreSellDependencies={ticket.decisionId: ["run:IEF"]})
     log = EventLog(tmp_path / "run.jsonl", runId="run")
-    log.append("order_submitted", dict(ticker="IEF", orderId="paper-order", qty=100, limitPrice=100, trdEnv="SIMULATE"), decisionId="run:IEF")
-    state.execution = dict(fills={"paper-order": dict(filledQty=filled)})
-    if blocked:
-        with pytest.raises(ValueError, match="full reconciled"):
-            require_core_fills(ticket, manifest, state, log, {"IEF": 100})
-    else:
+    if filled is not None:
+        log.append("order_submitted", dict(ticker="IEF", orderId="paper-order", qty=100, limitPrice=100, trdEnv="SIMULATE"), decisionId="run:IEF")
+        state.execution = dict(fills={"paper-order": dict(filledQty=filled)})
+    require_core_fills(ticket, manifest, state, log, {"IEF": 100})
+    state.positions["IEF"]["qty"] = 350
+    with pytest.raises(ValueError, match="core target" if filled == 100 else "reconciled"):
         require_core_fills(ticket, manifest, state, log, {"IEF": 100})
-        state.positions["IEF"]["qty"] = 350
-        with pytest.raises(ValueError, match="core target"):
-            require_core_fills(ticket, manifest, state, log, {"IEF": 100})
-        manifest["coreSellDependencies"] = {}
-        with pytest.raises(ValueError, match="manifest mismatch"):
-            require_core_fills(ticket, manifest, state, log, {"IEF": 100})
+    manifest["coreSellDependencies"] = {}
+    with pytest.raises(ValueError, match="manifest mismatch"):
+        require_core_fills(ticket, manifest, state, log, {"IEF": 100})
 
 
 def test_plan_cli_reserves_conditional_buys_without_crediting_sells(desk, tmp_path):
@@ -185,3 +183,85 @@ def test_report_uses_matured_brier_and_contiguous_close_metrics(tmp_path):
     assert report["creditsUsed"] == 0  # This fixture explicitly measured zero.
     assert report["accountMetrics"]["sharpe"] is not None
     assert "brier" not in report["missing"] and "accountDailySeries" not in report["missing"]
+
+
+@pytest.mark.parametrize("constraint", ["cash", "core"])
+@pytest.mark.parametrize("filled", [0, 50, 100])
+def test_core_dispatch_waits_when_actual_budget_needs_sell(tmp_path, constraint, filled):
+    # Both portfolios have 100,000 equity; the buy needs either cash or core room.
+    cash = 14000 if constraint == "cash" else 70000
+    core_qty = 100 if constraint == "cash" else 300
+    positions = {"IEF": position("core", qty=core_qty)}
+    if constraint == "cash":
+        positions["AAA"] = position(qty=760)
+    state = PortfolioState(cash=cash, positions=positions, sessionStartEquity=100000)
+    ticket = OrderTicket(decisionId="run:XLV", ticker="XLV", side="BUY", qty=50,
+        limitPrice=100, sleeve="core", kind="core", stop=0, reason="rebalance",
+        configHash=frozen_config()["configHash"], createdTs="2026-11-19T15:00:00Z", estFees=.99)
+    state.reserve(ticket)
+    sell = ticket.to_dict() | dict(decisionId="run:IEF", ticker="IEF", side="SELL", qty=100)
+    manifest = dict(tickets=[sell, ticket.to_dict()], coreSellDependencies={ticket.decisionId: ["run:IEF"]})
+    log = EventLog(tmp_path / "run.jsonl", runId="run")
+    if filled:
+        log.append("order_submitted", dict(ticker="IEF", orderId="paper-order", qty=100,
+                   limitPrice=100, trdEnv="SIMULATE"), decisionId="run:IEF")
+        state.execution = dict(fills={"paper-order": dict(filledQty=filled)})
+    prices = {"IEF": 100, "AAA": 100}
+    # A fill checkpoint alone never supplies buying power or core room.
+    with pytest.raises(ValueError, match="reconciled"):
+        require_core_fills(ticket, manifest, state, log, prices)
+    if filled == 100:
+        state.positions["IEF"]["qty"] -= filled
+        state.cash += filled * 100 - 1.01
+        require_core_fills(ticket, manifest, state, log, prices)
+
+
+def test_core_cash_path_counts_other_reservations_and_halts(tmp_path):
+    state = PortfolioState(cash=14000, positions={"AAA": position(qty=860)}, sessionStartEquity=100000)
+    ticket = OrderTicket(decisionId="run:XLV", ticker="XLV", side="BUY", qty=30,
+        limitPrice=100, sleeve="core", kind="core", stop=0, reason="rebalance",
+        configHash=frozen_config()["configHash"], createdTs="2026-11-19T15:00:00Z", estFees=.99)
+    state.reserve(ticket)
+    manifest = dict(tickets=[ticket.to_dict()])
+    log = EventLog(tmp_path / "run.jsonl", runId="run")
+    require_core_fills(ticket, manifest, state, log, {"AAA": 100})
+    state.halted = True
+    with pytest.raises(ValueError, match="halt/tier"):
+        require_core_fills(ticket, manifest, state, log, {"AAA": 100})
+    state.halted = False
+    state.reserve(ticket.to_dict() | dict(decisionId="run:USMV", ticker="USMV", qty=20))
+    with pytest.raises(ValueError, match="cash floor"):
+        require_core_fills(ticket, manifest, state, log, {"AAA": 100})
+
+
+@pytest.mark.parametrize("cash,allowed", [(80000, True), (12000, False)])
+def test_cash_funded_core_buy_through_dispatch(prepared, cash, allowed):
+    import dispatch_check
+    from moowoo.execution import prepare
+    from test_runtime_guards import NOW, RUN
+    args, _, log, _, _ = prepared
+    ticket = OrderTicket(decisionId=RUN + ":XLV", ticker="XLV", side="BUY", qty=50,
+        limitPrice=100, sleeve="core", kind="core", stop=0, reason="rebalance",
+        configHash=frozen_config()["configHash"], createdTs="2026-11-17T15:00:00Z", estFees=.99)
+    sell = ticket.to_dict() | dict(decisionId=RUN + ":IEF", ticker="IEF", side="SELL", qty=100)
+    positions = {"IEF": position("core", qty=100, marketPrice=100)}
+    if cash < 80000:
+        positions["AAA"] = position(qty=(80000-cash)/100, marketPrice=100)
+    state = PortfolioState(cash=cash, positions=positions, sessionStartEquity=90000)
+    state.reserve(ticket)
+    state.reserve(sell)
+    atomic_json(args.dir / "state.json", state.to_dict())
+    atomic_json(args.dir / f"tickets/{RUN}.json", dict(runId=RUN, configHash=ticket.configHash,
+        tickets=[sell, ticket.to_dict()], coreSellDependencies={ticket.decisionId: [sell["decisionId"]]}))
+    result = prepare({ticket.decisionId: ticket}, log)
+    atomic_json(args.dir / f"receipts/{RUN}/prepare-core.json", result)
+    atomic_json(args.dir / f"inputs/{RUN}/quotes-raw-XLV.json", dict(ret_code=0, ret_msg="success",
+        data=dict(snapshot_list=[dict(code="US.XLV", update_time=NOW.timestamp()*1000,
+                                     last_price=100, bid_price=99.99, ask_price=100)])))
+    args.decision_id = ticket.decisionId
+    result = dispatch_check.run(args, NOW)
+    assert result["ok"] is allowed
+    if allowed:
+        assert log.read()[-1]["executionAction"] == "dispatch_authorized"
+    else:
+        assert result["skipped"] and "reconciled sell fills" in result["reason"]

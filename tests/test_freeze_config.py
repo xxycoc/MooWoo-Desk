@@ -85,14 +85,14 @@ def test_preregistration_matches_frozen_artifact():
     )
     namespace = {}
     exec(committed_config, namespace)
-    from moowoo.rules import PICKS_CHANGE, SIZING_CHANGE
+    from moowoo.rules import PICKS_CHANGE, SIZING_CHANGE, REGIME_SIZING_CHANGE
     for key, value in namespace.items():
         if not key.startswith("_"):
-            assert getattr(config, key) == (PICKS_CHANGE["after"] | SIZING_CHANGE["after"]).get(key, value)
+            assert getattr(config, key) == (PICKS_CHANGE["after"] | SIZING_CHANGE["after"] | REGIME_SIZING_CHANGE["after"]).get(key, value)
     additions = next(json.loads(line)["after"] for line in (ROOT / "config/rule-ledger.jsonl").read_text().splitlines()
                      if json.loads(line)["ruleId"] == "FEES-01")
-    from moowoo.rules import CORE_REBALANCE_CHANGE
-    assert {k: v for k, v in vars(config).items() if not k.startswith("_") and k not in namespace} == additions | CORE_REBALANCE_CHANGE["after"]
+    from moowoo.rules import CORE_REBALANCE_CHANGE, CORE_CASH_CHANGE
+    assert {k: v for k, v in vars(config).items() if not k.startswith("_") and k not in namespace} == additions | CORE_REBALANCE_CHANGE["after"] | CORE_CASH_CHANGE["after"]
 
 
 @pytest.mark.parametrize("damage", [None, "missing", "changed", "extra"])
@@ -125,8 +125,35 @@ def test_topology_addendum_is_exact_and_preserves_frozen_config(tmp_path, monkey
 
 
 def test_core_rebalance_addendum_is_canonical_and_recognized():
-    from moowoo.rules import CORE_REBALANCE_CHANGE
+    from moowoo.rules import CORE_REBALANCE_CHANGE, CORE_CASH_CHANGE
     from plan_session import frozen_config
     assert canonical_bytes(CORE_REBALANCE_CHANGE) in (ROOT / "config/rule-ledger.jsonl").read_bytes().splitlines()
     assert CORE_REBALANCE_CHANGE["after"] == dict(CORE_REBALANCE_AFTER_FILLS=True)
     assert frozen_config()["configHash"]
+
+
+@pytest.mark.parametrize("rule_id", ["SIZING-02", "CORE-REBALANCE-02"])
+@pytest.mark.parametrize("damage", [None, "missing", "changed"])
+def test_more_risk_addenda_are_exact(tmp_path, monkeypatch, rule_id, damage):
+    import plan_session
+    from moowoo.rules import REGIME_SIZING_CHANGE, CORE_CASH_CHANGE
+    rule = next(r for r in (REGIME_SIZING_CHANGE, CORE_CASH_CHANGE) if r["ruleId"] == rule_id)
+    directory = tmp_path / "config"
+    directory.mkdir()
+    frozen = (ROOT / "config/frozen-2026-11-17.json").read_bytes()
+    (directory / "frozen-2026-11-17.json").write_bytes(frozen)
+    lines = (ROOT / "config/rule-ledger.jsonl").read_bytes().splitlines()
+    index = lines.index(canonical_bytes(rule))
+    assert rule["date"] == "2026-11-19"
+    assert rule["effectiveFrom"] == "first session after 20 Nov 00:00 SGT"
+    if damage == "missing":
+        lines.pop(index)
+    elif damage == "changed":
+        lines[index] = canonical_bytes(rule | {"after": {"CASH_FLOOR": 0}})
+    (directory / "rule-ledger.jsonl").write_bytes(b"\n".join(lines) + b"\n")
+    monkeypatch.setattr(plan_session, "ROOT", tmp_path)
+    if damage:
+        with pytest.raises(ValueError, match="unrecognized rule addendum"):
+            plan_session.frozen_config()
+    else:
+        assert plan_session.frozen_config()["configHash"] == json.loads(frozen)["configHash"]
