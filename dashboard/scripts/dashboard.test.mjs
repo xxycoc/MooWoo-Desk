@@ -158,6 +158,46 @@ test('benchmarks are absent without audits, deduplicated by day and never fill m
 test('streams remain signed and legacy hashes redirect to the new tabs', () => {
   const rows = streamPnl({ positions: [{ sleeve: 'core', lastPrice: 9, avgCost: 10, qty: 2 }, { sleeve: 'bounce', lastPrice: 12, avgCost: 10, qty: 3 }] });
   assert.deepEqual(rows.map((row) => row.value), [-2, 0, 6, 4]);
-  for (const hash of ['', '#now', '#mission', '#risk', '#floor', '#unknown']) assert.equal(viewFromHash(hash), 'now');
+  for (const hash of ['', '#now', '#mission', '#risk', '#unknown']) assert.equal(viewFromHash(hash), 'now');
   for (const hash of ['#strategy', '#radar', '#truth', '#debate']) assert.equal(viewFromHash(hash), 'strategy');
+  assert.equal(viewFromHash('#floor'), 'floor');
+});
+
+test('floor lights three agents, four code stations and the halt alarm', async () => {
+  const { roleOfEvent, sceneAt, floorStatuses, FLOOR_ROLES, FLOOR_AGENTS, FLOOR_STATIONS } =
+    await server.ssrLoadModule('/src/data/floor.ts');
+  const role = (row) => roleOfEvent(eventsOf([row])[0]);
+  assert.deepEqual(role({ type: 'run_started' }), ['coordinator']);
+  assert.deepEqual(role({ type: 'run_started', runId: '2026-11-18-watch-abc' }), ['watcher']);
+  assert.deepEqual(role({ type: 'run_started', runId: '2026-11-17-audit-abc' }), ['auditor']);
+  assert.deepEqual(role({ type: 'screen' }), ['screener']);
+  assert.deepEqual(role({ type: 'rating' }), ['analyst']);
+  assert.deepEqual(role({ type: 'core_rebalance' }), ['risk']);
+  assert.deepEqual(role({ type: 'order_intent' }), ['risk']);
+  assert.deepEqual(role({ type: 'risk_verdict' }), ['risk']);
+  assert.deepEqual(role({ type: 'reflection_note', executionAction: 'prepared' }), ['coordinator']);
+  assert.deepEqual(role({ type: 'reflection_note', executionAction: 'dispatch_authorized' }), ['coordinator']);
+  assert.deepEqual(role({ type: 'reflection_note', executionAction: 'skip' }), []);
+  assert.deepEqual(role({ type: 'order_submitted' }), ['executor']);
+  assert.deepEqual(role({ type: 'fill' }), ['executor']);
+  assert.deepEqual(role({ type: 'halt' }), []);
+
+  assert.deepEqual(Object.keys(FLOOR_ROLES).sort(), ['analyst', 'auditor', 'coordinator', 'executor', 'risk', 'screener', 'watcher']);
+  assert.deepEqual(FLOOR_AGENTS.map((agent) => agent.role).sort(), ['analyst', 'coordinator', 'executor']);
+  assert.deepEqual(FLOOR_STATIONS.map((station) => station.role).sort(), ['auditor', 'risk', 'screener', 'watcher']);
+
+  const events = eventsOf([{ type: 'run_started' }, { type: 'screen' }, { type: 'rating' }]);
+  const state = stateAt(events, events.length);
+  const scene = sceneAt(events, 2, state);
+  const statuses = floorStatuses(events, 2, scene);
+  assert.equal(statuses.coordinator, 'done');
+  assert.equal(statuses.screener, 'done');
+  assert.equal(statuses.analyst, 'working');
+
+  const halts = eventsOf([{ type: 'halt', scope: 'run', reason: 'cash mismatch' }]);
+  const haltScene = sceneAt(halts, 0, stateAt(halts, 1));
+  assert.equal(haltScene.kind, 'halt');
+  assert.equal(haltScene.tone, 'bad');
+  assert.equal(haltScene.card?.kind, 'halt');
+  assert.equal(floorStatuses(halts, 0, haltScene).coordinator, 'idle');
 });

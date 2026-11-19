@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { DeskState, LoadedEvent } from "../data/types";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import type { DeskState, LoadedEvent, SessionSummary } from "../data/types";
 import { stateAt } from "../data/state";
 import {
   eventsForRole,
@@ -11,8 +11,10 @@ import {
   type FloorStatus,
 } from "../data/floor";
 import { fmtDate } from "../data/format";
-import { Floor3D } from "../components/Floor3D";
+import { runKind, sessionResult, todayResult } from "../data/dashboard";
 import { FloorMap2D } from "../components/FloorMap2D";
+
+const Floor3D = lazy(() => import("../components/Floor3D").then((module) => ({ default: module.Floor3D })));
 
 const EMPTY_STATUSES = Object.fromEntries(
   FLOOR_ROLE_ORDER.map((role) => [role, "idle"]),
@@ -36,24 +38,27 @@ function eventTicker(ev: LoadedEvent): string | null {
   return typeof ticker === "string" && ticker ? ticker : typeof etf === "string" && etf ? etf : null;
 }
 
+function chipLabel(session: SessionSummary): string {
+  return `${fmtDate(session.startTs)} · ${runKind(session.events)}`;
+}
+
 export function TradingFloor({
   state,
   events,
   duckEnabled,
+  health,
   onOpenDecision,
 }: {
   state: DeskState;
   events: LoadedEvent[];
   duckEnabled: boolean;
+  health: { tone: "ok" | "warn" | "halt"; message: string };
   onOpenDecision: (id: string) => void;
 }) {
-  const latest = state.sessions[state.sessions.length - 1]?.runId ?? "";
-  const [selected, setSelected] = useState(latest);
-  const runId = state.sessions.some((session) => session.runId === selected) ? selected : latest;
-  const session = state.sessions.find((candidate) => candidate.runId === runId) ?? null;
-  const sessionEvents = session?.events ?? [];
+  const latest = state.sessions[state.sessions.length - 1] ?? null;
+  const [mode, setMode] = useState<"live" | "replay">("live");
+  const [selected, setSelected] = useState(latest?.runId ?? "");
   const [index, setIndex] = useState(0);
-  const safeIndex = Math.min(index, Math.max(0, sessionEvents.length - 1));
   const [playing, setPlaying] = useState(false);
   const [speed, setSpeed] = useState<Speed>(1);
   const [selectedRole, setSelectedRole] = useState<FloorRole | null>(null);
@@ -64,6 +69,15 @@ export function TradingFloor({
   const [webglOk, setWebglOk] = useState(supportsWebGL);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const [stageWidth, setStageWidth] = useState(0);
+
+  const session =
+    mode === "live"
+      ? latest
+      : state.sessions.find((candidate) => candidate.runId === selected) ?? latest;
+  const sessionEvents = session?.events ?? [];
+  const safeIndex =
+    mode === "live" ? Math.max(0, sessionEvents.length - 1) : Math.min(index, Math.max(0, sessionEvents.length - 1));
+  const event = sessionEvents[safeIndex] ?? null;
 
   useEffect(() => {
     const query = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -88,10 +102,16 @@ export function TradingFloor({
   }, []);
 
   useEffect(() => {
-    setIndex((current) => Math.min(current, Math.max(0, sessionEvents.length - 1)));
-  }, [sessionEvents.length]);
+    if (mode === "replay") {
+      setIndex((current) => Math.min(current, Math.max(0, sessionEvents.length - 1)));
+    }
+  }, [mode, sessionEvents.length]);
 
-  const event = sessionEvents[safeIndex] ?? null;
+  useEffect(() => {
+    if (!latest) return;
+    if (!state.sessions.some((candidate) => candidate.runId === selected)) setSelected(latest.runId);
+  }, [latest, selected, state.sessions]);
+
   const eventState = useMemo(
     () => (event ? stateAt(events, event.gseq) : state),
     [events, event, state],
@@ -108,9 +128,13 @@ export function TradingFloor({
     () => (selectedRole ? eventsForRole(sessionEvents, selectedRole) : []),
     [sessionEvents, selectedRole],
   );
+  const today = useMemo(
+    () => (session ? sessionResult(eventState, session.runId) ?? todayResult(eventState) : todayResult(eventState)),
+    [eventState, session],
+  );
 
   useEffect(() => {
-    if (!playing || !scene || sessionEvents.length === 0) return;
+    if (!playing || !scene || mode !== "replay" || sessionEvents.length === 0) return;
     if (safeIndex >= sessionEvents.length - 1) {
       setPlaying(false);
       return;
@@ -120,15 +144,16 @@ export function TradingFloor({
       setIndex((current) => Math.min(current + 1, sessionEvents.length - 1));
     }, delay);
     return () => window.clearTimeout(timer);
-  }, [playing, scene, safeIndex, speed, sessionEvents.length]);
+  }, [playing, scene, mode, safeIndex, speed, sessionEvents.length]);
 
   const openDecision = (id: string) => {
     setPlaying(false);
     onOpenDecision(id);
   };
 
-  const pickSession = (next: string) => {
-    setSelected(next);
+  const pickSession = (runId: string) => {
+    setSelected(runId);
+    setMode(runId === latest?.runId ? "live" : "replay");
     setIndex(0);
     setPlaying(false);
   };
@@ -143,8 +168,23 @@ export function TradingFloor({
       setPlaying(false);
       return;
     }
+    if (mode === "live") {
+      if (!latest) return;
+      setSelected(latest.runId);
+      setMode("replay");
+      setIndex(0);
+      setPlaying(true);
+      return;
+    }
     if (safeIndex >= sessionEvents.length - 1) setIndex(0);
     setPlaying(true);
+  };
+
+  const scrub = (nextIndex: number) => {
+    if (session) setSelected(session.runId);
+    setMode("replay");
+    setPlaying(false);
+    setIndex(nextIndex);
   };
 
   const nextEvent = () => {
@@ -161,13 +201,13 @@ export function TradingFloor({
     );
   }
 
-  const narrow = stageWidth > 0 && stageWidth < 600;
+  const narrow = stageWidth > 0 && stageWidth < 640;
   const use2D = reducedMotion || !webglOk || narrow;
   const fallbackReason = reducedMotion
     ? "2D still-frame map: reduced motion is on."
     : !webglOk
       ? "2D fallback: WebGL is not available in this browser."
-      : "2D fallback: the floor is narrower than 600 px. Rotate for the 3D office.";
+      : "2D fallback: the floor is narrower than 640 px. Rotate for the 3D office.";
 
   return (
     <>
@@ -175,24 +215,30 @@ export function TradingFloor({
         <div>
           <h1>Trading floor</h1>
           <p className="view-sub">
-            The selected session replayed as a small voxel office. Scrub or step through the event
-            log; drag to pan and wheel or pinch to zoom. Characters are ducks, not order authority.
+            The session replayed as a small voxel office. Three ducks run the desk; four code
+            stations light from the event log. Drag to pan and wheel or pinch to zoom. Ducks are not
+            order authority.
           </p>
         </div>
         <div className="floor-head-aside">
-          <span className={`floor-mode-badge${use2D ? " is-2d" : ""}`}>
-            {use2D ? "2D fallback" : "3D office"}
-          </span>
+          <div className="floor-head-badges">
+            <span className={`floor-mode-badge${use2D ? " is-2d" : ""}`}>
+              {use2D ? "2D fallback" : "3D office"}
+            </span>
+            <span className={`floor-live-badge${mode === "live" ? " is-live" : ""}`}>
+              {mode === "live" ? "Live" : "Replay"}
+            </span>
+          </div>
           <div className="session-bar" role="group" aria-label="Selected session">
-            {state.sessions.map((item) => (
+            {state.sessions.slice().reverse().map((item) => (
               <button
                 key={item.runId}
                 type="button"
-                className={item.runId === runId ? "session-chip active" : "session-chip"}
-                aria-pressed={item.runId === runId}
+                className={item.runId === session?.runId ? "session-chip active" : "session-chip"}
+                aria-pressed={item.runId === session?.runId}
                 onClick={() => pickSession(item.runId)}
               >
-                {fmtDate(item.startTs)}
+                {chipLabel(item)}
               </button>
             ))}
           </div>
@@ -208,21 +254,27 @@ export function TradingFloor({
             state={eventState}
             statuses={statuses}
             duckEnabled={duckEnabled}
+            health={health}
+            today={today}
             reason={fallbackReason}
             onOpenDecision={openDecision}
             onSelectRole={selectRole}
           />
         ) : (
-          <Floor3D
-            scene={scene}
-            state={eventState}
-            statuses={statuses}
-            duckEnabled={duckEnabled}
-            screenTickers={scene.screenTickers}
-            onOpenDecision={openDecision}
-            onSelectRole={selectRole}
-            onUnsupported={() => setWebglOk(false)}
-          />
+          <Suspense fallback={<div className="floor-stage-loading">Building the 3D office…</div>}>
+            <Floor3D
+              scene={scene}
+              state={eventState}
+              statuses={statuses}
+              duckEnabled={duckEnabled}
+              health={health}
+              today={today}
+              calm={reducedMotion}
+              onOpenDecision={openDecision}
+              onSelectRole={selectRole}
+              onUnsupported={() => setWebglOk(false)}
+            />
+          </Suspense>
         )}
       </div>
 
@@ -231,9 +283,21 @@ export function TradingFloor({
           type="button"
           className="floor-play"
           onClick={togglePlay}
-          aria-label={playing ? "Pause replay" : safeIndex >= sessionEvents.length - 1 ? "Replay session" : "Play replay"}
+          aria-label={playing ? "Pause replay" : "Play session replay"}
         >
-          {playing ? "Pause" : safeIndex >= sessionEvents.length - 1 ? "Replay" : "Play"}
+          {playing ? "Pause" : "Play"}
+        </button>
+        <button
+          type="button"
+          className={`floor-live-button${mode === "live" ? " active" : ""}`}
+          aria-pressed={mode === "live"}
+          onClick={() => {
+            setPlaying(false);
+            setMode("live");
+            setIndex(0);
+          }}
+        >
+          Live
         </button>
         <div className="floor-speed" role="group" aria-label="Playback speed">
           {SPEEDS.map((value) => (
@@ -257,17 +321,19 @@ export function TradingFloor({
             max={Math.max(0, sessionEvents.length - 1)}
             value={safeIndex}
             step={1}
-            onChange={(changeEvent) => {
-              setPlaying(false);
-              setIndex(Number(changeEvent.target.value));
-            }}
+            onChange={(changeEvent) => scrub(Number(changeEvent.target.value))}
             aria-valuetext={`Event ${safeIndex + 1} of ${sessionEvents.length}: ${scene.title}`}
           />
         </label>
         <span className="floor-count num">
           {safeIndex + 1} / {sessionEvents.length}
         </span>
-        <button type="button" className="floor-next" onClick={nextEvent} disabled={safeIndex >= sessionEvents.length - 1}>
+        <button
+          type="button"
+          className="floor-next"
+          onClick={nextEvent}
+          disabled={mode === "live" || safeIndex >= sessionEvents.length - 1}
+        >
           Next event
         </button>
       </div>
@@ -287,6 +353,12 @@ export function TradingFloor({
         </span>
         <span className="floor-legend-sep" aria-hidden="true" />
         <span>
+          <i className="legend-swatch" style={{ background: "#f2c230" }} /> agents
+        </span>
+        <span>
+          <i className="legend-swatch" style={{ background: "#c3ccdc" }} /> code
+        </span>
+        <span>
           <i className="legend-swatch" style={{ background: "#5b8def" }} /> core
         </span>
         <span>
@@ -297,6 +369,9 @@ export function TradingFloor({
         </span>
         <span>
           <i className="legend-swatch" style={{ background: "#ff7a1a" }} /> orders
+        </span>
+        <span>
+          <i className="legend-swatch" style={{ background: "#f26b6b" }} /> halts / risk
         </span>
       </div>
 
@@ -337,6 +412,8 @@ export function TradingFloor({
                     className={at === safeIndex ? "floor-role-event active" : "floor-role-event"}
                     onClick={() => {
                       setPlaying(false);
+                      if (session) setSelected(session.runId);
+                      setMode("replay");
                       setIndex(Math.max(0, at));
                     }}
                     aria-current={at === safeIndex ? "true" : undefined}
@@ -353,7 +430,8 @@ export function TradingFloor({
         </section>
       ) : (
         <p className="floor-role-hint">
-          Click a duck or its name tag to list the events that role handled in this session.
+          Click a duck, a station tag or a wall position to list the events that role handled in this
+          session. Wall positions open their decision.
         </p>
       )}
     </>

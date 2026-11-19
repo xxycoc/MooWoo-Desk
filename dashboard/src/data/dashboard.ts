@@ -103,7 +103,7 @@ export function lastRuns(events: LoadedEvent[], state: DeskState): RunRow[] {
   }).sort((left, right) => Date.parse(right.at) - Date.parse(left.at));
 }
 
-export function healthStatus(events: LoadedEvent[], runs: RunRow[], now: Date, desk?: DeskStatus) {
+export function healthStatus(events: LoadedEvent[], runs: RunRow[], now: Date, desk?: DeskStatus): { tone: "ok" | "warn" | "halt"; message: string } {
   const ordered = [...events].sort((left, right) => Date.parse(left.ts) - Date.parse(right.ts) || left.gseq - right.gseq);
   const halt = [...ordered].reverse().find((event) => event.type === "halt");
   // A halt persists only if no later run got past preflight; input-file aborts never persist.
@@ -135,6 +135,25 @@ export function streamPnl(state: DeskState) {
   const rows = sleeves.map((sleeve) => ({ name: sleeve, value: open(sleeve), color: COLORS[sleeve] }));
   if (state.positions.some((position) => position.sleeve === "unclassified")) rows.push({ name: "unclassified", value: open("unclassified"), color: COLORS.unclassified });
   return [...rows, { name: "total", value: rows.reduce((sum, row) => sum + row.value, 0), color: COLORS.book }];
+}
+
+/** Result of one session: reported P&L when present, else marks vs its starting equity. */
+export function sessionResult(
+  state: DeskState,
+  runId: string,
+): { pct: number; source: "reported" | "marks" } | null {
+  const session = state.sessions.find((item) => item.runId === runId);
+  if (!session) return null;
+  if (session.pnlPct != null && Number.isFinite(session.pnlPct)) return { pct: session.pnlPct, source: "reported" };
+  if (state.equity != null && Number.isFinite(state.equity) && session.startEquity > 0) {
+    return { pct: (state.equity / session.startEquity - 1) * 100, source: "marks" };
+  }
+  return null;
+}
+
+/** Today's result: the reported session P&L when present, else marks vs the live session start. */
+export function todayResult(state: DeskState): { pct: number; source: "reported" | "marks" } | null {
+  return state.liveSession ? sessionResult(state, state.liveSession.runId) : null;
 }
 
 export function closedTradeScore(events: LoadedEvent[]) {

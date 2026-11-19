@@ -7,8 +7,10 @@ import { Tabs, viewFromHash, type ViewKey } from "./components/Nav";
 import { VerifyPanel, type VerifyState } from "./components/VerifyPanel";
 import { TraceTooltip } from "./components/Trace";
 import { DecisionDrawer } from "./components/Drawer";
+import { readDuckPreference, writeDuckPreference } from "./components/Duck";
 import { Now } from "./views/Now";
 import { Strategy } from "./views/Strategy";
+import { TradingFloor } from "./views/TradingFloor";
 import { healthStatus, lastRuns, nextScheduledRun, sgtTime } from "./data/dashboard";
 
 export default function App() {
@@ -18,7 +20,14 @@ export default function App() {
   const [view, setView] = useState<ViewKey>(() => viewFromHash(window.location.hash));
   const [now, setNow] = useState(() => new Date());
   const [decisionId, setDecisionId] = useState<string | null>(null);
+  const [duckEnabled, setDuckEnabled] = useState(readDuckPreference);
   const closeDecision = useCallback(() => setDecisionId(null), []);
+  const toggleDuck = useCallback(() => {
+    setDuckEnabled((current) => {
+      writeDuckPreference(!current);
+      return !current;
+    });
+  }, []);
   const [verifyOpen, setVerifyOpen] = useState(false);
   const [verify, setVerify] = useState<VerifyState>({ busy: false, ran: false, results: [], error: null });
 
@@ -127,7 +136,7 @@ export default function App() {
   return (
     <div className="app option-b">
       <a className="skip-link" href="#main">Skip to content</a>
-      <TopBar state={state} next={next} verifyBusy={verify.busy} verifyTone={verifyTone} />
+      <TopBar state={state} next={next} verifyBusy={verify.busy} verifyTone={verifyTone} duckEnabled={duckEnabled} onDuckToggle={toggleDuck} />
       <section className={"health-banner tone-" + health.tone} role="status" aria-label="Desk health">
         <strong><span className="health-dot" aria-hidden="true" />{health.message}</strong>
         <span>Last run: {runs[0] ? sgtTime(runs[0].at) + " · " + runs[0].kind : "Not recorded"}</span>
@@ -137,8 +146,20 @@ export default function App() {
       <p className="feed-status"><strong>{corpus.source === "feed" ? "Public live feed" : corpus.source === "bundled-fallback" ? "Feed unavailable · bundled fallback" : "Bundled snapshot"}</strong> · Last event {sgtTime(corpus.latestEventTs)}. {feedUrl ? "Checked every 60 seconds." : "Snapshot does not update automatically."} Health reflects this feed snapshot, not a broker heartbeat.</p>
       {corpus.errors.length > 0 && <div className="load-warning" role="alert"><strong>Some log lines could not be loaded.</strong> {corpus.errors.join(" · ")}</div>}
       {corpus.events.some((event) => event.dataset === "fixture") && <p className="load-warning">Includes FICTIONAL fixtures. Combined totals are not the real ledger.</p>}
-      <main id="main" className="desk-main" tabIndex={-1} aria-label={view === "now" ? "Now" : "Strategy"}>
-        {view === "now" ? <Now state={state} events={corpus.events} runs={runs} onOpenDecision={setDecisionId} /> : <Strategy state={state} events={corpus.events} onOpenDecision={setDecisionId} />}
+      <main id="main" className="desk-main" tabIndex={-1} aria-label={view === "now" ? "Now" : view === "strategy" ? "Strategy" : "Floor"}>
+        {view === "now" ? (
+          <Now state={state} events={corpus.events} runs={runs} onOpenDecision={setDecisionId} />
+        ) : view === "strategy" ? (
+          <Strategy state={state} events={corpus.events} onOpenDecision={setDecisionId} />
+        ) : (
+          <TradingFloor
+            state={state}
+            events={corpus.events}
+            duckEnabled={duckEnabled}
+            health={health}
+            onOpenDecision={setDecisionId}
+          />
+        )}
       </main>
       <footer className="desk-footer">
         <div className="footer-row"><span>Scrubbed event data. No broker calls or API keys.</span><button type="button" aria-expanded={verifyOpen} aria-controls="footer-verify" onClick={() => { setVerifyOpen(!verifyOpen); if (!verifyOpen) void runVerify(); }}>Verify logs</button></div>

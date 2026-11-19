@@ -1,8 +1,9 @@
 import type { DeskState } from "../data/types";
 import {
   CORE_TICKERS,
-  FLOOR_DUCKS,
+  FLOOR_AGENTS,
   FLOOR_ROLES,
+  FLOOR_STATIONS,
   MASCOT_POSITION,
   SLEEVE_COLORS,
   type FloorRole,
@@ -15,7 +16,6 @@ const MAP_W = 36;
 const MAP_H = 24;
 
 const AGENT = "#f2c230";
-const CODE = "#c3ccdc";
 
 interface MapBlock {
   label: string;
@@ -23,21 +23,11 @@ interface MapBlock {
   z: number;
   w: number;
   d: number;
-  kind: "desk" | "room" | "booth" | "platform" | "lounge";
+  kind: "room" | "platform" | "lounge";
 }
 
 const BLOCKS: MapBlock[] = [
-  { label: "Scheduler", x: -14.3, z: -8.1, w: 2.3, d: 1.5, kind: "desk" },
-  { label: "Screener", x: -10.7, z: -8.0, w: 2.1, d: 1.4, kind: "desk" },
-  { label: "Watcher", x: -15.2, z: -1.7, w: 1.0, d: 0.8, kind: "desk" },
-  { label: "Research table", x: -7.2, z: -2.9, w: 2.9, d: 2.9, kind: "room" },
-  { label: "Debate pit", x: 0, z: -3.1, w: 5.7, d: 2.3, kind: "room" },
-  { label: "Quick kiosk", x: 5.2, z: -3.65, w: 1.9, d: 1.0, kind: "desk" },
-  { label: "Trader", x: 7.9, z: -0.7, w: 2.35, d: 1.5, kind: "desk" },
-  { label: "Risk booth", x: 11.0, z: 1.8, w: 3.5, d: 2.4, kind: "booth" },
-  { label: "Rebalancer", x: 14.0, z: 4.2, w: 2.25, d: 1.4, kind: "desk" },
-  { label: "Executor", x: 14.7, z: -7.6, w: 2.2, d: 1.3, kind: "desk" },
-  { label: "Auditor", x: 16.0, z: 5.7, w: 2.7, d: 1.6, kind: "desk" },
+  { label: "Research table", x: -7.2, z: -2.9, w: 3.3, d: 3.3, kind: "room" },
   { label: "Coordinator", x: 0.8, z: 4.9, w: 4.3, d: 4.3, kind: "platform" },
   { label: "Lounge", x: -14.2, z: 6.7, w: 3.4, d: 1.6, kind: "lounge" },
 ];
@@ -50,37 +40,8 @@ function pctZ(z: number): string {
   return `${((z + MAP_H / 2) / MAP_H) * 100}%`;
 }
 
-const NAME_SHIFT: Record<string, string> = {
-  scheduler: "lift",
-  bull: "lift",
-  trader: "lift",
-  screener: "drop",
-  bear: "drop",
-  risk: "drop",
-};
-
-function mapLabel(spec: (typeof FLOOR_DUCKS)[number]): string {
-  if (spec.id.startsWith("analyst-")) return `A${spec.id.slice(-1)}`;
-  switch (spec.role) {
-    case "scheduler":
-      return "Sched";
-    case "screener":
-      return "Screen";
-    case "manager":
-      return "Mgr";
-    case "rebalancer":
-      return "Rebal";
-    case "executor":
-      return "Exec";
-    case "watcher":
-      return "Watch";
-    case "auditor":
-      return "Audit";
-    case "coordinator":
-      return "Coord";
-    default:
-      return FLOOR_ROLES[spec.role].short;
-  }
+function pctText(pct: number, signed: boolean): string {
+  return `${signed && pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`;
 }
 
 export function FloorMap2D({
@@ -88,6 +49,8 @@ export function FloorMap2D({
   state,
   statuses,
   duckEnabled,
+  health,
+  today,
   reason,
   onOpenDecision,
   onSelectRole,
@@ -96,30 +59,18 @@ export function FloorMap2D({
   state: DeskState;
   statuses: Record<FloorRole, FloorStatus>;
   duckEnabled: boolean;
+  health: { tone: "ok" | "warn" | "halt"; message: string };
+  today: { pct: number; source: "reported" | "marks" } | null;
   reason: string;
   onOpenDecision: (id: string) => void;
   onSelectRole: (role: FloorRole) => void;
 }) {
   const card =
-    scene.card &&
-    scene.card.kind !== "drill" &&
-    scene.card.kind !== "tier" &&
-    scene.card.kind !== "halt" &&
-    scene.card.kind !== "rule"
-      ? scene.card
-      : null;
+    scene.card && (scene.card.kind === "rating" || scene.card.kind === "report") ? scene.card : null;
   const banner =
-    scene.card &&
-    (scene.card.kind === "drill" ||
-      scene.card.kind === "tier" ||
-      scene.card.kind === "halt" ||
-      scene.card.kind === "rule")
-      ? scene.card
-      : null;
-  const cardX =
-    card?.kind === "rating" ? 2.5 : card?.kind === "report" ? 8.5 : card?.kind === "outcome" ? 8 : 0;
-  const cardZ =
-    card?.kind === "rating" ? -0.2 : card?.kind === "report" ? 5.4 : card?.kind === "outcome" ? -9 : 0;
+    scene.card && (scene.card.kind === "tier" || scene.card.kind === "halt") ? scene.card : null;
+  const cardX = card?.kind === "report" ? 16 : -7.2;
+  const cardZ = card?.kind === "report" ? 3.6 : -5.4;
   const isCore = (ticker: string): boolean =>
     (CORE_TICKERS as readonly string[]).includes(ticker);
   const corePositions = state.positions.filter((position) => isCore(position.ticker));
@@ -135,10 +86,13 @@ export function FloorMap2D({
         <div className="floor2d-wall" aria-hidden="true" />
         <div className="floor2d-back" aria-hidden="true">
           <span className="floor2d-wall-clock">Scheduler</span>
-          <span className="floor2d-screen">
+          <span className={`floor2d-screen tone-${health.tone}`}>
             <i>Equity</i>
             <strong>{state.equity == null ? "—" : fmtUsd(state.equity, 0)}</strong>
-            <em className={`tier-${state.tier}`}>{state.tier.replaceAll("_", " ")}</em>
+            <em className={`floor2d-today ${today == null || today.pct >= 0 ? "up" : "down"}`}>
+              {today == null ? "today —" : `${pctText(today.pct, true)} today`}
+            </em>
+            <small className={`floor2d-health tone-${health.tone}`}>{health.message}</small>
           </span>
           <span className="floor2d-boards">
             <span className="floor2d-board is-core">
@@ -147,9 +101,19 @@ export function FloorMap2D({
                 <em>flat</em>
               ) : (
                 corePositions.slice(0, 5).map((position) => (
-                  <b key={position.ticker} style={{ background: SLEEVE_COLORS.core }}>
+                  <button
+                    key={position.ticker}
+                    type="button"
+                    className="floor2d-holding is-core"
+                    style={{ background: SLEEVE_COLORS.core }}
+                    onClick={() => {
+                      if (position.decisionId) onOpenDecision(position.decisionId);
+                    }}
+                    disabled={!position.decisionId}
+                    aria-label={`${position.ticker} core position${position.decisionId ? ". Open decision." : ""}`}
+                  >
                     {position.ticker}
-                  </b>
+                  </button>
                 ))
               )}
             </span>
@@ -159,9 +123,19 @@ export function FloorMap2D({
                 <em>none</em>
               ) : (
                 satellitePositions.slice(0, 4).map((position) => (
-                  <b key={position.ticker} style={{ background: SLEEVE_COLORS[position.sleeve] }}>
+                  <button
+                    key={position.ticker}
+                    type="button"
+                    className={`floor2d-holding satellite-${position.sleeve}`}
+                    style={{ background: SLEEVE_COLORS[position.sleeve] }}
+                    onClick={() => {
+                      if (position.decisionId) onOpenDecision(position.decisionId);
+                    }}
+                    disabled={!position.decisionId}
+                    aria-label={`${position.ticker} ${position.sleeve} position${position.decisionId ? ". Open decision." : ""}`}
+                  >
                     {position.ticker}
-                  </b>
+                  </button>
                 ))
               )}
             </span>
@@ -171,7 +145,7 @@ export function FloorMap2D({
         {BLOCKS.map((block) => (
           <div
             key={block.label}
-            className={`floor2d-block kind-${block.kind}${block.label === "Debate room" ? " is-debate" : ""}`}
+            className={`floor2d-block kind-${block.kind}`}
             style={{
               left: pctX(block.x - block.w / 2),
               top: pctZ(block.z - block.d / 2),
@@ -195,24 +169,41 @@ export function FloorMap2D({
             scene.screenTickers.slice(0, 6).map((ticker) => (
               <b key={ticker.ticker} className={ticker.picked ? "picked" : ""}>
                 {ticker.ticker}
-                <i>{ticker.movePct >= 0 ? "+" : ""}{ticker.movePct.toFixed(1)}</i>
+                <i>
+                  {ticker.movePct >= 0 ? "+" : ""}
+                  {ticker.movePct.toFixed(1)}
+                </i>
               </b>
             ))
           )}
         </div>
 
-        <div className="floor2d-door" style={{ left: pctX(15.35), top: pctZ(-8.2) }} aria-hidden="true">
-          Moomoo paper
-        </div>
-        <div className="floor2d-cabinet" style={{ left: pctX(15.35), top: pctZ(4.7) }} aria-hidden="true">
-          Files
-        </div>
         <div className="floor2d-plant" style={{ left: pctX(-16.1), top: pctZ(7.2) }} aria-hidden="true" />
 
-        {FLOOR_DUCKS.map((spec) => {
+        {FLOOR_STATIONS.map((spec) => {
+          const status = statuses[spec.role];
+          return (
+            <button
+              key={spec.id}
+              type="button"
+              className={`floor2d-station kind-${spec.role} status-${status}`}
+              style={{
+                left: pctX(spec.x),
+                top: pctZ(spec.z),
+              }}
+              onClick={() => onSelectRole(spec.role)}
+              aria-label={`${spec.label}, ${status}. Show handled events.`}
+              title={`${spec.label} · ${FLOOR_ROLES[spec.role].desk}`}
+            >
+              <i className={`floor-tag-dot ${status}`} aria-hidden="true" />
+              <span>{spec.label}</span>
+            </button>
+          );
+        })}
+
+        {FLOOR_AGENTS.map((spec) => {
           const status = statuses[spec.role];
           const actor = scene.actorId === spec.id;
-          const body = FLOOR_ROLES[spec.role].agent ? AGENT : CODE;
           return (
             <button
               key={spec.id}
@@ -225,19 +216,31 @@ export function FloorMap2D({
               }}
               onClick={() => onSelectRole(spec.role)}
               aria-label={`${spec.label}, ${status}. Show handled events.`}
-              title={spec.label}
+              title={`${spec.label} · ${FLOOR_ROLES[spec.role].desk}`}
             >
-              <span className="floor2d-duck-body" style={{ background: body }} aria-hidden="true">
+              <span className="floor2d-duck-body" style={{ background: AGENT }} aria-hidden="true">
                 <span className="floor2d-eye" />
                 <span className="floor2d-beak" />
               </span>
-              <span className={`floor2d-name status-${status} ${NAME_SHIFT[spec.id] ?? ""}`}>
+              <span className={`floor2d-name status-${status}`}>
                 <i className={`floor-tag-dot ${status}`} />
-                {mapLabel(spec)}
+                {spec.label}
               </span>
             </button>
           );
         })}
+
+        {scene.kind === "halt" ? (
+          <div
+            className="floor2d-alarm"
+            style={{ left: pctX(11), top: pctZ(0.4) }}
+            role="status"
+            aria-label={`Alarm: ${scene.title}. ${scene.detail}`}
+          >
+            <i aria-hidden="true" />
+            <span>HALT</span>
+          </div>
+        ) : null}
 
         {duckEnabled ? (
           <span
@@ -259,17 +262,6 @@ export function FloorMap2D({
             </span>
           </span>
         ) : null}
-
-        {scene.speech.map((speech) => (
-          <div
-            key={speech.role}
-            className={`floor2d-speech ${speech.role}`}
-            style={{ left: pctX(speech.role === "bull" ? -2.6 : 2.6), top: pctZ(-2.2) }}
-          >
-            <strong>{speech.role === "bull" ? "Bull" : "Bear"}</strong>
-            <span>{speech.text}</span>
-          </div>
-        ))}
 
         {scene.stamp ? (
           <div

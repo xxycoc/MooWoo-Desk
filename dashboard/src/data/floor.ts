@@ -2,20 +2,13 @@ import type { DeskState, LoadedEvent, Sleeve } from "./types";
 import { classMapsToSleeve } from "./rules";
 
 export type FloorRole =
-  | "scheduler"
-  | "screener"
+  | "coordinator"
   | "analyst"
-  | "bull"
-  | "bear"
-  | "manager"
-  | "quick"
-  | "trader"
-  | "rebalancer"
-  | "risk"
   | "executor"
+  | "screener"
+  | "risk"
   | "watcher"
-  | "auditor"
-  | "coordinator";
+  | "auditor";
 
 export type FloorStatus = "idle" | "working" | "done" | "problem";
 
@@ -23,20 +16,15 @@ export type SceneKind =
   | "run_started"
   | "screen"
   | "rating"
+  | "core_rebalance"
   | "order_intent"
   | "risk_verdict"
   | "order_submitted"
   | "fill"
-  | "stop_hit"
-  | "tier_changed"
-  | "drill"
-  | "outcome"
-  | "daily_report"
   | "halt"
-  | "rule_change"
   | "reflection_note"
-  | "core_rebalance"
-  | "shadow"
+  | "daily_report"
+  | "tier_changed"
   | "other";
 
 export type SceneTone = "neutral" | "ok" | "warn" | "bad";
@@ -49,43 +37,29 @@ export interface FloorRoleSpec {
 }
 
 export const FLOOR_ROLES: Record<FloorRole, FloorRoleSpec> = {
-  scheduler: { label: "Scheduler", short: "Scheduler", agent: false, desk: "Scheduler" },
-  screener: { label: "Screener", short: "Screener", agent: false, desk: "Screener" },
-  analyst: { label: "Analyst", short: "Analyst", agent: true, desk: "Analysts" },
-  bull: { label: "Bull", short: "Bull", agent: true, desk: "Debate table" },
-  bear: { label: "Bear", short: "Bear", agent: true, desk: "Debate table" },
-  manager: { label: "Manager", short: "Manager", agent: true, desk: "Debate table" },
-  quick: { label: "Quick classifier", short: "Quick", agent: true, desk: "Quick kiosk" },
-  trader: { label: "Trader", short: "Trader", agent: true, desk: "Trader" },
-  rebalancer: { label: "Core rebalancer", short: "Rebalance", agent: false, desk: "Rebalancer" },
+  coordinator: { label: "Coordinator", short: "Coord", agent: true, desk: "Coordinator platform" },
+  analyst: { label: "Analyst", short: "Analyst", agent: true, desk: "Research table" },
+  executor: { label: "Executor", short: "Executor", agent: true, desk: "Paper door" },
+  screener: { label: "Screener", short: "Screen", agent: false, desk: "Ticker board" },
   risk: { label: "Risk desk", short: "Risk", agent: false, desk: "Risk booth" },
-  executor: { label: "Executor", short: "Executor", agent: false, desk: "Moomoo paper" },
-  watcher: { label: "Watcher", short: "Watcher", agent: false, desk: "Patrol" },
-  auditor: { label: "Auditor", short: "Auditor", agent: false, desk: "Filing cabinet" },
-  coordinator: { label: "Coordinator", short: "Coordinator", agent: true, desk: "Centre platform" },
+  watcher: { label: "Watcher", short: "Watch", agent: false, desk: "Watch station" },
+  auditor: { label: "Auditor", short: "Audit", agent: false, desk: "Filing cabinet" },
 };
 
 /** Core sleeve ETFs, the only names allowed on the core board. */
 export const CORE_TICKERS = ["USMV", "XLP", "XLV", "IEF", "GLD"] as const;
 
 export const FLOOR_ROLE_ORDER: FloorRole[] = [
-  "scheduler",
-  "screener",
+  "coordinator",
   "analyst",
-  "bull",
-  "bear",
-  "manager",
-  "quick",
-  "trader",
-  "rebalancer",
-  "risk",
   "executor",
+  "screener",
+  "risk",
   "watcher",
   "auditor",
-  "coordinator",
 ];
 
-export interface FloorDuckSpec {
+export interface FloorAgentSpec {
   id: string;
   role: FloorRole;
   label: string;
@@ -95,41 +69,40 @@ export interface FloorDuckSpec {
   scale: number;
 }
 
-/**
- * Standing positions. Desks, props and zone mats are placed around these points.
- * The pipeline reads left to right: intake, research, debate, decision, controls,
- * execution by the paper door, then back office in the front-right corner.
- */
-export const FLOOR_DUCKS: FloorDuckSpec[] = [
-  { id: "scheduler", role: "scheduler", label: "Scheduler", x: -14.3, z: -7.4, rotation: 0, scale: 1.1 },
-  { id: "screener", role: "screener", label: "Screener", x: -10.7, z: -7.2, rotation: 0, scale: 1.1 },
-  { id: "analyst-1", role: "analyst", label: "Analyst 1", x: -8.9, z: -2.2, rotation: 1.9, scale: 1.1 },
-  { id: "analyst-2", role: "analyst", label: "Analyst 2", x: -5.5, z: -2.2, rotation: -1.9, scale: 1.1 },
-  { id: "analyst-3", role: "analyst", label: "Analyst 3", x: -7.2, z: -4.9, rotation: 0, scale: 1.1 },
-  { id: "bull", role: "bull", label: "Bull", x: -1.55, z: -2.45, rotation: 1.35, scale: 1.12 },
-  { id: "bear", role: "bear", label: "Bear", x: 1.55, z: -2.45, rotation: -1.35, scale: 1.12 },
-  { id: "manager", role: "manager", label: "Manager", x: 0, z: -4.9, rotation: 0, scale: 1.2 },
-  { id: "quick", role: "quick", label: "Quick", x: 5.0, z: -2.0, rotation: 0.35, scale: 0.88 },
-  { id: "trader", role: "trader", label: "Trader", x: 7.9, z: 0.2, rotation: 1.4, scale: 1.12 },
-  { id: "rebalancer", role: "rebalancer", label: "Core rebalancer", x: 14.0, z: 3.4, rotation: 0.3, scale: 1.1 },
-  { id: "risk", role: "risk", label: "Risk desk", x: 11.0, z: 0.4, rotation: -1.57, scale: 1.12 },
-  { id: "executor", role: "executor", label: "Executor", x: 14.7, z: -6.7, rotation: 0.5, scale: 1.1 },
-  { id: "watcher", role: "watcher", label: "Watcher", x: -14.2, z: -0.6, rotation: 0, scale: 1.1 },
-  { id: "auditor", role: "auditor", label: "Auditor", x: 16.4, z: 7.2, rotation: -0.4, scale: 1.1 },
+export interface FloorStationSpec {
+  id: string;
+  role: FloorRole;
+  label: string;
+  x: number;
+  z: number;
+  tagY: number;
+}
+
+/** The desk has three ducks. Code steps are stations, not characters. */
+export const FLOOR_AGENTS: FloorAgentSpec[] = [
   { id: "coordinator", role: "coordinator", label: "Coordinator", x: 0.8, z: 4.9, rotation: 0, scale: 1.12 },
+  { id: "analyst", role: "analyst", label: "Analyst", x: -7.0, z: -1.6, rotation: Math.PI, scale: 1.1 },
+  { id: "executor", role: "executor", label: "Executor", x: 14.7, z: -7.6, rotation: 0.5, scale: 1.1 },
 ];
 
-/** Home point; the mascot wanders around the front-centre aisle from here. */
+export const FLOOR_STATIONS: FloorStationSpec[] = [
+  { id: "screener", role: "screener", label: "Screener", x: -10.7, z: -8.0, tagY: 2.55 },
+  { id: "risk", role: "risk", label: "Risk desk", x: 11.0, z: 1.8, tagY: 2.35 },
+  { id: "watcher", role: "watcher", label: "Watcher", x: -14.6, z: -1.7, tagY: 2.35 },
+  { id: "auditor", role: "auditor", label: "Auditor", x: 16.0, z: 5.7, tagY: 2.6 },
+];
+
+/** Home point; the mascot sits around the front-centre aisle from here. */
 export const MASCOT_POSITION = { x: 4.5, z: 7.0 };
 
 export const FLOOR_TARGETS = {
-  debate: { x: -0.5, z: -0.9 },
-  quick: { x: 5.0, z: -2.0 },
-  risk: { x: 10.7, z: 0.9 },
+  analyst: { x: -7.2, z: -2.9 },
+  risk: { x: 11.0, z: 1.8 },
   door: { x: 15.35, z: -8.4 },
   board: { x: 8.0, z: -10.2 },
   cabinet: { x: 16.3, z: 5.8 },
   coordinator: { x: 0.8, z: 4.9 },
+  screen: { x: -10.7, z: -8.0 },
   aisle: { x: -13.6, z: -0.4 },
 };
 
@@ -140,13 +113,8 @@ export const SLEEVE_COLORS: Record<Sleeve, string> = {
   unclassified: "#8b97ad",
 };
 
-export interface FloorSpeech {
-  role: "bull" | "bear";
-  text: string;
-}
-
 export interface FloorCard {
-  kind: "rating" | "report" | "drill" | "tier" | "outcome" | "stamp" | "halt" | "rule";
+  kind: "rating" | "report" | "tier" | "halt";
   title: string;
   body: string;
   tone: SceneTone;
@@ -178,7 +146,6 @@ export interface FloorScene {
   activeRoles: FloorRole[];
   actorId: string | null;
   actorTarget: { x: number; z: number } | null;
-  speech: FloorSpeech[];
   card: FloorCard | null;
   stamp: { label: string; rule: string | null; tone: SceneTone } | null;
   slip: FloorSlip | null;
@@ -208,62 +175,44 @@ function recordList(value: unknown): Payload[] {
     : [];
 }
 
-function shortValue(value: unknown, depth = 0): string {
-  if (value == null) return "none";
-  if (typeof value === "string") return value;
-  if (typeof value === "number") return Number.isInteger(value) ? String(value) : value.toFixed(2);
-  if (typeof value === "boolean") return value ? "true" : "false";
-  if (Array.isArray(value)) return value.map((item) => shortValue(item, depth + 1)).join(", ");
-  if (typeof value === "object") {
-    const entries = Object.entries(value as Record<string, unknown>);
-    if (entries.length === 0) return "empty";
-    return entries
-      .slice(0, 4)
-      .map(([key, item]) => `${key}=${shortValue(item, depth + 1)}`)
-      .join(" · ");
-  }
-  return String(value);
+function runRoleOf(ev: LoadedEvent): FloorRole | null {
+  const hint = `${typeof ev.runKind === "string" ? ev.runKind : ""} ${ev.runId}`;
+  if (/audit/i.test(hint)) return "auditor";
+  if (/watch/i.test(hint)) return "watcher";
+  return null;
+}
+
+function mergeRoles(roles: FloorRole[], run: FloorRole | null): FloorRole[] {
+  return run ? [...new Set([...roles, run])] : roles;
 }
 
 export function roleOfEvent(ev: LoadedEvent): FloorRole[] {
+  const run = runRoleOf(ev);
+  if (ev.type === "run_started") return [run ?? "coordinator"];
   switch (ev.type) {
-    case "run_started":
-      return ["scheduler", "coordinator"];
     case "screen":
-      return ["screener"];
-    case "rating": {
-      const p = payload(ev);
-      return str(p.tier) === "quick" ? ["quick", "manager"] : ["analyst", "bull", "bear", "manager"];
-    }
+      return mergeRoles(["screener"], run);
+    case "rating":
+      return mergeRoles(["analyst"], run);
+    case "core_rebalance":
     case "order_intent":
-      return ["trader"];
     case "risk_verdict":
-      return ["risk"];
+      return mergeRoles(["risk"], run);
     case "order_submitted":
     case "fill":
-      return ["executor"];
-    case "stop_hit":
-      return ["watcher"];
-    case "tier_changed":
-      return ["risk", "coordinator"];
+      return mergeRoles(["executor"], run);
+    case "reflection_note": {
+      const action = str(payload(ev).executionAction);
+      const roles: FloorRole[] = action === "prepared" || action === "dispatch_authorized" ? ["coordinator"] : [];
+      return mergeRoles(roles, run);
+    }
     case "halt":
-      return ["watcher", "risk"];
-    case "drill":
-      return ["coordinator", "auditor"];
-    case "outcome":
-      return ["auditor"];
+      return [];
     case "daily_report":
-      return ["auditor", "coordinator"];
-    case "rule_change":
-      return ["coordinator", "auditor"];
-    case "reflection_note":
-      return ["coordinator"];
-    case "core_rebalance":
-      return ["rebalancer"];
-    case "shadow":
-      return ["trader", "analyst"];
+    case "tier_changed":
+      return mergeRoles([], run);
     default:
-      return ["coordinator"];
+      return run ? [run] : [];
   }
 }
 
@@ -290,6 +239,8 @@ function durationFor(type: string): number {
       return 2400;
     case "rating":
       return 2600;
+    case "core_rebalance":
+      return 1700;
     case "order_intent":
       return 1900;
     case "risk_verdict":
@@ -298,26 +249,14 @@ function durationFor(type: string): number {
       return 1800;
     case "fill":
       return 1900;
-    case "stop_hit":
-      return 2200;
-    case "tier_changed":
-      return 1800;
-    case "drill":
-      return 2400;
-    case "outcome":
+    case "halt":
+      return 2000;
+    case "reflection_note":
       return 1700;
     case "daily_report":
       return 2400;
-    case "halt":
-      return 2000;
-    case "rule_change":
-      return 1900;
-    case "reflection_note":
-      return 1700;
-    case "core_rebalance":
-      return 1500;
-    case "shadow":
-      return 1300;
+    case "tier_changed":
+      return 1800;
     default:
       return 1200;
   }
@@ -326,21 +265,13 @@ function durationFor(type: string): number {
 function completedStatus(ev: LoadedEvent): FloorStatus {
   const p = payload(ev);
   if (ev.type === "risk_verdict" && str(p.verdict) === "veto") return "problem";
-  if (ev.type === "stop_hit" || ev.type === "halt") return "problem";
-  if (ev.type === "drill" && p.pass !== true) return "problem";
-  if (ev.type === "outcome" && p.graded === true && p.right !== true) return "problem";
+  if (ev.type === "halt") return "problem";
   if (ev.type === "tier_changed" && ["exits_only", "kill"].includes(str(p.to))) return "problem";
   return "done";
 }
 
 function sceneStatus(ev: LoadedEvent): FloorStatus {
-  const p = payload(ev);
-  if (ev.type === "risk_verdict" && str(p.verdict) === "veto") return "problem";
-  if (ev.type === "stop_hit" || ev.type === "halt") return "problem";
-  if (ev.type === "drill" && p.pass !== true) return "problem";
-  if (ev.type === "outcome" && p.graded === true && p.right !== true) return "problem";
-  if (ev.type === "tier_changed" && ["exits_only", "kill"].includes(str(p.to))) return "problem";
-  if (["run_started", "screen", "rating", "order_intent", "order_submitted", "shadow"].includes(ev.type)) {
+  if (["run_started", "screen", "rating", "order_intent", "order_submitted"].includes(ev.type)) {
     return "working";
   }
   return completedStatus(ev);
@@ -374,16 +305,16 @@ function cardFor(ev: LoadedEvent): FloorCard | null {
     return {
       kind: "rating",
       title: str(p.class).replaceAll("_", " "),
-      body: `${Math.round(num(p.confidence) * 100)}% confidence · ${str(p.tier, "debate")} tier`,
+      body: `${Math.round(num(p.confidence) * 100)}% confidence · ${str(p.tier, "single")} tier`,
       tone: "neutral",
     };
   }
-  if (ev.type === "drill") {
+  if (ev.type === "daily_report") {
     return {
-      kind: "drill",
-      title: p.pass === true ? "DRILL PASS" : "DRILL FAIL",
-      body: `${str(p.name, "drill")} · expected ${shortValue(p.expected)} · observed ${shortValue(p.observed)}`,
-      tone: p.pass === true ? "ok" : "bad",
+      kind: "report",
+      title: "Daily report filed",
+      body: `equity $${num(p.equity).toLocaleString("en-US")} · P&L ${num(p.pnlPct).toFixed(2)}%`,
+      tone: "ok",
     };
   }
   if (ev.type === "tier_changed") {
@@ -394,39 +325,12 @@ function cardFor(ev: LoadedEvent): FloorCard | null {
       tone: ["exits_only", "kill"].includes(str(p.to)) ? "bad" : "warn",
     };
   }
-  if (ev.type === "daily_report") {
-    return {
-      kind: "report",
-      title: "Daily report filed",
-      body: `equity $${num(p.equity).toLocaleString("en-US")} · P&L ${num(p.pnlPct).toFixed(2)}% · ${num(p.vetoes)} vetoes`,
-      tone: "ok",
-    };
-  }
-  if (ev.type === "outcome") {
-    if (p.graded !== true) {
-      return { kind: "outcome", title: "Ungraded", body: str(p.reason, "not enough prices"), tone: "warn" };
-    }
-    return {
-      kind: "outcome",
-      title: p.right === true ? "Call right" : "Call wrong",
-      body: `${str(p.ticker)} · excess ${(num(p.excess) * 100).toFixed(2)}%`,
-      tone: p.right === true ? "ok" : "bad",
-    };
-  }
   if (ev.type === "halt") {
     return {
       kind: "halt",
       title: "HALT",
       body: `${str(p.scope, "run")} · ${str(p.reason, "halted")}`,
       tone: "bad",
-    };
-  }
-  if (ev.type === "rule_change") {
-    return {
-      kind: "rule",
-      title: "Rule change",
-      body: `${str(p.ruleId)} · ${shortValue(p.before)} → ${shortValue(p.after)}`,
-      tone: "warn",
     };
   }
   return null;
@@ -440,8 +344,8 @@ function slipFor(ev: LoadedEvent): FloorSlip | null {
       ticker,
       label: `${str(p.side, "BUY")} ${str(p.qty, "?")}`,
       color: "#ff7a1a",
-      from: { x: 8.4, z: 0.0 },
-      to: FLOOR_TARGETS.risk,
+      from: FLOOR_TARGETS.risk,
+      to: FLOOR_TARGETS.door,
     };
   }
   if ((ev.type === "order_submitted" || ev.type === "fill") && ticker) {
@@ -449,7 +353,7 @@ function slipFor(ev: LoadedEvent): FloorSlip | null {
       ticker,
       label: str(p.orderId, "order"),
       color: "#ff7a1a",
-      from: { x: 11.1, z: 0.8 },
+      from: { x: 14.7, z: -7.6 },
       to: FLOOR_TARGETS.door,
     };
   }
@@ -459,16 +363,10 @@ function slipFor(ev: LoadedEvent): FloorSlip | null {
 function tileFor(ev: LoadedEvent, state: DeskState): FloorTileChange | null {
   const p = payload(ev);
   const decisionId = decisionIdOf(ev);
-  const ticker = str(p.ticker);
+  const ticker = str(p.ticker) || str(p.etf);
   if (!ticker) return null;
   if (ev.type === "fill") {
     return { ticker, sleeve: sleeveForDecision(state, decisionId), decisionId, action: "add" };
-  }
-  if (ev.type === "stop_hit") {
-    return { ticker, sleeve: sleeveForDecision(state, decisionId), decisionId, action: "remove" };
-  }
-  if (ev.type === "outcome") {
-    return { ticker, sleeve: sleeveForDecision(state, decisionId), decisionId, action: "red" };
   }
   return null;
 }
@@ -490,54 +388,54 @@ export function sceneAt(events: LoadedEvent[], index: number, state: DeskState):
   const p = payload(event);
   const kind = (event.type as SceneKind) || "other";
   const roles = roleOfEvent(event);
-  const tier = state.tier;
+  const runRole = runRoleOf(event);
   let title = "Event";
   let detail = event.type.replaceAll("_", " ");
   let tone: SceneTone = "neutral";
   let actorId: string | null = null;
   let actorTarget: { x: number; z: number } | null = null;
-  let speech: FloorSpeech[] = [];
-  let card = cardFor(event);
+  const card = cardFor(event);
   let stamp: FloorScene["stamp"] = null;
   let screenTickers: FloorScene["screenTickers"] = [];
 
   switch (event.type) {
     case "run_started":
-      title = "Run started";
-      detail = `Equity $${num(p.equity).toLocaleString("en-US")} · ${str(p.tier, "normal")} tier · bell rung`;
-      actorId = "scheduler";
+      if (runRole === "watcher") {
+        title = "Watch started";
+        detail = `equity $${num(p.equity).toLocaleString("en-US")} · ${str(p.tier, "normal")} tier · watch session`;
+      } else if (runRole === "auditor") {
+        title = "Audit started";
+        detail = `equity $${num(p.equity).toLocaleString("en-US")} · ${str(p.tier, "normal")} tier · audit session`;
+      } else {
+        title = "Run started";
+        detail = `equity $${num(p.equity).toLocaleString("en-US")} · ${str(p.tier, "normal")} tier · bell rung`;
+      }
+      actorId = runRole ? null : "coordinator";
       break;
     case "screen": {
       const picked = new Set(Array.isArray(p.picked) ? (p.picked as string[]) : []);
       screenTickers = screenTickersFor(event);
       title = "Screen";
       detail = `${recordList(p.candidates).length} names screened · picked ${[...picked].join(", ") || "none"}`;
-      actorId = "screener";
       break;
     }
     case "rating": {
       const ticker = str(p.ticker);
-      const quick = str(p.tier) === "quick";
       const cls = str(p.class).replaceAll("_", " ");
-      title = quick ? "Quick rating" : "Rating";
+      title = "Rating";
       detail = `${ticker} · ${cls} · ${Math.round(num(p.confidence) * 100)}% confidence`;
-      tone = "neutral";
-      actorId = quick ? "quick" : "analyst-1";
-      actorTarget = quick ? FLOOR_TARGETS.quick : FLOOR_TARGETS.debate;
-      const bull = str(p.bullSummary) || "…";
-      const bear = str(p.bearSummary) || "…";
-      if (!quick) {
-        speech = [
-          { role: "bull", text: bull },
-          { role: "bear", text: bear },
-        ];
-      }
+      actorId = "analyst";
+      actorTarget = FLOOR_TARGETS.analyst;
       break;
     }
+    case "core_rebalance":
+      title = "Core rebalance";
+      detail = `${str(p.side, "BUY")} ${num(p.qty)} ${str(p.etf)} · target ${(num(p.targetWeight) * 100).toFixed(1)}%`;
+      tone = "ok";
+      break;
     case "order_intent":
       title = "Order intent";
       detail = `${str(p.side, "BUY")} ${num(p.qty)} ${str(p.ticker)} · $${num(p.notional).toLocaleString("en-US")} · ${str(p.sleeve)}`;
-      actorId = "trader";
       break;
     case "risk_verdict": {
       const verdict = str(p.verdict, "approve");
@@ -549,7 +447,6 @@ export function sceneAt(events: LoadedEvent[], index: number, state: DeskState):
         rule: p.firedRule ? str(p.firedRule) : null,
         tone,
       };
-      actorId = "risk";
       break;
     }
     case "order_submitted":
@@ -565,68 +462,39 @@ export function sceneAt(events: LoadedEvent[], index: number, state: DeskState):
       actorId = "executor";
       actorTarget = FLOOR_TARGETS.door;
       break;
-    case "stop_hit":
-      title = "Stop hit";
-      detail = `${str(p.ticker)} · entry $${num(p.entry).toFixed(2)} · stop $${num(p.stop).toFixed(2)} · ${str(p.exitOrderId)}`;
+    case "halt":
+      title = "Halt";
+      detail = `${str(p.scope, "run")} · ${str(p.reason)}`;
       tone = "bad";
-      actorId = "watcher";
-      actorTarget = FLOOR_TARGETS.board;
+      break;
+    case "reflection_note": {
+      const action = str(p.executionAction);
+      const ticker = str(p.ticker) || (event.decisionId?.split(":").slice(1).join(":") ?? "");
+      if (action === "prepared") {
+        title = "Execution prepared";
+        detail = `${ticker || "ticket"} · prepared, awaiting dispatch`;
+        tone = "warn";
+        actorId = "coordinator";
+      } else if (action === "dispatch_authorized") {
+        title = "Dispatch authorized";
+        detail = `${ticker || "ticket"} · exact ticket authorized`;
+        tone = "ok";
+        actorId = "coordinator";
+      } else {
+        title = "Reflection note";
+        detail = str(p.prompt, "Reflection") + (str(p.text) ? ` · ${str(p.text)}` : "");
+      }
+      break;
+    }
+    case "daily_report":
+      title = "Daily report";
+      detail = `equity $${num(p.equity).toLocaleString("en-US")} · P&L ${num(p.pnlPct).toFixed(2)}%`;
+      tone = "ok";
       break;
     case "tier_changed":
       title = "Risk tier changed";
       detail = `${str(p.from, "normal")} → ${str(p.to)} · drawdown ${num(p.drawdownPct).toFixed(1)}%`;
       tone = ["exits_only", "kill"].includes(str(p.to)) ? "bad" : "warn";
-      actorId = "risk";
-      break;
-    case "drill":
-      title = p.pass === true ? "Drill passed" : "Drill failed";
-      detail = `${str(p.name)} · expected ${shortValue(p.expected)} · observed ${shortValue(p.observed)}`;
-      tone = p.pass === true ? "ok" : "bad";
-      actorId = "coordinator";
-      break;
-    case "outcome":
-      title = p.graded === true ? (p.right === true ? "Outcome right" : "Outcome wrong") : "Outcome ungraded";
-      detail = p.graded === true
-        ? `${str(p.ticker)} · excess ${(num(p.excess) * 100).toFixed(2)}% · ${str(p.class).replaceAll("_", " ")}`
-        : `${str(p.ticker)} · ${str(p.reason, "not graded")}`;
-      tone = p.graded !== true ? "warn" : p.right === true ? "ok" : "bad";
-      actorId = "auditor";
-      actorTarget = FLOOR_TARGETS.board;
-      break;
-    case "daily_report":
-      title = "Daily report";
-      detail = `equity $${num(p.equity).toLocaleString("en-US")} · P&L ${num(p.pnlPct).toFixed(2)}% · Brier ${num(p.brier).toFixed(2)}`;
-      tone = "ok";
-      actorId = "auditor";
-      actorTarget = FLOOR_TARGETS.cabinet;
-      break;
-    case "halt":
-      title = "Halt";
-      detail = `${str(p.scope, "run")} · ${str(p.reason)}`;
-      tone = "bad";
-      actorId = "watcher";
-      actorTarget = FLOOR_TARGETS.aisle;
-      break;
-    case "rule_change":
-      title = "Rule change";
-      detail = `${str(p.ruleId)} · ${shortValue(p.before)} → ${shortValue(p.after)}`;
-      actorId = "coordinator";
-      break;
-    case "reflection_note":
-      title = "Reflection note";
-      detail = str(p.prompt, "Reflection") + (str(p.text) ? ` · ${str(p.text)}` : "");
-      actorId = "coordinator";
-      break;
-    case "core_rebalance":
-      title = "Core rebalance";
-      detail = `${str(p.side, "BUY")} ${num(p.qty)} ${str(p.etf)} · target ${(num(p.targetWeight) * 100).toFixed(1)}%`;
-      tone = "ok";
-      actorId = "rebalancer";
-      break;
-    case "shadow":
-      title = "Shadow book";
-      detail = `${str(p.book)} ${str(p.side)} ${str(p.ticker)} · $${num(p.notional).toLocaleString("en-US")}`;
-      actorId = "trader";
       break;
     default:
       break;
@@ -653,13 +521,12 @@ export function sceneAt(events: LoadedEvent[], index: number, state: DeskState):
     activeRoles: roles,
     actorId,
     actorTarget,
-    speech,
     card,
     stamp,
     slip: slipFor(event),
     tile: tileFor(event, state),
     decisionId: decisionIdOf(event),
-    tier,
+    tier: state.tier,
     screenTickers,
   };
 }

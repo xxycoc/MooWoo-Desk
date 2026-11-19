@@ -1,7 +1,8 @@
 # MooWoo Desk dashboard: Option B
 
-Read-only operations screen for simulated paper funds. Two questions guide the layout:
-**Now:** what is happening? **Strategy:** is the approach working?
+Read-only operations screen for simulated paper funds. Three questions guide the layout:
+**Now:** what is happening? **Strategy:** is the approach working? **Floor:** who did what,
+in order?
 
 ## Run and build
 
@@ -81,10 +82,10 @@ snapshot. No state snapshot is inferred from those filtered events.
 ## Layout and navigation
 
 The sticky top bar keeps MooWoo Desk, SIMULATED FUNDS, equity/return, the next run
-and the desk duck visible. The health banner follows immediately, then two tabs.
-Default/unknown hashes become #now. Legacy #mission, #risk and #floor map to #now;
-#radar, #truth and #debate map to #strategy. Back/Forward works; #main remains the
-keyboard skip link.
+and the desk duck visible. The health banner follows immediately, then three tabs.
+Default/unknown hashes become #now. Legacy #mission and #risk map to #now; #floor is
+the Floor tab; #radar, #truth and #debate map to #strategy. Back/Forward works; #main
+remains the keyboard skip link.
 
 Now contains four KPIs, a small equity chart from run_started events, positions,
 and the ten newest run groups with Show more in batches of ten. Each runId gathers
@@ -118,6 +119,34 @@ Strategy contains one question per chart:
 - How deep is the drawdown? Run-start and daily-report equity below its running
   peak, starting at $100,000, with -2%, -4%, -6% risk lines. Intraday moves between
   snapshots are unknown.
+
+## Floor
+
+Floor replays one session as a small voxel office, driven only by the loaded event
+log. Three ducks are the agents: Coordinator (runs the steps), Analyst (rates movers)
+and Executor (places orders). Four code stations have no ducks: Screener, Risk desk,
+Watcher and Auditor. Stations light from events: run_started to Coordinator, screen
+to Screener, rating to Analyst, core_rebalance/order_intent/risk_verdict to Risk,
+prepared or dispatch_authorized reflection notes to Coordinator,
+order_submitted/fill to Executor, watch runs to Watcher, audit runs to Auditor. A
+halt raises a red alarm over the desk and lights no station. Bull, bear, manager and
+quick are not floor actors.
+
+Live follows the newest loaded session and jumps to its latest event when the feed
+refreshes. Replay freezes a session and exposes play/pause, 1x/2x/4x speed, a scrubber,
+Next event and a session picker. Playback uses the selected event's gseq through
+stateAt, so positions, cash and tier match the rest of the dashboard at that point.
+
+The wall screens repeat the same health selector as the top banner, equity and the
+session result, plus core and satellite positions coloured blue/violet/teal. Clicking
+a duck or station tag lists its handled events; clicking a wall position opens the
+existing decision drawer when a decision is recorded. The mascot toggle applies to
+the floor too.
+
+Three.js is loaded lazily only when the 3D stage renders. The renderer draws on demand,
+stops while the tab is hidden, and is replaced by a static 2D map on phone widths under
+640 pixels, without WebGL, or with prefers-reduced-motion. The stage reserves the
+bottom-right area for the host badge rather than placing controls there.
 
 Removed: Mission control wall, Debate room, standalone Truth table, risk-desk
 wall, quick-classifier calibration, credits chart and retired agent step strip.
@@ -188,9 +217,10 @@ whole chain needs an independently trusted terminal hash to detect.
 npm test covers loader success/fallback/cancellation and operational selectors:
 DST, weekend and early-close scheduling, state-driven and legacy halt/restart
 precedence, invalid desk fallback, radar bounds, staleness, run
-classification, closed trades, missing benchmarks and old hash routing.
-npm run check:data exercises the real bundled corpus, reducer holdings, scrub
-scan, original-chain verification/tamper detection and both new views via SSR.
+classification, closed trades, missing benchmarks, old hash routing and floor
+role lighting. npm run check:data exercises the real bundled corpus, reducer
+holdings, scrub scan, original-chain verification/tamper detection and the
+Now/Strategy views via SSR.
 These deterministic tests do not prove browser rendering or live-feed delivery.
 
 ### Option B acceptance check (19 November 2026)

@@ -3,11 +3,12 @@ import * as THREE from "three";
 import type { DeskState } from "../data/types";
 import {
   CORE_TICKERS,
-  FLOOR_DUCKS,
+  FLOOR_AGENTS,
   FLOOR_ROLES,
+  FLOOR_STATIONS,
   MASCOT_POSITION,
   SLEEVE_COLORS,
-  type FloorDuckSpec,
+  type FloorAgentSpec,
   type FloorRole,
   type FloorScene,
   type FloorStatus,
@@ -17,18 +18,12 @@ import { fmtUsd } from "../data/format";
 const BG = "#0c1322";
 const LINE = "#24314a";
 const YELLOW = "#f2c230";
-const GREY = "#c3ccdc";
 const ORANGE = "#ff7a1a";
 const BLUE = "#5b8def";
 const VIOLET = "#a78bfa";
 const GREEN = "#34c98a";
 const RED = "#f26b6b";
-
-/** Lifts a name tag above a tall prop without moving the duck. */
-const TAG_LIFT: Record<string, number> = {
-  manager: 0.55,
-  auditor: 0.15,
-};
+const IDLE_LAMP = "#33425e";
 
 interface BoxOptions {
   cast?: boolean;
@@ -129,10 +124,10 @@ function addDesk(parent: THREE.Object3D, x: number, z: number, width = 2.15, col
       addBox(parent, leg, 0.88, leg, x + sx * (width / 2 - 0.12), 0.46, z + sz * 0.46, "#3b2c22");
     });
   });
-  addBox(parent, 0.72, 0.44, 0.08, x, 1.34, z - 0.32, "#0c1322");
+  addBox(parent, 0.72, 0.44, 0.08, x, 1.34, z - 0.32, BG);
   addBox(parent, 0.62, 0.34, 0.035, x, 1.34, z - 0.27, "#17365c", { emissive: "#0b2748" });
-  addBox(parent, 0.08, 0.28, 0.08, x, 1.16, z - 0.32, "#24314a");
-  addBox(parent, 0.78, 0.06, 0.34, x, 1.03, z - 0.32, "#24314a");
+  addBox(parent, 0.08, 0.28, 0.08, x, 1.16, z - 0.32, LINE);
+  addBox(parent, 0.78, 0.06, 0.34, x, 1.03, z - 0.32, LINE);
 }
 
 function addChair(parent: THREE.Object3D, x: number, z: number, color = "#2a3852"): void {
@@ -174,7 +169,7 @@ function addRoundTable(parent: THREE.Object3D, x: number, z: number, radius: num
 }
 
 interface DuckState {
-  spec: FloorDuckSpec;
+  spec: FloorAgentSpec;
   group: THREE.Group;
   bob: THREE.Group;
   lean: number;
@@ -212,89 +207,22 @@ function addGlasses(bob: THREE.Group): void {
   addBox(bob, 0.13, 0.035, 0.035, 0, 1.36, 0.43, BG);
 }
 
-const ANALYST_CLIPBOARDS: Record<string, string> = {
-  "analyst-1": BLUE,
-  "analyst-2": VIOLET,
-  "analyst-3": "#2dd4bf",
-};
-
-function addRoleProps(role: FloorRole, bob: THREE.Group, id: string): void {
+function addRoleProps(role: FloorRole, bob: THREE.Group): void {
   switch (role) {
     case "analyst": {
-      const accent = ANALYST_CLIPBOARDS[id] ?? BLUE;
       addCylinder(bob, 0.4, 0.4, 0.13, 0, 1.67, 0.03, BLUE, {}, 12);
       addCylinder(bob, 0.46, 0.46, 0.04, 0, 1.6, 0.03, "#3f6fc4", {}, 12);
       addSphere(bob, 0.06, 0.08, 1.76, 0.03, BLUE, 6);
       addGlasses(bob);
-      addBox(bob, 0.7, 0.54, 0.05, 0.4, 0.98, 0.58, accent, { rotation: [0, 0, -0.18] });
+      addBox(bob, 0.7, 0.54, 0.05, 0.4, 0.98, 0.58, BLUE, { rotation: [0, 0, -0.18] });
       addBox(bob, 0.58, 0.42, 0.014, 0.4, 0.98, 0.612, "#e8edf6", {
         cast: false,
         rotation: [0, 0, -0.18],
       });
-      addBox(bob, 0.16, 0.06, 0.025, 0.4, 1.22, 0.618, "#24314a", {
-        cast: false,
-        rotation: [0, 0, -0.18],
-      });
+      addBox(bob, 0.16, 0.06, 0.025, 0.4, 1.22, 0.618, LINE, { cast: false, rotation: [0, 0, -0.18] });
       addBox(bob, 0.42, 0.024, 0.012, 0.42, 1.08, 0.625, "#8b97ad", { cast: false, rotation: [0, 0, -0.18] });
       addBox(bob, 0.36, 0.024, 0.012, 0.42, 1.0, 0.625, "#8b97ad", { cast: false, rotation: [0, 0, -0.18] });
       addBox(bob, 0.28, 0.024, 0.012, 0.42, 0.92, 0.625, "#8b97ad", { cast: false, rotation: [0, 0, -0.18] });
-      break;
-    }
-    case "bull": {
-      addBox(bob, 1.32, 0.48, 0.84, 0, 1.06, 0.02, YELLOW);
-      addBox(bob, 0.42, 0.34, 0.5, -0.7, 0.95, 0.04, YELLOW, { rotation: [0, 0, 0.18] });
-      addBox(bob, 0.42, 0.34, 0.5, 0.7, 0.95, 0.04, YELLOW, { rotation: [0, 0, -0.18] });
-      addCylinder(bob, 0.43, 0.45, 0.24, 0, 1.69, 0.03, "#2b9a6a", {}, 10);
-      addCylinder(bob, 0.1, 0.13, 0.64, -0.44, 1.78, 0.03, "#e8edf6", {
-        rotation: [0, 0, 1.15],
-      }, 8);
-      addCylinder(bob, 0.1, 0.13, 0.64, 0.44, 1.78, 0.03, "#e8edf6", {
-        rotation: [0, 0, -1.15],
-      }, 8);
-      addCylinder(bob, 0.025, 0.025, 0.9, 0.62, 1.05, -0.1, "#24314a", {}, 6);
-      addBox(bob, 0.4, 0.34, 0.035, 0.79, 1.38, -0.1, GREEN);
-      addBox(bob, 0.065, 0.2, 0.02, 0.79, 1.39, -0.075, "#e8edf6", { cast: false });
-      addBox(bob, 0.2, 0.06, 0.02, 0.79, 1.42, -0.075, "#e8edf6", { cast: false });
-      break;
-    }
-    case "bear": {
-      addSphere(bob, 0.5, 0, 0.88, 0.24, YELLOW, 12);
-      addSphere(bob, 0.47, 0, 1.61, -0.01, "#3d2227", 10);
-      addSphere(bob, 0.16, -0.37, 1.86, 0, "#7a2f2f", 7);
-      addSphere(bob, 0.16, 0.37, 1.86, 0, "#7a2f2f", 7);
-      addBox(bob, 0.88, 0.15, 0.15, 0, 0.85, 0.54, "#c3ccdc", { rotation: [0, 0, 0.38] });
-      addBox(bob, 0.88, 0.15, 0.15, 0, 0.85, 0.55, "#c3ccdc", { rotation: [0, 0, -0.38] });
-      addCylinder(bob, 0.025, 0.025, 0.9, -0.58, 1.06, -0.12, "#24314a", {}, 6);
-      addBox(bob, 0.34, 0.3, 0.035, -0.58, 1.37, -0.12, RED);
-      addBox(bob, 0.06, 0.2, 0.02, -0.58, 1.35, -0.09, "#e8edf6", { cast: false });
-      addBox(bob, 0.17, 0.06, 0.02, -0.58, 1.28, -0.09, "#e8edf6", { cast: false });
-      break;
-    }
-    case "manager": {
-      addCylinder(bob, 0.32, 0.32, 0.92, 0, 2.16, 0.02, "#171512", {}, 12);
-      addCylinder(bob, 0.52, 0.52, 0.07, 0, 1.64, 0.02, "#171512", {}, 12);
-      addCylinder(bob, 0.33, 0.33, 0.11, 0, 1.75, 0.02, VIOLET, {}, 12);
-      addCylinder(bob, 0.04, 0.045, 0.46, 0.68, 0.91, 0.42, "#7a5a32", {
-        rotation: [0, 0, -0.45],
-      }, 8);
-      addBox(bob, 0.2, 0.18, 0.3, 0.8, 1.1, 0.46, "#7a5a32", { rotation: [0, 0, -0.45] });
-      addBox(bob, 0.4, 0.3, 0.04, -0.58, 0.98, 0.53, "#e8edf6", { rotation: [0, 0, 0.14] });
-      addBox(bob, 0.42, 0.32, 0.025, -0.58, 0.98, 0.5, VIOLET, { rotation: [0, 0, 0.14], cast: false });
-      break;
-    }
-    case "quick": {
-      addBox(bob, 0.11, 0.28, 0.06, 0.5, 1.57, 0.12, "#ffe27a", { rotation: [0, 0, 0.55] });
-      addBox(bob, 0.11, 0.28, 0.06, 0.38, 1.39, 0.12, "#ffe27a", { rotation: [0, 0, 0.55] });
-      addBox(bob, 0.11, 0.26, 0.06, 0.52, 1.25, 0.12, "#ffe27a", { rotation: [0, 0, 0.55] });
-      addBox(bob, 0.1, 0.16, 0.05, 0.38, 1.67, 0.12, "#ffe27a", { rotation: [0, 0, 0.55] });
-      addCylinder(bob, 0.2, 0.2, 0.08, 0.5, 1.56, 0.3, "#171512", { rotation: [Math.PI / 2, 0, 0] }, 14);
-      addCylinder(bob, 0.155, 0.155, 0.02, 0.5, 1.56, 0.35, "#f4f7fb", {
-        rotation: [Math.PI / 2, 0, 0],
-        emissive: "#dfe6f0",
-      }, 14);
-      addBox(bob, 0.025, 0.12, 0.012, 0.5, 1.6, 0.365, BG, { cast: false });
-      addBox(bob, 0.08, 0.025, 0.012, 0.53, 1.56, 0.365, BG, { cast: false });
-      addCylinder(bob, 0.03, 0.03, 0.07, 0.5, 1.71, 0.3, "#171512", {}, 8);
       break;
     }
     case "coordinator": {
@@ -314,88 +242,6 @@ function addRoleProps(role: FloorRole, bob: THREE.Group, id: string): void {
       });
       break;
     }
-    case "auditor": {
-      addBox(bob, 0.16, 0.12, 0.05, -0.14, 1.02, 0.47, VIOLET, { rotation: [0, 0, 0.45] });
-      addBox(bob, 0.16, 0.12, 0.05, 0.14, 1.02, 0.47, VIOLET, { rotation: [0, 0, -0.45] });
-      addBox(bob, 0.08, 0.08, 0.06, 0, 1.02, 0.48, "#7c5fd6");
-      addBox(bob, 0.18, 0.04, 0.03, -0.19, 1.43, 0.41, BG, { cast: false });
-      addBox(bob, 0.18, 0.04, 0.03, 0.19, 1.43, 0.41, BG, { cast: false });
-      addCylinder(bob, 0.03, 0.035, 0.4, 0.53, 0.84, 0.42, "#171512", {
-        rotation: [0.4, 0, -0.5],
-      }, 8);
-      addCylinder(bob, 0.14, 0.14, 0.04, 0.64, 1.07, 0.42, BG, { rotation: [Math.PI / 2, 0, 0] }, 12);
-      addCylinder(bob, 0.1, 0.1, 0.02, 0.64, 1.07, 0.45, "#bfe3ff", {
-        rotation: [Math.PI / 2, 0, 0],
-        opacity: 0.5,
-      }, 12);
-      break;
-    }
-    case "scheduler": {
-      addCylinder(bob, 0.31, 0.31, 0.1, 0, 1.78, 0.06, "#171512", {
-        rotation: [Math.PI / 2, 0, 0],
-      }, 14);
-      addCylinder(bob, 0.26, 0.26, 0.04, 0, 1.78, 0.12, "#e8edf6", {
-        rotation: [Math.PI / 2, 0, 0],
-      }, 14);
-      addSphere(bob, 0.08, -0.26, 1.98, 0.02, ORANGE, 7);
-      addSphere(bob, 0.08, 0.26, 1.98, 0.02, ORANGE, 7);
-      addBox(bob, 0.035, 0.16, 0.02, 0, 1.83, 0.145, BG, { cast: false });
-      addBox(bob, 0.12, 0.035, 0.02, 0.05, 1.78, 0.145, BG, { cast: false });
-      break;
-    }
-    case "screener": {
-      addBox(bob, 0.7, 0.16, 0.18, 0, 1.55, 0.06, "#24314a");
-      addCylinder(bob, 0.15, 0.15, 0.3, -0.18, 1.38, 0.55, BG, {
-        rotation: [Math.PI / 2, 0, 0],
-      }, 12);
-      addCylinder(bob, 0.15, 0.15, 0.3, 0.18, 1.38, 0.55, BG, {
-        rotation: [Math.PI / 2, 0, 0],
-      }, 12);
-      addCylinder(bob, 0.1, 0.1, 0.02, -0.18, 1.38, 0.71, BLUE, {
-        rotation: [Math.PI / 2, 0, 0],
-        emissive: "#204a80",
-      }, 12);
-      addCylinder(bob, 0.1, 0.1, 0.02, 0.18, 1.38, 0.71, BLUE, {
-        rotation: [Math.PI / 2, 0, 0],
-        emissive: "#204a80",
-      }, 12);
-      addBox(bob, 0.12, 0.06, 0.12, 0, 1.38, 0.56, "#24314a");
-      addBox(bob, 0.12, 0.36, 0.12, -0.35, 1.1, 0.36, "#c3ccdc", { rotation: [0.7, 0, 0.3] });
-      addBox(bob, 0.12, 0.36, 0.12, 0.35, 1.1, 0.36, "#c3ccdc", { rotation: [0.7, 0, -0.3] });
-      break;
-    }
-    case "trader": {
-      addBox(bob, 0.66, 0.07, 0.1, 0, 1.64, 0.02, "#171512");
-      addCylinder(bob, 0.12, 0.12, 0.1, -0.36, 1.42, 0.02, "#171512", {
-        rotation: [0, 0, Math.PI / 2],
-      }, 10);
-      addCylinder(bob, 0.12, 0.12, 0.1, 0.36, 1.42, 0.02, "#171512", {
-        rotation: [0, 0, Math.PI / 2],
-      }, 10);
-      addBox(bob, 0.04, 0.04, 0.32, 0.33, 1.28, 0.19, "#171512", { rotation: [0.5, 0, 0] });
-      addSphere(bob, 0.055, 0.33, 1.17, 0.4, "#171512", 6);
-      addBox(bob, 0.045, 0.085, 0.46, -0.4, 1.44, -0.02, YELLOW, { rotation: [0.1, -0.2, -0.3] });
-      addBox(bob, 0.35, 0.25, 0.035, 0.43, 0.94, 0.55, ORANGE, { rotation: [0, 0, -0.12] });
-      break;
-    }
-    case "risk": {
-      addBox(bob, 0.66, 0.12, 0.2, 0, 1.47, 0.39, "#c92a2a", { rotation: [-0.16, 0, 0] });
-      addBox(bob, 0.38, 0.24, 0.035, -0.42, 0.95, 0.54, "#e8edf6");
-      addBox(bob, 0.3, 0.03, 0.012, -0.42, 0.98, 0.562, "#c92a2a", { cast: false });
-      addCylinder(bob, 0.045, 0.055, 0.34, 0.47, 0.9, 0.5, "#7a5a32", {
-        rotation: [0.35, 0, -0.5],
-      }, 8);
-      addBox(bob, 0.28, 0.14, 0.24, 0.58, 1.02, 0.6, "#c92a2a", { rotation: [0, 0.3, 0] });
-      break;
-    }
-    case "rebalancer": {
-      addBox(bob, 0.66, 0.11, 0.2, 0, 1.48, 0.39, BLUE, { rotation: [-0.18, 0, 0] });
-      addBox(bob, 0.52, 0.42, 0.05, 0.42, 0.96, 0.58, "#e8edf6", { rotation: [0, 0, -0.14] });
-      addBox(bob, 0.38, 0.07, 0.014, 0.42, 1.07, 0.609, "#8fb2ff", { cast: false, rotation: [0, 0, -0.14] });
-      addBox(bob, 0.3, 0.07, 0.014, 0.42, 0.97, 0.609, BLUE, { cast: false, rotation: [0, 0, -0.14] });
-      addBox(bob, 0.22, 0.07, 0.014, 0.42, 0.87, 0.609, "#3f6fc4", { cast: false, rotation: [0, 0, -0.14] });
-      break;
-    }
     case "executor": {
       addBox(bob, 0.58, 0.14, 0.55, 0, 1.68, 0.03, ORANGE);
       addBox(bob, 0.56, 0.06, 0.25, 0, 1.61, 0.35, ORANGE);
@@ -403,33 +249,20 @@ function addRoleProps(role: FloorRole, bob: THREE.Group, id: string): void {
       addBox(bob, 0.3, 0.22, 0.035, 0.45, 0.95, 0.56, ORANGE, { rotation: [0, 0, -0.12] });
       break;
     }
-    case "watcher": {
-      addBox(bob, 0.56, 0.14, 0.56, 0, 1.68, 0.03, "#1b3a2c");
-      addBox(bob, 0.56, 0.05, 0.22, 0, 1.61, 0.38, "#1b3a2c");
-      addCylinder(bob, 0.08, 0.08, 0.4, 0.49, 1.02, 0.38, GREEN, {
-        rotation: [Math.PI / 2, 0, 0],
-      }, 10);
-      addCylinder(bob, 0.3, 0.03, 1.1, 0.49, 1.02, 1.05, "#d6ffe9", {
-        rotation: [Math.PI / 2, 0, 0],
-        opacity: 0.16,
-        cast: false,
-      }, 12);
-      break;
-    }
     default:
       break;
   }
 }
 
-function createDuck(spec: FloorDuckSpec): DuckState {
-  const bodyColor = FLOOR_ROLES[spec.role].agent ? YELLOW : GREY;
+function createDuck(spec: FloorAgentSpec): DuckState {
+  const bodyColor = FLOOR_ROLES[spec.role].agent ? YELLOW : "#c3ccdc";
   const { group, bob } = createDuckBase(bodyColor);
-  addRoleProps(spec.role, bob, spec.id);
+  addRoleProps(spec.role, bob);
   group.scale.setScalar(spec.scale);
   group.position.set(spec.x, 0, spec.z);
   group.rotation.y = spec.rotation;
   group.userData = { kind: "role", role: spec.role };
-  const lean = spec.role === "bull" ? 0.1 : spec.role === "quick" || spec.role === "executor" ? -0.09 : 0;
+  const lean = spec.role === "executor" ? -0.09 : 0;
   return { spec, group, bob, lean };
 }
 
@@ -463,11 +296,10 @@ function buildOffice(office: THREE.Group, stampGroup: THREE.Group): void {
   addBox(office, 36, 0.12, 0.4, 0, 0.08, -11.85, "#2c3852", { cast: false });
   addBox(office, 0.4, 0.12, 24, -17.85, 0.08, 0, "#2c3852", { cast: false });
 
-  // Zone mats follow the pipeline left to right and fill the front-right floor.
+  // Zone mats follow the pipeline left to right.
   addZone(office, -12.8, -4.0, 6.2, 10.2, "#3d6ea8");
   addZone(office, -7.2, -3.3, 5.2, 5.2, "#2dd4bf");
-  addZone(office, 7.1, -1.2, 6.2, 6.4, "#e08a2e");
-  addZone(office, 12.4, 1.8, 6.0, 5.6, "#c94a4a");
+  addZone(office, 11.0, 1.8, 6.0, 5.6, "#c94a4a");
   addZone(office, 14.7, -7.9, 4.4, 3.6, "#e08a2e");
   addZone(office, 15.7, 6.4, 3.8, 4.2, "#a78bfa");
 
@@ -481,6 +313,7 @@ function buildOffice(office: THREE.Group, stampGroup: THREE.Group): void {
   addBox(office, 0.045, 0.25, 0.02, -14.2, 2.81, -11.49, BG, { cast: false });
   addBox(office, 0.19, 0.045, 0.02, -14.12, 2.72, -11.49, BG, { cast: false });
 
+  // Wall boards: screen feed, desk health, core sleeve, satellite sleeve.
   addBox(office, 5.7, 2.55, 0.12, -10.8, 2.18, -11.58, "#0d1628");
   addBox(office, 5.95, 2.8, 0.06, -10.8, 2.18, -11.64, LINE, { cast: false });
   addBox(office, 5.35, 2.2, 0.03, -10.8, 2.18, -11.5, "#101c31", { emissive: "#07101f" });
@@ -489,7 +322,6 @@ function buildOffice(office: THREE.Group, stampGroup: THREE.Group): void {
   addBox(office, 6.15, 2.8, 0.06, 0, 2.2, -11.64, ORANGE, { cast: false, opacity: 0.8 });
   addBox(office, 5.55, 2.2, 0.03, 0, 2.2, -11.5, "#0d1b33", { emissive: "#07162d" });
 
-  // Core board (blue) and the small satellite board beside it.
   addBox(office, 5.8, 2.7, 0.12, 8, 2.18, -11.58, "#0d1628");
   addBox(office, 6.05, 2.95, 0.06, 8, 2.18, -11.64, BLUE, { cast: false, opacity: 0.85 });
   addBox(office, 5.45, 2.35, 0.03, 8, 2.18, -11.5, "#0d1b33", { emissive: "#07162d" });
@@ -504,14 +336,10 @@ function buildOffice(office: THREE.Group, stampGroup: THREE.Group): void {
   addSphere(office, 0.08, 14.55, 1.3, -11.31, "#e8edf6", 8);
   addBox(office, 2.9, 0.16, 0.8, 15.35, 0.08, -11.2, "#2c3852");
 
-  // Intake: schedule and screen the run by the wall clock and ticker board.
-  addDesk(office, -14.3, -8.1, 2.3, "#5b3f2a");
+  // Intake: the screening desk sits under its wall board.
   addDesk(office, -10.7, -8.0, 2.1, "#4d3828");
-  addBox(office, 0.9, 1.15, 0.7, -15.2, 0.58, -1.7, "#223149");
-  addBox(office, 0.72, 0.5, 0.06, -15.2, 1.4, -1.95, "#0d1628");
-  addBox(office, 0.6, 0.38, 0.03, -15.2, 1.4, -1.9, "#17365c", { emissive: "#0b2748" });
 
-  // Research pod: three analysts share one round table.
+  // Research pod: the analyst works from one round table.
   addRoundTable(office, -7.2, -2.9, 1.3);
   addChair(office, -8.15, -1.85);
   addChair(office, -6.25, -1.85);
@@ -521,34 +349,10 @@ function buildOffice(office: THREE.Group, stampGroup: THREE.Group): void {
   addBox(office, 0.5, 0.32, 0.05, -6.7, 1.3, -3.48, "#17233a", { rotation: [0, 0.35, 0] });
   addCylinder(office, 0.09, 0.08, 0.2, -7.6, 1.18, -3.3, "#8b97ad", {}, 8);
 
-  // Glass-walled debate pit, open at the front for the analyst entrance.
-  addBox(office, 5.7, 2.45, 0.08, 0, 1.23, -5.15, BLUE, { opacity: 0.13, cast: false });
-  addBox(office, 0.08, 2.45, 2.2, -2.85, 1.23, -4.05, BLUE, { opacity: 0.13, cast: false });
-  addBox(office, 0.08, 2.45, 2.2, 2.85, 1.23, -4.05, BLUE, { opacity: 0.13, cast: false });
-  addBox(office, 5.9, 0.09, 0.12, 0, 2.47, -5.15, "#3a4a67");
-  addBox(office, 0.12, 0.09, 2.3, -2.85, 2.47, -4.05, "#3a4a67");
-  addBox(office, 0.12, 0.09, 2.3, 2.85, 2.47, -4.05, "#3a4a67");
-  [-2.85, 0, 2.85].forEach((x) => addBox(office, 0.1, 2.5, 0.1, x, 1.25, -5.15, "#3a4a67"));
-  [-2.85, 2.85].forEach((x) => addBox(office, 0.1, 2.5, 0.1, x, 1.25, -2.95, "#3a4a67"));
-  addRoundTable(office, 0, -3.1, 1.3);
-  addChair(office, -1.55, -1.7);
-  addChair(office, 1.55, -1.7);
-  addBox(office, 0.46, 0.04, 0.34, -0.4, 1.12, -3.15, "#e8edf6", { cast: false });
-  addBox(office, 0.36, 0.04, 0.28, 0.35, 1.12, -3.3, "#dfe6f0", { cast: false });
-
-  // Decision: quick kiosk and the trader desk.
-  addBox(office, 1.9, 1.05, 1.0, 5.2, 0.53, -3.65, "#223149");
-  addBox(office, 1.6, 1.3, 0.12, 5.2, 1.45, -4.1, "#0d1628");
-  addBox(office, 1.38, 1.05, 0.035, 5.2, 1.45, -4.03, "#193b66", { emissive: "#0b2748" });
-  addBox(office, 0.12, 0.32, 0.06, 5.2, 1.77, -3.89, YELLOW, { rotation: [0, 0, 0.55], cast: false });
-  addBox(office, 0.1, 0.22, 0.06, 5.13, 1.63, -3.89, YELLOW, { rotation: [0, 0, 0.55], cast: false });
-  addDesk(office, 7.9, -0.7, 2.35);
-  addChair(office, 9.05, 0.35);
-
-  // Controls: the risk booth and the core rebalancer.
-  addBox(office, 3.6, 1.75, 0.12, 11.0, 0.88, 3.0, "#24314a");
-  addBox(office, 0.12, 1.75, 2.6, 9.25, 0.88, 1.7, "#24314a");
-  addBox(office, 0.12, 1.75, 2.6, 12.75, 0.88, 1.7, "#24314a");
+  // Controls: the risk booth with its approval stamp.
+  addBox(office, 3.6, 1.75, 0.12, 11.0, 0.88, 3.0, LINE);
+  addBox(office, 0.12, 1.75, 2.6, 9.25, 0.88, 1.7, LINE);
+  addBox(office, 0.12, 1.75, 2.6, 12.75, 0.88, 1.7, LINE);
   addBox(office, 3.6, 0.09, 0.18, 11.0, 1.78, 3.0, RED, { opacity: 0.65 });
   addBox(office, 3.0, 0.9, 0.05, 11.0, 1.62, 2.92, "#17233a", { emissive: "#07101f" });
   addDesk(office, 11.0, 1.8, 2.6, "#4d3828");
@@ -557,20 +361,12 @@ function buildOffice(office: THREE.Group, stampGroup: THREE.Group): void {
   addBox(stampGroup, 0.62, 0.28, 0.5, 0, 0.06, 0, "#c92a2a");
   addBox(stampGroup, 0.42, 0.06, 0.34, 0, 0.23, 0, "#f26b6b", { cast: false });
   office.add(stampGroup);
-  addDesk(office, 14.0, 4.2, 2.25);
-  [0, 1, 2, 3, 4].forEach((index) => {
-    const height = 0.12 + index * 0.07;
-    addBox(office, 0.22, height, 0.14, 13.25 + index * 0.32, 1.1 + height / 2, 3.95, BLUE, {
-      emissive: "#1d3f74",
-      cast: false,
-    });
-  });
 
   // Execution: executor desk beside the paper door, plus the slip rail.
   addDesk(office, 14.7, -7.6, 2.2);
   addBox(office, 0.16, 0.05, 2.1, 15.35, 0.11, -9.3, ORANGE, { opacity: 0.4, cast: false });
 
-  // Back office: auditor and the filing cabinets in the front-right corner.
+  // Back office: filing cabinets for the auditor.
   addBox(office, 1.35, 2.15, 0.85, 16.3, 1.08, 5.9, "#2b3852");
   [0.55, 1.12, 1.69].forEach((y) => {
     addBox(office, 1.18, 0.42, 0.04, 16.3, y, 6.35, "#1a2438");
@@ -586,19 +382,92 @@ function buildOffice(office: THREE.Group, stampGroup: THREE.Group): void {
   addCylinder(office, 2.15, 2.15, 0.22, 0.8, 0.11, 4.9, "#1b2940", {}, 24);
   addCylinder(office, 2.1, 2.1, 0.04, 0.8, 0.24, 4.9, ORANGE, { opacity: 0.5 }, 24);
   addBox(office, 1.25, 0.72, 0.65, 0.8, 0.6, 4.1, "#223149");
-  addBox(office, 0.82, 0.42, 0.03, 0.8, 0.75, 4.45, "#5b8def", { emissive: "#17365c" });
+  addBox(office, 0.82, 0.42, 0.03, 0.8, 0.75, 4.45, BLUE, { emissive: "#17365c" });
 
   // Lounge corner.
   addBox(office, 3.1, 0.38, 1.25, -14.2, 0.42, 6.7, "#2a3852");
-  addBox(office, 3.1, 0.9, 0.24, -14.2, 0.89, 7.27, "#24314a");
-  addBox(office, 0.24, 0.62, 1.25, -15.65, 0.72, 6.7, "#24314a");
-  addBox(office, 0.24, 0.62, 1.25, -12.75, 0.72, 6.7, "#24314a");
+  addBox(office, 3.1, 0.9, 0.24, -14.2, 0.89, 7.27, LINE);
+  addBox(office, 0.24, 0.62, 1.25, -15.65, 0.72, 6.7, LINE);
+  addBox(office, 0.24, 0.62, 1.25, -12.75, 0.72, 6.7, LINE);
   addBox(office, 0.55, 0.12, 0.55, -14.6, 0.65, 6.68, YELLOW, { cast: false });
   addBox(office, 0.55, 0.12, 0.55, -13.8, 0.65, 6.68, YELLOW, { cast: false });
   addCylinder(office, 0.75, 0.75, 0.12, -14.2, 0.58, 4.9, "#5b3f2a", {}, 16);
   addCylinder(office, 0.11, 0.13, 0.55, -14.2, 0.29, 4.9, "#3b2c22", {}, 8);
+
   addPlant(office, -16.1, 7.2);
   addPlant(office, 16.9, 9.6);
+}
+
+function buildStations(office: THREE.Group, lamps: Map<FloorRole, THREE.Mesh>): THREE.Group {
+  const group = new THREE.Group();
+  office.add(group);
+
+  const makePick = (role: FloorRole, x: number, z: number, w: number, d: number): void => {
+    const pick = addBox(group, w, 2.2, d, x, 1.1, z, "#000000", {
+      opacity: 0.001,
+      cast: false,
+      receive: false,
+    });
+    pick.userData = { kind: "role", role };
+  };
+  const addLamp = (role: FloorRole, x: number, y: number, z: number, color: string): void => {
+    const lamp = addSphere(group, 0.1, x, y, z, color, 8);
+    lamps.set(role, lamp);
+  };
+
+  // Screener: a small quote board over the desk.
+  addBox(group, 1.0, 0.66, 0.06, -10.7, 1.62, -8.72, "#0d1628");
+  addBox(group, 0.9, 0.52, 0.03, -10.7, 1.62, -8.67, "#143256", { emissive: "#0b2748" });
+  [-0.28, -0.08, 0.12].forEach((dx, index) => {
+    addBox(group, 0.16, 0.045, 0.012, -10.7 + dx, 1.74 - index * 0.1, -8.65, BLUE, { cast: false });
+  });
+  addLamp("screener", -10.7, 1.98, -8.6, IDLE_LAMP);
+  makePick("screener", -10.7, -8.0, 2.6, 2.0);
+
+  // Watcher: a single camera on a tripod.
+  addCylinder(group, 0.05, 0.07, 1.35, -14.6, 0.68, -1.7, LINE, {}, 8);
+  addCylinder(group, 0.28, 0.34, 0.42, -14.6, 1.52, -1.7, "#1b3a2c", {
+    rotation: [Math.PI / 2, 0, 0],
+  }, 12);
+  addCylinder(group, 0.2, 0.2, 0.04, -14.6, 1.52, -1.47, "#d6ffe9", {
+    rotation: [Math.PI / 2, 0, 0],
+    emissive: "#1f6b4a",
+  }, 12);
+  addLamp("watcher", -14.6, 1.86, -1.7, IDLE_LAMP);
+  makePick("watcher", -14.6, -1.7, 1.3, 1.3);
+
+  // Risk desk: a tray of checked files and a status lamp on the booth frame.
+  addBox(group, 0.68, 0.1, 0.5, 10.55, 1.16, 1.55, "#c92a2a", { rotation: [0, 0.2, 0] });
+  addBox(group, 0.56, 0.08, 0.4, 10.55, 1.24, 1.55, "#e8edf6", { rotation: [0, 0.2, 0] });
+  addLamp("risk", 11.0, 1.95, 2.95, IDLE_LAMP);
+  makePick("risk", 11.0, 1.8, 4.0, 3.2);
+
+  // Auditor: a violet seal on the filing cabinet.
+  addCylinder(group, 0.3, 0.3, 0.04, 16.3, 1.85, 6.37, VIOLET, {
+    rotation: [Math.PI / 2, 0, 0],
+    emissive: "#3d2f70",
+  }, 16);
+  addCylinder(group, 0.2, 0.2, 0.05, 16.3, 1.85, 6.4, "#2a2145", {
+    rotation: [Math.PI / 2, 0, 0],
+  }, 16);
+  addLamp("auditor", 16.3, 2.35, 5.9, IDLE_LAMP);
+  makePick("auditor", 16.0, 5.7, 2.6, 2.2);
+
+  return group;
+}
+
+function buildAlarm(office: THREE.Group): { group: THREE.Group; light: THREE.PointLight; dome: THREE.Mesh } {
+  const group = new THREE.Group();
+  group.position.set(11.0, 0, 1.8);
+  addCylinder(group, 0.06, 0.08, 2.9, 0, 1.45, 0, "#24314a", {}, 8);
+  addBox(group, 0.5, 0.08, 0.5, 0, 2.92, 0, "#171512");
+  const dome = addSphere(group, 0.22, 0, 3.12, 0, "#5a1b1b", 12);
+  const light = new THREE.PointLight(RED, 0, 10);
+  light.position.set(0, 3.1, 0);
+  group.add(light);
+  group.visible = false;
+  office.add(group);
+  return { group, light, dome };
 }
 
 function findPickable(object: THREE.Object3D | null): Record<string, unknown> | null {
@@ -610,12 +479,33 @@ function findPickable(object: THREE.Object3D | null): Record<string, unknown> | 
   return null;
 }
 
+const TAG_HEIGHT = 2.45;
+
+function duckTagY(spec: FloorAgentSpec): number {
+  return TAG_HEIGHT + Math.max(0, spec.scale - 1) * 0.8;
+}
+
+function statusColor(status: FloorStatus): string {
+  switch (status) {
+    case "working":
+      return YELLOW;
+    case "done":
+      return GREEN;
+    case "problem":
+      return RED;
+    default:
+      return IDLE_LAMP;
+  }
+}
+
 export function Floor3D({
   scene,
   state,
   statuses,
   duckEnabled,
-  screenTickers,
+  health,
+  today,
+  calm,
   onOpenDecision,
   onSelectRole,
   onUnsupported,
@@ -624,18 +514,20 @@ export function Floor3D({
   state: DeskState;
   statuses: Record<FloorRole, FloorStatus>;
   duckEnabled: boolean;
-  screenTickers: FloorScene["screenTickers"];
+  health: { tone: "ok" | "warn" | "halt"; message: string };
+  today: { pct: number; source: "reported" | "marks" } | null;
+  calm: boolean;
   onOpenDecision: (id: string) => void;
   onSelectRole: (role: FloorRole) => void;
   onUnsupported: () => void;
 }) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const tagRefs = useRef<Record<string, HTMLElement | null>>({});
-  const speechRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const screenRef = useRef<HTMLDivElement | null>(null);
   const tickerBoardRef = useRef<HTMLDivElement | null>(null);
-  const coreLabelRefs = useRef<Record<string, HTMLSpanElement | null>>({});
-  const satelliteLabelRefs = useRef<Record<string, HTMLSpanElement | null>>({});
+  const coreEmptyRef = useRef<HTMLSpanElement | null>(null);
+  const satelliteEmptyRef = useRef<HTMLSpanElement | null>(null);
+  const boardRefs = useRef<Record<string, HTMLButtonElement | null>>({});
   const doorRef = useRef<HTMLDivElement | null>(null);
   const stampRef = useRef<HTMLDivElement | null>(null);
   const cardRef = useRef<HTMLButtonElement | null>(null);
@@ -646,16 +538,23 @@ export function Floor3D({
   const onOpenRef = useRef(onOpenDecision);
   const onSelectRef = useRef(onSelectRole);
   const unsupportedRef = useRef(onUnsupported);
+  const statusesRef = useRef(statuses);
+  const calmRef = useRef(calm);
   onOpenRef.current = onOpenDecision;
   onSelectRef.current = onSelectRole;
   unsupportedRef.current = onUnsupported;
+  statusesRef.current = statuses;
+  calmRef.current = calm;
 
   const isCoreTicker = (ticker: string): boolean =>
     (CORE_TICKERS as readonly string[]).includes(ticker);
   const corePositions = state.positions.filter((position) => isCoreTicker(position.ticker));
-  const satellitePositions = state.positions
-    .filter((position) => !isCoreTicker(position.ticker))
-    .slice(0, 4);
+  const satellitePositions = state.positions.filter((position) => !isCoreTicker(position.ticker));
+
+  const card =
+    scene.card && (scene.card.kind === "rating" || scene.card.kind === "report") ? scene.card : null;
+  const banner =
+    scene.card && (scene.card.kind === "tier" || scene.card.kind === "halt") ? scene.card : null;
 
   useEffect(() => {
     const host = hostRef.current;
@@ -675,7 +574,7 @@ export function Floor3D({
     canvas.setAttribute("role", "img");
     canvas.setAttribute(
       "aria-label",
-      "Isometric voxel office with the MooWoo duck crew. Use the ticker line and controls below for the current event.",
+      "Isometric voxel office with the MooWoo duck crew, four code stations and wall boards. Use the ticker line and controls below for the current event.",
     );
     stage.appendChild(canvas);
 
@@ -721,11 +620,14 @@ export function Floor3D({
     threeScene.add(office);
     const stampGroup = new THREE.Group();
     buildOffice(office, stampGroup);
+    const stationLamps = new Map<FloorRole, THREE.Mesh>();
+    const stationGroup = buildStations(office, stationLamps);
+    const alarm = buildAlarm(office);
 
     const ducksGroup = new THREE.Group();
     threeScene.add(ducksGroup);
     const ducks = new Map<string, DuckState>();
-    FLOOR_DUCKS.forEach((spec) => {
+    FLOOR_AGENTS.forEach((spec) => {
       const duck = createDuck(spec);
       ducks.set(spec.id, duck);
       ducksGroup.add(duck.group);
@@ -749,18 +651,7 @@ export function Floor3D({
     slipGroup.visible = false;
     threeScene.add(slipGroup);
 
-    const paper = addBox(threeScene, 0.48, 0.36, 0.04, 0, 1.05, 0, "#e8edf6");
-    addBox(paper, 0.34, 0.02, 0.012, 0, 0.05, 0.03, "#8b97ad", { cast: false });
-    paper.visible = false;
-
-    const debateCard = new THREE.Group();
-    addBox(debateCard, 0.64, 0.46, 0.05, 0, 0, 0, VIOLET, { emissive: "#3d2f70" });
-    addBox(debateCard, 0.54, 0.36, 0.02, 0, 0, 0.035, "#e8edf6");
-    debateCard.position.set(-1.1, 1.28, -3.15);
-    debateCard.visible = false;
-    threeScene.add(debateCard);
-
-    const pickRoots = [ducksGroup, slipGroup, tilesGroup, debateCard];
+    const pickRoots = [ducksGroup, stationGroup, tilesGroup, slipGroup];
     let currentScene = scene;
     let currentState = state;
     let sceneStart = performance.now();
@@ -786,6 +677,17 @@ export function Floor3D({
       hemi.color.set(palette.sky);
       hemi.groundColor.set(palette.ground);
       light.color.set(palette.sun);
+    }
+
+    function applyStationLamps(): void {
+      stationLamps.forEach((lamp, role) => {
+        const status = statusesRef.current[role] ?? "idle";
+        const color = statusColor(status);
+        const material = lamp.material as THREE.MeshStandardMaterial;
+        material.color.set(color);
+        material.emissive.set(color);
+        material.emissiveIntensity = status === "idle" ? 0.15 : status === "done" ? 0.6 : 1.2;
+      });
     }
 
     function resetDucks(): void {
@@ -850,7 +752,7 @@ export function Floor3D({
           "#e8edf6",
           { cast: false },
         );
-        tile.userData = { kind: "decision", decisionId, baseY };
+        tile.userData = { kind: "decision", decisionId, ticker, baseY };
         if (activeChange) {
           if (activeChange.action === "add") newTile = tile;
           if (activeChange.action === "remove") stopTile = tile;
@@ -865,7 +767,7 @@ export function Floor3D({
       core.forEach((position, index) => {
         addTile(
           position.ticker,
-          BLUE,
+          SLEEVE_COLORS.core,
           position.decisionId,
           8 + (index - (core.length - 1) / 2) * 1.04,
           2.52,
@@ -891,41 +793,62 @@ export function Floor3D({
       currentScene = nextScene;
       currentState = nextState;
       sceneStart = performance.now();
-      animationUntil = sceneStart + nextScene.durationMs + 450;
+      const calmNow = calmRef.current;
+      animationUntil = sceneStart + (calmNow ? 0 : nextScene.durationMs + 600);
       resetDucks();
       applyTier(nextState.tier);
+      applyStationLamps();
       mascot.visible = nextDuck;
+
+      alarm.group.visible = nextScene.kind === "halt";
+      alarm.light.intensity = alarm.group.visible ? 1.4 : 0;
+      const alarmMaterial = alarm.dome.material as THREE.MeshStandardMaterial;
+      alarmMaterial.emissive.set(RED);
+      alarmMaterial.emissiveIntensity = alarm.group.visible ? 0.9 : 0;
 
       if (nextScene.actorId && nextScene.actorTarget) {
         actor = ducks.get(nextScene.actorId) ?? null;
         if (actor) {
           actorFrom.set(actor.group.position.x, 0, actor.group.position.z);
           actorTo.set(nextScene.actorTarget.x, 0, nextScene.actorTarget.z);
+          if (calmNow) {
+            actor.group.position.set(actorTo.x, 0, actorTo.z);
+            actor.group.rotation.y = Math.atan2(actorTo.x - actorFrom.x, actorTo.z - actorFrom.z);
+          }
         }
+      }
+      if (mascot.visible && calmNow) {
+        mascot.position.set(MASCOT_POSITION.x, 0, MASCOT_POSITION.z);
+        mascot.rotation.y = -0.2;
       }
 
       if (nextScene.slip) {
         slipGroup.visible = true;
         slipGroup.position.set(nextScene.slip.from.x, 1.42, nextScene.slip.from.z);
+        if (calmNow) {
+          slipGroup.position.set(nextScene.slip.to.x, 1.4, nextScene.slip.to.z);
+          slipGroup.rotation.y = Math.atan2(
+            nextScene.slip.to.x - nextScene.slip.from.x,
+            nextScene.slip.to.z - nextScene.slip.from.z,
+          );
+        }
       } else {
         slipGroup.visible = false;
       }
       slipGroup.userData = nextScene.decisionId ? { kind: "decision", decisionId: nextScene.decisionId } : {};
 
-      paper.visible = nextScene.kind === "rating";
-      debateCard.visible = nextScene.kind === "rating" && nextScene.decisionId != null;
-      debateCard.userData = nextScene.decisionId ? { kind: "decision", decisionId: nextScene.decisionId } : {};
-      stampActive = nextScene.kind === "risk_verdict";
+      stampActive = nextScene.kind === "risk_verdict" && !calmNow;
+      stampGroup.position.y = 1.12;
       buildTiles(nextState, nextScene);
+      if (calmNow && newTile) newTile.scale.set(1, 1, 1);
       schedule();
     }
 
     function updateMotion(now: number): void {
       const elapsed = now - sceneStart;
       const animating = now < animationUntil;
-      const actorDuration = actor?.spec.id === "quick" ? 700 : 950;
       if (actor) {
-        const t = Math.max(0, Math.min(1, elapsed / actorDuration));
+        const t = calmRef.current ? 1 : Math.max(0, Math.min(1, elapsed / 950));
         const eased = t * t * (3 - 2 * t);
         actor.group.position.set(
           actorFrom.x + (actorTo.x - actorFrom.x) * eased,
@@ -935,38 +858,19 @@ export function Floor3D({
         const dx = actorTo.x - actorFrom.x;
         const dz = actorTo.z - actorFrom.z;
         if (t > 0.02) actor.group.rotation.y = Math.atan2(dx, dz);
-        if (t < 1) {
+        if (t < 1 && animating) {
           actor.bob.position.y = Math.abs(Math.sin(elapsed * 0.021)) * 0.075;
           actor.bob.rotation.z = Math.sin(elapsed * 0.021) * 0.09;
         }
       }
 
-      const watcher = ducks.get("watcher");
-      if (watcher && watcher !== actor && animating && currentScene.kind !== "stop_hit" && currentScene.kind !== "halt") {
-        const t = elapsed / 1900;
-        const x = -14.0 + Math.sin(t * Math.PI * 2) * 0.9;
-        const z = -2.6 + Math.cos(t * Math.PI * 2) * 2.2;
-        watcher.group.position.set(x, 0, z);
-        watcher.group.rotation.y = Math.atan2(
-          Math.cos(t * Math.PI * 2) * 0.9,
-          -Math.sin(t * Math.PI * 2) * 2.2,
-        );
-        watcher.bob.position.y = Math.abs(Math.sin(elapsed * 0.018)) * 0.055;
-        watcher.bob.rotation.z = Math.sin(elapsed * 0.018) * 0.07;
-      }
-
-      if (mascot.visible) {
+      if (mascot.visible && animating && !calmRef.current) {
         const t = now * 0.00028;
         const mx = 5.75 + Math.sin(t * 1.3) * 3.4;
         const mz = 7.0 + Math.cos(t) * 2.3;
         mascot.position.set(mx, 0, mz);
         mascot.rotation.y = Math.atan2(Math.cos(t * 1.3) * 3.4, -Math.sin(t) * 2.3);
         mascot.children[0].position.y = Math.abs(Math.sin(now * 0.003)) * 0.05;
-      }
-
-      if (paper.visible && actor) {
-        paper.position.set(actor.group.position.x + 0.25, 1.08, actor.group.position.z + 0.5);
-        paper.rotation.y = actor.group.rotation.y + 0.15;
       }
 
       if (slipGroup.visible && currentScene.slip) {
@@ -998,6 +902,13 @@ export function Floor3D({
         stopTile.scale.set(1 - t * 0.95, 1 - t * 0.95, 1);
         stopTile.position.y = ((stopTile.userData.baseY as number | undefined) ?? 2.73) - t * 0.4;
         if (t >= 1) stopTile.visible = false;
+      }
+
+      if (alarm.group.visible) {
+        const pulse = calmRef.current ? 0.8 : 0.45 + Math.abs(Math.sin(now * 0.008)) * 0.55;
+        const material = alarm.dome.material as THREE.MeshStandardMaterial;
+        material.emissiveIntensity = 0.5 + pulse * 1.3;
+        alarm.light.intensity = pulse * 2.4;
       }
 
       if (!animating && actor) {
@@ -1106,40 +1017,26 @@ export function Floor3D({
     }
     CARD_OFFSETS.sort((a, b) => Math.abs(a[0]) * 1.2 + Math.abs(a[1]) - (Math.abs(b[0]) * 1.2 + Math.abs(b[1])));
 
-    function speechOffsets(side: number): Array<[number, number]> {
-      const offsets: Array<[number, number]> = [];
-      for (const lift of [0, 1, 2, 3, 4]) {
-        for (const spread of [0, 1]) offsets.push([side * spread, lift]);
-        if (lift > 0) {
-          for (const spread of [0, 1]) offsets.push([side * spread, -lift]);
-        }
-      }
-      return offsets;
-    }
-
-    function activeDuckIds(): Set<string> {
-      const active = new Set<string>();
-      if (currentScene.actorId) active.add(currentScene.actorId);
-      currentScene.speech.forEach((speech) => active.add(speech.role));
-      if (currentScene.stamp) active.add("risk");
-      if (currentScene.slip) active.add("executor");
-      if (currentScene.card?.kind === "report") active.add("auditor");
-      if (currentScene.card?.kind === "rating" && !currentScene.actorId) active.add("manager");
-      return active;
-    }
-
     function updateOverlays(): void {
-      const active = activeDuckIds();
-      FLOOR_DUCKS.forEach((spec) => {
+      const active = new Set<FloorRole>(currentScene.activeRoles);
+      FLOOR_AGENTS.forEach((spec) => {
         const duck = ducks.get(spec.id);
         if (!duck) return;
-        const y = (spec.role === "scheduler" ? 2.42 : 2.32) * Math.max(spec.scale, 0.9);
         place(
           tagRefs.current[spec.id],
           duck.group.position.x,
-          y + (TAG_LIFT[spec.id] ?? 0),
+          duckTagY(spec),
           duck.group.position.z,
-          active.size > 0 && !active.has(spec.id) ? 0.5 : 1,
+          active.size > 0 && !active.has(spec.role) ? 0.55 : 1,
+        );
+      });
+      FLOOR_STATIONS.forEach((spec) => {
+        place(
+          tagRefs.current[spec.role],
+          spec.x,
+          spec.tagY,
+          spec.z,
+          active.size > 0 && !active.has(spec.role) ? 0.55 : 1,
         );
       });
       place(
@@ -1149,27 +1046,9 @@ export function Floor3D({
         mascot.position.z,
         active.size > 0 ? 0.5 : 1,
       );
-      const tagBoxes = [
-        ...FLOOR_DUCKS.map((spec) => visibleBox(tagRefs.current[spec.id], "tag", 12)),
-        visibleBox(tagRefs.current.mascot, "tag", 12),
-      ].filter((box): box is ScreenBox => box !== null);
-      const speechBoxes: ScreenBox[] = [];
-      currentScene.speech.forEach((speech) => {
-        const duck = speech.role === "bull" ? ducks.get("bull") : ducks.get("bear");
-        if (!duck) return;
-        const side = speech.role === "bull" ? -2.1 : 2.1;
-        placeClear(
-          speechRefs.current[speech.role],
-          duck.group.position.x + side,
-          3.85,
-          duck.group.position.z,
-          speechOffsets(side),
-          tagBoxes,
-          3,
-        );
-        const box = visibleBox(speechRefs.current[speech.role], "bottom");
-        if (box) speechBoxes.push(box);
-      });
+      const tagBoxes = [...FLOOR_AGENTS.map((spec) => spec.id), ...FLOOR_STATIONS.map((spec) => spec.id), "mascot"]
+        .map((id) => visibleBox(tagRefs.current[id], "tag", 12))
+        .filter((box): box is ScreenBox => box !== null);
       place(screenRef.current, 0, 2.23, -11.38);
       place(tickerBoardRef.current, -10.8, 2.2, -11.38);
       const coreNow = currentState.positions
@@ -1177,36 +1056,38 @@ export function Floor3D({
         .slice(0, 5);
       coreNow.forEach((position, index) => {
         place(
-          coreLabelRefs.current[position.ticker],
+          boardRefs.current[position.ticker],
           8 + (index - (coreNow.length - 1) / 2) * 1.04,
           2.52,
           -11.29,
         );
       });
+      if (coreNow.length === 0) place(coreEmptyRef.current, 8, 2.1, -11.3);
       const satelliteNow = currentState.positions
         .filter((position) => !(CORE_TICKERS as readonly string[]).includes(position.ticker))
         .slice(0, 4);
       satelliteNow.forEach((position, index) => {
-        place(satelliteLabelRefs.current[position.ticker], 12.4, 2.55 - index * 0.55, -11.29);
+        place(boardRefs.current[position.ticker], 12.4, 2.55 - index * 0.55, -11.29);
       });
+      if (satelliteNow.length === 0) place(satelliteEmptyRef.current, 12.4, 2.0, -11.3);
       place(doorRef.current, 15.35, 2.9, -11.32);
       if (currentScene.stamp) place(stampRef.current, 11.7, 2.55, 1.42);
       const wallBoxes = [
         visibleBox(screenRef.current, "center"),
         visibleBox(tickerBoardRef.current, "center"),
         visibleBox(doorRef.current, "center"),
-        ...coreNow.map((position) => visibleBox(coreLabelRefs.current[position.ticker], "center")),
-        ...satelliteNow.map((position) => visibleBox(satelliteLabelRefs.current[position.ticker], "center")),
+        ...coreNow.map((position) => visibleBox(boardRefs.current[position.ticker], "center")),
+        ...satelliteNow.map((position) => visibleBox(boardRefs.current[position.ticker], "center")),
       ].filter((box): box is ScreenBox => box !== null);
-      const cardObstacles = [...tagBoxes, ...speechBoxes, ...wallBoxes];
+      const cardObstacles = [...tagBoxes, ...wallBoxes];
       if (currentScene.card?.kind === "rating") {
-        const rater = currentScene.actorId === "quick" ? ducks.get("quick") : ducks.get("manager");
-        if (rater) {
+        const analyst = ducks.get("analyst");
+        if (analyst) {
           const placed = placeClear(
             cardRef.current,
-            rater.group.position.x,
+            analyst.group.position.x,
             2.55,
-            rater.group.position.z,
+            analyst.group.position.z,
             CARD_OFFSETS,
             cardObstacles,
             5,
@@ -1214,21 +1095,19 @@ export function Floor3D({
           if (!placed) placeDock(cardRef.current);
         }
       } else if (currentScene.card?.kind === "report") {
-        const auditor = ducks.get("auditor");
+        const auditor = FLOOR_STATIONS.find((spec) => spec.role === "auditor");
         if (auditor) {
           const placed = placeClear(
             cardRef.current,
-            auditor.group.position.x,
+            auditor.x,
             2.55,
-            auditor.group.position.z,
+            auditor.z,
             CARD_OFFSETS,
             cardObstacles,
             5,
           );
           if (!placed) placeDock(cardRef.current);
         }
-      } else if (currentScene.card?.kind === "outcome") {
-        place(cardRef.current, 8.2, 3.28, -9.4);
       }
     }
 
@@ -1240,7 +1119,7 @@ export function Floor3D({
       updateMotion(now);
       renderer.render(threeScene, camera);
       updateOverlays();
-      if (now < animationUntil || dragActive || mascot.visible) schedule();
+      if (dragActive || (!calmRef.current && now < animationUntil)) schedule();
     }
     function schedule(): void {
       if (scheduled || document.hidden) return;
@@ -1429,17 +1308,35 @@ export function Floor3D({
     controllerRef.current?.update(scene, state, duckEnabled);
   }, [scene, state, duckEnabled]);
 
+  const pctText = (pct: number, signed: boolean): string =>
+    `${signed && pct >= 0 ? "+" : ""}${pct.toFixed(2)}%`;
+
   return (
     <div className="floor-stage" ref={hostRef}>
       <div className="floor-tag-layer">
-        {FLOOR_DUCKS.map((spec) => (
+        {FLOOR_AGENTS.map((spec) => (
           <button
             key={spec.id}
             type="button"
             ref={(element) => {
               tagRefs.current[spec.id] = element;
             }}
-            className={`floor-tag status-${statuses[spec.role]}`}
+            className={`floor-tag is-agent status-${statuses[spec.role]}`}
+            onClick={() => onSelectRole(spec.role)}
+            aria-label={`${spec.label}, ${statuses[spec.role]}. Show handled events.`}
+          >
+            <span className={`floor-tag-dot ${statuses[spec.role]}`} aria-hidden="true" />
+            {spec.label}
+          </button>
+        ))}
+        {FLOOR_STATIONS.map((spec) => (
+          <button
+            key={spec.id}
+            type="button"
+            ref={(element) => {
+              tagRefs.current[spec.id] = element;
+            }}
+            className={`floor-tag is-station status-${statuses[spec.role]}`}
             onClick={() => onSelectRole(spec.role)}
             aria-label={`${spec.label}, ${statuses[spec.role]}. Show handled events.`}
           >
@@ -1460,30 +1357,20 @@ export function Floor3D({
         ) : null}
       </div>
 
-      {scene.speech.map((speech) => (
-        <div
-          key={speech.role}
-          ref={(element) => {
-            speechRefs.current[speech.role] = element;
-          }}
-          className={`floor-speech ${speech.role}`}
-        >
-          <strong>{speech.role === "bull" ? "Bull" : "Bear"}</strong>
-          <span>{speech.text}</span>
-        </div>
-      ))}
-
-      <div ref={screenRef} className="floor-wall-screen" aria-hidden="true">
+      <div ref={screenRef} className={`floor-wall-screen tone-${health.tone}`}>
         <span className="floor-screen-label">Equity</span>
         <strong>{state.equity == null ? "—" : fmtUsd(state.equity, 0)}</strong>
-        <span className={`floor-screen-tier tier-${state.tier}`}>{state.tier.replaceAll("_", " ")}</span>
+        <span className={`floor-screen-today ${today == null || today.pct >= 0 ? "up" : "down"}`}>
+          {today == null ? "today —" : `${pctText(today.pct, true)} today`}
+        </span>
+        <span className={`floor-screen-health tone-${health.tone}`}>{health.message}</span>
       </div>
 
       <div ref={tickerBoardRef} className="floor-ticker-board" aria-hidden="true">
-        {screenTickers.length === 0 ? (
+        {scene.screenTickers.length === 0 ? (
           <span className="floor-board-empty">awaiting screen</span>
         ) : (
-          screenTickers.slice(0, 6).map((ticker, index) => (
+          scene.screenTickers.slice(0, 6).map((ticker, index) => (
             <span
               key={ticker.ticker}
               className={ticker.picked ? "floor-screen-ticker is-picked" : "floor-screen-ticker"}
@@ -1500,32 +1387,50 @@ export function Floor3D({
       </div>
 
       {corePositions.map((position) => (
-        <span
+        <button
           key={position.ticker}
+          type="button"
           ref={(element) => {
-            coreLabelRefs.current[position.ticker] = element;
+            boardRefs.current[position.ticker] = element;
           }}
-          className="floor-board-ticker is-core"
-          aria-hidden="true"
+          className="floor-board-ticker is-core is-link"
+          style={{ color: SLEEVE_COLORS.core }}
+          onClick={() => {
+            if (position.decisionId) onOpenDecision(position.decisionId);
+          }}
+          disabled={!position.decisionId}
+          aria-label={`${position.ticker} core position${position.decisionId ? ". Open decision." : ""}`}
         >
-          <i />
+          <i style={{ background: SLEEVE_COLORS.core }} />
           {position.ticker}
-        </span>
+        </button>
       ))}
+      <span ref={coreEmptyRef} className="floor-board-empty board-slot" aria-hidden="true">
+        {corePositions.length === 0 ? "flat" : ""}
+      </span>
 
       {satellitePositions.map((position) => (
-        <span
+        <button
           key={position.ticker}
+          type="button"
           ref={(element) => {
-            satelliteLabelRefs.current[position.ticker] = element;
+            boardRefs.current[position.ticker] = element;
           }}
-          className={`floor-board-ticker is-satellite satellite-${position.sleeve}`}
-          aria-hidden="true"
+          className={`floor-board-ticker is-satellite satellite-${position.sleeve} is-link`}
+          style={{ color: SLEEVE_COLORS[position.sleeve] }}
+          onClick={() => {
+            if (position.decisionId) onOpenDecision(position.decisionId);
+          }}
+          disabled={!position.decisionId}
+          aria-label={`${position.ticker} ${position.sleeve} position${position.decisionId ? ". Open decision." : ""}`}
         >
-          <i />
+          <i style={{ background: SLEEVE_COLORS[position.sleeve] }} />
           {position.ticker}
-        </span>
+        </button>
       ))}
+      <span ref={satelliteEmptyRef} className="floor-board-empty board-slot" aria-hidden="true">
+        {satellitePositions.length === 0 ? "none" : ""}
+      </span>
 
       <div ref={doorRef} className="floor-door-label" aria-hidden="true">
         Moomoo paper
@@ -1538,26 +1443,26 @@ export function Floor3D({
         </div>
       ) : null}
 
-      {scene.card && scene.card.kind !== "drill" && scene.card.kind !== "tier" && scene.card.kind !== "halt" && scene.card.kind !== "rule" ? (
+      {card ? (
         <button
           type="button"
           ref={cardRef}
-          className={`floor-world-card tone-${scene.card.tone}`}
+          className={`floor-world-card tone-${card.tone}`}
           onClick={() => {
             if (scene.decisionId) onOpenDecision(scene.decisionId);
           }}
           disabled={!scene.decisionId}
-          aria-label={`${scene.card.title}. ${scene.card.body}${scene.decisionId ? ". Open decision." : ""}`}
+          aria-label={`${card.title}. ${card.body}${scene.decisionId ? ". Open decision." : ""}`}
         >
-          <strong>{scene.card.title}</strong>
-          <span>{scene.card.body}</span>
+          <strong>{card.title}</strong>
+          <span>{card.body}</span>
         </button>
       ) : null}
 
-      {scene.card && (scene.card.kind === "drill" || scene.card.kind === "tier" || scene.card.kind === "halt" || scene.card.kind === "rule") ? (
-        <div className={`floor-banner tone-${scene.card.tone}`} role="status">
-          <strong>{scene.card.title}</strong>
-          <span>{scene.card.body}</span>
+      {banner ? (
+        <div className={`floor-banner tone-${banner.tone}`} role="status">
+          <strong>{banner.title}</strong>
+          <span>{banner.body}</span>
         </div>
       ) : null}
 
