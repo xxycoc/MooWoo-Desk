@@ -31,4 +31,3 @@ explicit bounce eligibility and stop calculations in `propose_entry`.
 `SETUP_SCORE_USE` is `log_only`: no score-based size, ranking override or new risk
 rule. Distinguish the diagnostic score from the existing support-based entry
 rules. The historical setup buckets did not demonstrate a monotonic edge.
-

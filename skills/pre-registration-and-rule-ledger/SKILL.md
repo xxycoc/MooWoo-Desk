@@ -32,4 +32,3 @@ This skill does not authorize rule edits, autonomy or historical rewrites.
 `agent.json` model choices and live cloud versions are not covered by this prompt
 hash; record them separately. Existing addenda supersede stale descriptive docs,
 but never make an unverified deployment or financial result true.
-

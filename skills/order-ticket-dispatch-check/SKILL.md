@@ -34,4 +34,3 @@ No discretionary price/quantity changes, replay of a decision, or blind retry
 after an ambiguous broker response. Broker acceptance is not a fill. Source
 permissions default to human approval; unattended paper execution requires the
 separately logged and configured autonomy override.
-

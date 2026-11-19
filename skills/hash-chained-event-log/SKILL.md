@@ -30,4 +30,3 @@ Hashes provide integrity, not authentication. A trusted terminal checkpoint is
 needed to detect whole-chain replacement or suffix removal. Do not repair
 corrupted historical bytes silently. Raw private logs are not public exports;
 use `scripts/export_dashboard.py` for a scrubbed view.
-

@@ -32,4 +32,3 @@ SIZING-01 explicitly loosens the original allocation/spread rules; retain the
 original freeze and disclose the deviation. Normal and step-up caps are both
 60%. The historical quick multiplier remains in code but does not describe the
 active `single` analyst. No model-selected quantities or leverage.
-

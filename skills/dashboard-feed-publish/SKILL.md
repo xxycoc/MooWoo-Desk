@@ -32,4 +32,3 @@ Scrubbed does not mean confidential: tickers, timing, prices, quantities, rating
 and permitted evidence text remain public. Do not publish private state, receipts,
 locks, account context or raw transcripts. Feed publication does not deploy a new
 dashboard build, and a deployment does not prove that the feed is fresh.
-

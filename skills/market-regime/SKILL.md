@@ -29,4 +29,3 @@ continue under `moowoo/exits.py` exit rules.
 This is a fixed entry filter, not a macroeconomic forecast. It does not change
 core target weights or introduce a discretionary immediate liquidation. A normal
 regime does not override drawdown, liquidity, correlation or other risk gates.
-

@@ -31,4 +31,3 @@ Do not silently rewrite history, ignore unmatched orders, equate cash with
 buying power, or assume every comparison uses exact equality. Complete history
 and lease ownership remain necessary. Do not clear a true halt merely to resume
 trading or re-dispatch a released decision.
-

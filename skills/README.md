@@ -37,4 +37,3 @@ broker, deployment, publication or account access.
 
 For the active architecture, schedules and limitations see the
 [main README](../README.md) and [Qoder usage guide](../docs/qoder-usage.md).
-

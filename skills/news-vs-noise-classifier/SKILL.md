@@ -33,4 +33,3 @@ No sizing, order tools or discretionary trade authority. Return raw JSON: one
 complete code fence is tolerated with a warning, but prose wrappers, duplicate
 keys and nonfinite numbers are rejected. Confidence is not proven calibration.
 Retired debate and quick prompts are history, not extra votes in this workflow.
-

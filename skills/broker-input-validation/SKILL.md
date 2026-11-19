@@ -31,4 +31,3 @@ no stale file masquerading as fresh data.
 Trimming is not permission to publish snapshots: allowed private fields include
 account/order identifiers. Never print credentials or place raw payloads in the
 public feed. Do not repair missing fields by invention or suppress true mismatches.
-

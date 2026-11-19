@@ -35,4 +35,3 @@ deployer may load private `.env` credentials on apply; the usage script is
 environment-only. Local `skills/` procedures are not automatically uploaded or
 bound, and no skill resource IDs should be invented. Missing Slack pairing means
 no delivery sink, not a successfully delivered audit.
-

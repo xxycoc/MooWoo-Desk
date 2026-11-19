@@ -32,4 +32,3 @@ must be completed and aligned; missing evidence is not zero. Gap candidates use
 the move-session open as news cutoff, but daily selection uses full-session volume;
 do not describe this as a tradable real-time gap backtest. Historical proxy tests
 did not establish a holdout edge or evaluate actual LLM judgments.
-
