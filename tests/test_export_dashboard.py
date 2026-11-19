@@ -1,5 +1,6 @@
 """Public export is offline and must fail closed on unsupported source events."""
 import json
+import os
 from pathlib import Path
 import re
 import subprocess
@@ -143,3 +144,96 @@ def test_runtime_export_matches_ledger_and_writes_meta(ledger, tmp_path):
                              '--runtime', str(ledger), '--out', str(right)], capture_output=True, text=True)
     assert result.returncode == 0, result.stderr
     assert_public(right)
+
+
+@pytest.mark.parametrize('halted', [True, False])
+def test_runtime_desk_projects_only_public_state(ledger, tmp_path, halted):
+    state_path = ledger / 'state.json'
+    private_account = '7' * 9
+    private_credential = 'fixture-opaque-value'
+    reason = f'cash mismatch {private_account} {private_credential} at /data/private.json ' + 'detail ' * 80
+    state_path.write_text(json.dumps(dict(halted=halted, haltReason=reason, tier='reduced',
+                                         acc_id=private_account, token=private_credential,
+                                         positions={'private': True}, restartReasons=['private'])))
+    modified = timestamp('2026-11-19T02:00:00Z').timestamp()
+    os.utime(state_path, (modified, modified))
+    original = state_path.read_bytes()
+    out = tmp_path / 'export'
+    export(None, None, out, runtime=ledger)
+    desk = json.loads((out / 'meta.json').read_text())['desk']
+    assert desk == dict(halted=halted, haltReason=scrub(reason, replacements={
+        private_account: '[redacted]', private_credential: '[redacted]'})[:240],
+        tier='reduced', updatedAt='2026-11-19T02:00:00Z')
+    assert len(desk['haltReason']) == 240
+    assert private_credential not in json.dumps(desk)
+    assert state_path.read_bytes() == original
+    assert_public(out)
+
+
+def test_state_credentials_are_redacted_from_logs_and_log_credentials_from_state(ledger, tmp_path):
+    state_secret, log_secret = 'fixture-state-value', 'fixture-log-value'
+    (ledger / 'state.json').write_text(json.dumps(dict(halted=True, tier='kill',
+        token=state_secret, haltReason=log_secret)))
+    row = event(token=log_secret)
+    row['text'] = state_secret
+    name = '2026-11-18-morning-abcdef.jsonl'
+    (ledger / 'logs' / name).write_text(json.dumps(row) + '\n')
+    out = tmp_path / 'export'
+    export(None, None, out, runtime=ledger)
+    assert json.loads((out / 'meta.json').read_text())['desk']['haltReason'] == '[redacted]'
+    assert json.loads((out / name).read_text())['text'] == '[redacted]'
+    assert_public(out)
+
+
+def test_ledger_desk_uses_pinned_ref_and_last_state_commit(ledger, tmp_path, monkeypatch):
+    state_path = ledger / 'state.json'
+    state_path.write_text(json.dumps(dict(halted=True, haltReason='cash mismatch', tier='kill')))
+    monkeypatch.setenv('GIT_AUTHOR_DATE', '2026-11-18T20:32:00Z')
+    monkeypatch.setenv('GIT_COMMITTER_DATE', '2026-11-18T20:32:00Z')
+    git(ledger, 'add', 'state.json')
+    git(ledger, '-c', 'user.name=Offline Test', '-c', 'user.email=test@example.invalid', 'commit', '-m', 'halt')
+    halted_ref = git(ledger, 'rev-parse', 'HEAD').strip()
+    state_path.write_text(json.dumps(dict(halted=False, haltReason='', tier='normal')))
+    monkeypatch.setenv('GIT_AUTHOR_DATE', '2026-11-19T01:00:00Z')
+    monkeypatch.setenv('GIT_COMMITTER_DATE', '2026-11-19T01:00:00Z')
+    git(ledger, 'add', 'state.json')
+    git(ledger, '-c', 'user.name=Offline Test', '-c', 'user.email=test@example.invalid', 'commit', '-m', 'restart')
+    monkeypatch.setenv('GIT_COMMITTER_DATE', '2026-11-19T02:00:00Z')
+    git(ledger, '-c', 'user.name=Offline Test', '-c', 'user.email=test@example.invalid', 'commit', '--allow-empty', '-m', 'later run')
+    state_path.write_text(json.dumps(dict(halted=True, haltReason='uncommitted', tier='kill')))
+    for ref, halted, reason, tier, updated_at in [
+        (halted_ref, True, 'cash mismatch', 'kill', '2026-11-18T20:32:00Z'),
+        ('HEAD', False, '', 'normal', '2026-11-19T01:00:00Z'),
+    ]:
+        out = tmp_path / 'export'
+        export(ledger, ref, out)
+        assert json.loads((out / 'meta.json').read_text())['desk'] == dict(
+            halted=halted, haltReason=reason, tier=tier, updatedAt=updated_at)
+        assert_public(out)
+
+
+def test_missing_or_legacy_state_omits_desk(ledger, tmp_path):
+    out = tmp_path / 'export'
+    export(None, None, out, runtime=ledger)
+    assert 'desk' not in json.loads((out / 'meta.json').read_text())
+    (ledger / 'state.json').unlink()
+    export(None, None, out, runtime=ledger)
+    assert 'desk' not in json.loads((out / 'meta.json').read_text())
+    git(ledger, 'add', 'state.json')
+    git(ledger, '-c', 'user.name=Offline Test', '-c', 'user.email=test@example.invalid', 'commit', '-m', 'old ledger')
+    export(ledger, 'HEAD', out)
+    assert 'desk' not in json.loads((out / 'meta.json').read_text())
+
+
+@pytest.mark.parametrize('state', [
+    '{invalid', '[]', '{"halted": "false"}', '{"halted": 0}',
+    '{"halted": false, "haltReason": []}', '{"halted": false, "tier": "unexpected"}',
+])
+def test_invalid_state_never_replaces_previous_export(ledger, tmp_path, state):
+    out = tmp_path / 'export'
+    export(None, None, out, runtime=ledger)
+    previous = {path.name: path.read_bytes() for path in out.iterdir()}
+    (ledger / 'state.json').write_text(state)
+    with pytest.raises(ValueError):
+        export(None, None, out, runtime=ledger)
+    assert previous == {path.name: path.read_bytes() for path in out.iterdir()}

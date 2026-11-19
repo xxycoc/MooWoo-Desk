@@ -110,9 +110,24 @@ def git(repo: Path, *args: str) -> str:
     return subprocess.check_output(['git', '-C', str(repo), *args], encoding='utf-8')
 
 
+def project_desk(state: object, updated_at: str | None, replacements: dict) -> dict | None:
+    if state is None or isinstance(state, dict) and 'halted' not in state:
+        return None
+    if not isinstance(state, dict) or not isinstance(state.get('halted'), bool):
+        raise ValueError('state halted must be a boolean')
+    reason = state.get('haltReason', '')
+    tier = state.get('tier')
+    if not isinstance(reason, str) or tier not in (None, 'normal', 'reduced', 'exits_only', 'kill'):
+        raise ValueError('state haltReason or tier is invalid')
+    return dict(halted=state['halted'], haltReason=scrub(reason, replacements=replacements)[:240],
+                tier=tier, updatedAt=updated_at)
+
+
 def export(ledger_repo: Path | None, ref: str | None, out: Path, until: str | None = None,
            include_fixtures: bool = False, *, runtime: Path | None = None) -> dict:
     cutoff = timestamp(until) if until else None
+    state = None
+    state_updated_at = None
     if runtime is not None:
         ledger_repo = runtime
         if not (runtime / 'logs').is_dir():
@@ -120,6 +135,10 @@ def export(ledger_repo: Path | None, ref: str | None, out: Path, until: str | No
         sources = [(f'logs/{p.name}', p.read_text(encoding='utf-8'), False)
                    for p in sorted((runtime / 'logs').glob('*.jsonl'))
                    if RUN_FILE.fullmatch(f'logs/{p.name}')]
+        state_path = runtime / 'state.json'
+        if state_path.is_file():
+            state = json.loads(state_path.read_text(encoding='utf-8'))
+            state_updated_at = datetime.fromtimestamp(state_path.stat().st_mtime, timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')
     else:
         if ledger_repo is None or ref is None:
             raise ValueError('ledger repository and ref are required without runtime')
@@ -128,12 +147,17 @@ def export(ledger_repo: Path | None, ref: str | None, out: Path, until: str | No
         paths = git(ledger_repo, 'ls-tree', '-r', '--name-only', revision, 'logs/').splitlines()
         sources = [(p, git(ledger_repo, 'show', f'{revision}:{p}'), False)
                    for p in paths if RUN_FILE.fullmatch(p)]
+        if git(ledger_repo, 'ls-tree', '--name-only', revision, 'state.json').strip() == 'state.json':
+            state = json.loads(git(ledger_repo, 'show', f'{revision}:state.json'))
+            state_updated_at = git(ledger_repo, 'log', '-1', '--format=%cI', revision, '--', 'state.json').strip()
+            state_updated_at = datetime.fromisoformat(state_updated_at).astimezone(timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z')
     if include_fixtures:
         sources += [(p.name, p.read_text(encoding='utf-8'), True)
                     for p in sorted((ROOT / 'fixtures').glob('*.jsonl'))]
     parsed = [(path, [json.loads(line) for line in raw.splitlines() if line.strip()], fixture)
               for path, raw, fixture in sources]
-    replacements = collect_replacements([events for _, events, _ in parsed])
+    replacements = collect_replacements([state, *[events for _, events, _ in parsed]])
+    desk = project_desk(state, state_updated_at, replacements)
     logs = []
     for path, events, fixture in parsed:
         events = [e for e in events if cutoff is None or timestamp(e['ts']) <= cutoff]
@@ -153,7 +177,7 @@ def export(ledger_repo: Path | None, ref: str | None, out: Path, until: str | No
     latest = max((e['ts'] for _, _, events in logs for e in events), key=timestamp, default=None)
     artifacts['meta.json'] = json.dumps(dict(
         generatedAt=datetime.now(timezone.utc).isoformat(timespec='seconds').replace('+00:00', 'Z'),
-        latestEventTs=latest, logs=index['files']), indent=2) + '\n'
+        latestEventTs=latest, logs=index['files'], **({'desk': desk} if desk is not None else {})), indent=2) + '\n'
     for name, content in artifacts.items():
         if LONG_NUMBER.search(content) or '/data/' in content or PRIVATE_TEXT.search(content) or 'acc_id' in content.lower():
             raise ValueError(f'publication scan failed: {name}')

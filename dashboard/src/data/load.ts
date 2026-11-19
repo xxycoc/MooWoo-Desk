@@ -4,9 +4,17 @@ interface DataIndex {
   files: string[];
 }
 
+export interface DeskStatus {
+  halted: boolean;
+  haltReason: string;
+  tier: "normal" | "reduced" | "exits_only" | "kill" | null;
+  updatedAt: string | null;
+}
+
 interface FeedMeta {
   latestEventTs: string | null;
   logs: string[];
+  desk?: DeskStatus;
 }
 
 export interface Corpus {
@@ -15,6 +23,16 @@ export interface Corpus {
   errors: string[];
   source: "feed" | "bundled" | "bundled-fallback";
   latestEventTs: string | null;
+  desk?: DeskStatus;
+}
+
+function validDesk(value: unknown): value is DeskStatus {
+  if (!value || typeof value !== "object") return false;
+  const desk = value as DeskStatus;
+  return typeof desk.halted === "boolean" && typeof desk.haltReason === "string"
+    && Array.from(desk.haltReason).length <= 240
+    && [null, "normal", "reduced", "exits_only", "kill"].includes(desk.tier)
+    && (desk.updatedAt === null || typeof desk.updatedAt === "string" && Number.isFinite(Date.parse(desk.updatedAt)));
 }
 
 export function baseUrl(): string {
@@ -67,6 +85,9 @@ async function loadSource(base: string, signal?: AbortSignal, remote = false): P
           || !Number.isFinite(Date.parse(meta.latestEventTs))))) {
       throw new Error("data/meta.json does not match the feed index");
     }
+    if (meta.desk !== undefined && !validDesk(meta.desk)) {
+      throw new Error("data/meta.json desk status is invalid");
+    }
   }
 
   const logs: LoadedLog[] = [];
@@ -105,5 +126,5 @@ async function loadSource(base: string, signal?: AbortSignal, remote = false): P
   if (meta && meta.latestEventTs !== latestEventTs) {
     throw new Error("data/meta.json does not match the feed events");
   }
-  return { events, logs, errors, source: remote ? "feed" : "bundled", latestEventTs };
+  return { events, logs, errors, source: remote ? "feed" : "bundled", latestEventTs, desk: meta?.desk };
 }

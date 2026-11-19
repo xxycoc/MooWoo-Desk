@@ -1,4 +1,5 @@
 import type { DeskState, LoadedEvent, Sleeve } from "./types";
+import type { DeskStatus } from "./load";
 import { stateAt } from "./state";
 import { wilson } from "./wilson";
 
@@ -102,12 +103,15 @@ export function lastRuns(events: LoadedEvent[], state: DeskState): RunRow[] {
   }).sort((left, right) => Date.parse(right.at) - Date.parse(left.at));
 }
 
-export function healthStatus(events: LoadedEvent[], runs: RunRow[], now: Date) {
+export function healthStatus(events: LoadedEvent[], runs: RunRow[], now: Date, desk?: DeskStatus) {
   const ordered = [...events].sort((left, right) => Date.parse(left.ts) - Date.parse(right.ts) || left.gseq - right.gseq);
   const halt = [...ordered].reverse().find((event) => event.type === "halt");
   // A halt persists only if no later run got past preflight; input-file aborts never persist.
   const startedAfter = halt && ordered.some((event) => event.type === "run_started" && Date.parse(event.ts) > Date.parse(halt.ts));
-  if (halt && !isRestart(halt) && halt.disposition !== "abort" && !startedAfter) {
+  if (desk?.halted) {
+    return { tone: "halt", message: `HALTED: ${desk.haltReason || "reason not recorded"}` };
+  }
+  if (!desk && halt && !isRestart(halt) && halt.disposition !== "abort" && !startedAfter) {
     return { tone: "halt", message: `HALTED: ${String(halt.reason ?? "reason not recorded")}` };
   }
   if (runs[0]?.events.some((event) => event.type === "run_aborted" || /\bsession aborted\b/i.test(String(event.text ?? "")))) {
