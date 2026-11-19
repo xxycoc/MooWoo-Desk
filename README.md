@@ -32,7 +32,6 @@ private ledger.
 ## A paper session from signal to review
 
 <!-- TODO screenshot: docs/images/dashboard-now.png, dashboard Now tab -->
-<!-- TODO screenshot: docs/images/trading-floor.png, trading floor replay -->
 
 <table>
   <tr>
@@ -46,6 +45,8 @@ private ledger.
 </table>
 
 ### Trading floor
+
+<p align="center"><img src="docs/images/trading-floor.png" alt="MooWoo Desk trading floor: three agent ducks and the code stations in a 3D voxel office, replaying a 19 November watcher session" width="100%"></p>
 
 The dashboard's **Floor** tab replays one loaded session as a small voxel office.
 Three ducks represent the active agents (coordinator, analyst, executor); screener,
