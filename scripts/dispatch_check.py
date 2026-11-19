@@ -22,8 +22,18 @@ from persist_ledger import redact_error
 from run_session import validate_dispatch
 
 
-class StaleQuote(ValueError):
+class RetryableQuote(ValueError):
     pass
+
+
+class StaleQuote(RetryableQuote):
+    refresh_reason = "stale quote; fetch one fresh quote before rechecking"
+    withheld_reason = "quote expired during checkpoint"
+
+
+class QuoteUnreadable(RetryableQuote):
+    refresh_reason = "unreadable quote file; fetch one fresh quote and rewrite it"
+    withheld_reason = "quote unreadable during checkpoint"
 
 
 def run(args, now=None):
@@ -74,10 +84,14 @@ def run(args, now=None):
 
     def check_quote():
         nonlocal deadline
-        rows = quote_rows(read_json(quote_path))
-        if len(rows) != 1:
-            raise ValueError("dispatch requires exactly one quote")
-        symbol, quote = parse_quote(rows[0])
+        # Only input decoding/parsing failures share the stale-quote refresh budget.
+        try:
+            rows = quote_rows(read_json(quote_path))
+            if len(rows) != 1:
+                raise ValueError("dispatch requires exactly one quote")
+            symbol, quote = parse_quote(rows[0])
+        except (ValueError, KeyError, TypeError, OSError, OverflowError, AttributeError) as exc:
+            raise QuoteUnreadable(QuoteUnreadable.refresh_reason) from exc
         stamp = calendar.local_time(quote["ts"])
         deadline = calendar.utc_stamp(stamp + timedelta(seconds=config.STALE_PRICE_SECONDS))
         current = now or datetime.now(timezone.utc)
@@ -104,15 +118,15 @@ def run(args, now=None):
             raise StaleQuote("stale quote timestamp")
 
     def skip_quote(exc, *, before_authorization=False):
-        if isinstance(exc, StaleQuote) and quote_attempt < 2:
+        if isinstance(exc, RetryableQuote) and quote_attempt < 2:
             if not before_authorization:
                 # No ok:true was returned, so this authorization never reached the caller.
-                note(log, ticket, "dispatch_withheld", attempt=attempt, reason="quote expired during checkpoint")
+                note(log, ticket, "dispatch_withheld", attempt=attempt, reason=exc.withheld_reason)
             note(log, ticket, "quote_refresh", attempt=attempt, quoteAttempt=quote_attempt,
-                 reason="stale quote; fetch one fresh quote before rechecking")
+                 reason=exc.refresh_reason)
             store.save("Checkpoint quote refresh", context["holder"], release=False)
             return dict(ok=False, skipped=False, retryable=True, quoteAttempt=quote_attempt,
-                        attempt=attempt, decisionId=ticket.decisionId, reason="stale quote timestamp")
+                        attempt=attempt, decisionId=ticket.decisionId, reason=str(exc))
         reason = safe_reason(str(exc)) if isinstance(exc, ValueError) else "invalid or missing fresh quote"
         note(log, ticket, "skip", attempt=attempt, reason=reason, quoteDeadline=deadline)
         store.save("Skip ticket at dispatch", context["holder"], release=False)

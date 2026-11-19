@@ -35,6 +35,26 @@ cadence, holiday/early-close calendar, fresh snapshot acquisition and exclusive
 ownership of the account. The watcher validates the supplied regular-session
 window and quote age, but does not independently fetch an exchange calendar.
 
+## Dispatch quote refresh
+
+Before each broker handoff, `scripts/dispatch_check.py` reads
+`inputs/<runId>/quotes-raw-<TICKER>.json`. A stale quote or an unreadable quote
+file (missing file, malformed JSON, invalid envelope/quote fields, or anything
+other than exactly one row) gets one refresh. The first failure logs
+`quote_refresh` and returns `ok:false`, `skipped:false`, `retryable:true` and
+`quoteAttempt:1`. For unreadable input, the reason is
+`unreadable quote file; fetch one fresh quote and rewrite it`.
+The coordinator must fetch one new single-symbol quote, rewrite the file and
+repeat the same dispatch check. Stale and unreadable failures share this budget:
+a second failure skips the ticket. Quote refreshes do not increment the broker
+placement attempt or change the prepared ticket.
+
+If the file becomes unreadable or the quote expires during the authorization
+checkpoint, the checker logs `dispatch_withheld` before `quote_refresh`.
+Never retry a returned `ok:true` authorization or a broker handoff.
+Valid quotes that fail the limit-price, spread, symbol, future-timestamp or
+reconciled-core-sell checks remain immediate, non-retryable skips.
+
 ## Commands and files
 
 | Script | Reads | Writes |

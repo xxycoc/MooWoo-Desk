@@ -386,22 +386,21 @@ def test_audit_requires_competition_day(day):
     assert not calendar.run_allowed("audit", f"2026-11-{day}T21:15:00Z")
 
 
-@pytest.mark.parametrize("change", ["symbol", "multiple", "crossed", "spread", "price", "missing", "future"])
+@pytest.mark.parametrize("change", ["symbol", "spread", "price", "future"])
 def test_fresh_quote_refusal_skips_only_ticket(prepared, change):
     args, ticket, log, order, lock = prepared
     path = args.dir / f"inputs/{RUN}/quotes-raw-AAA.json"
     payload = json.loads(path.read_text())
     row = payload["data"]["snapshot_list"][0]
     if change == "symbol": row["code"] = "US.BBB"
-    if change == "multiple": payload["data"]["snapshot_list"].append(dict(row))
-    if change == "crossed": row["bid_price"] = 101
     if change == "spread": row["bid_price"] = 99
     if change == "price": row.update(bid_price=100.01, ask_price=100.02)
     if change == "future": row["update_time"] += 1000
     atomic_json(path, payload)
-    if change == "missing": path.unlink()
     result = dispatch_check.run(args, NOW)
     assert result["ok"] is False and result["skipped"]
+    assert not result.get("retryable", False)
+    assert not any(e.get("executionAction") == "quote_refresh" for e in log.read())
     assert log.read()[-1]["executionAction"] == "skip"
     assert not any(event["type"] == "halt" for event in log.read())
 
@@ -588,3 +587,75 @@ def test_runtime_releases_only_with_complete_absent_history(prepared, history_mo
         count = len(log.read())
         assert not reconcile_cli.run(call, current)["halted"]
         assert len(log.read()) == count
+
+
+@pytest.mark.parametrize("bad", ["json", "missing", "shape", "mcp_shape", "row", "empty", "multiple", "crossed"])
+@pytest.mark.parametrize("recover", [False, True])
+def test_unreadable_quote_refresh_once(prepared, bad, recover):
+    args, ticket, log, order, lock = prepared
+    path = args.dir / f"inputs/{RUN}/quotes-raw-AAA.json"
+    original = path.read_bytes()
+    payload = json.loads(original)
+    rows = payload["data"]["snapshot_list"]
+    if bad == "shape": payload = None
+    if bad == "mcp_shape": payload = dict(content=[None])
+    if bad == "row": del rows[0]["ask_price"]
+    if bad == "empty": rows.clear()
+    if bad == "multiple": rows.append(dict(rows[0]))
+    if bad == "crossed": rows[0]["bid_price"] = 101
+    atomic_json(path, payload)
+    if bad == "json": path.write_text('{"broken" 1}')
+    if bad == "missing": path.unlink()
+    result = dispatch_check.run(args, NOW)
+    assert result["ok"] is False and result["skipped"] is False
+    assert result["retryable"] is True and result["quoteAttempt"] == 1
+    assert result["attempt"] == 1
+    assert result["reason"] == "unreadable quote file; fetch one fresh quote and rewrite it"
+    assert log.read()[-1]["executionAction"] == "quote_refresh"
+    assert log.read()[-1]["reason"] == result["reason"]
+    if recover:
+        path.write_bytes(original)
+    result = dispatch_check.run(args, NOW)
+    assert result["ok"] is recover
+    if recover:
+        assert result["attempt"] == 1 and result["args"] == order["args"]
+    else:
+        assert result["skipped"] is True and not result.get("retryable", False)
+        assert log.read()[-1]["executionAction"] == "skip"
+    assert sum(e.get("executionAction") == "quote_refresh" for e in log.read()) == 1
+
+
+def test_unreadable_quote_after_authorization_withholds_before_refresh(prepared, monkeypatch):
+    args, ticket, log, order, lock = prepared
+    path = args.dir / f"inputs/{RUN}/quotes-raw-AAA.json"
+    original = path.read_bytes()
+    def save(self, message, *args, **kwargs):
+        if message == "Checkpoint dispatch before broker handoff":
+            path.write_text("{")
+        return dict(saved=True)
+    monkeypatch.setattr(LedgerStore, "save", save)
+    assert dispatch_check.run(args, NOW)["retryable"]
+    actions = [e.get("executionAction") for e in log.read()]
+    assert actions[-3:] == ["dispatch_authorized", "dispatch_withheld", "quote_refresh"]
+    path.write_bytes(original)
+    monkeypatch.setattr(LedgerStore, "save", lambda *a, **k: dict(saved=True))
+    assert dispatch_check.run(args, NOW)["ok"]
+    with pytest.raises(ValueError, match="resolved"):
+        dispatch_check.run(args, NOW)
+
+
+@pytest.mark.parametrize("unreadable_first", [False, True])
+def test_stale_and_unreadable_share_one_refresh(prepared, unreadable_first):
+    args, ticket, log, order, lock = prepared
+    path = args.dir / f"inputs/{RUN}/quotes-raw-AAA.json"
+    original = path.read_bytes()
+    if unreadable_first:
+        path.unlink()
+    assert dispatch_check.run(args, NOW + timedelta(seconds=61))["retryable"]
+    if unreadable_first:
+        path.write_bytes(original)
+    else:
+        path.unlink()
+    result = dispatch_check.run(args, NOW + timedelta(seconds=61))
+    assert result["skipped"] and not result.get("retryable", False)
+    assert sum(e.get("executionAction") == "quote_refresh" for e in log.read()) == 1
