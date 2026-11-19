@@ -65,7 +65,7 @@ export default function App() {
   const state = useMemo(() => (corpus ? stateAt(corpus.events, liveSeq) : null), [corpus, liveSeq]);
   const runs = useMemo(() => corpus && state ? lastRuns(corpus.events, state) : [], [corpus, state]);
   const next = useMemo(() => nextScheduledRun(now), [now]);
-  const health = useMemo(() => healthStatus(corpus?.events ?? [], runs, now), [corpus, runs, now]);
+  const health = useMemo(() => healthStatus(corpus?.events ?? [], runs, now, corpus?.desk), [corpus, runs, now]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 1000);
@@ -134,7 +134,7 @@ export default function App() {
         <span>Next: {sgtTime(next.at)} · {next.kind}</span>
       </section>
       <Tabs view={view} />
-      <p className="feed-status"><strong>{corpus.source === "feed" ? "Public live feed" : corpus.source === "bundled-fallback" ? "Feed unavailable · bundled fallback" : "Bundled snapshot"}</strong> · Last event {sgtTime(corpus.latestEventTs)}. {feedUrl ? "Checked every 60 seconds." : "Snapshot does not update automatically."} Health reflects these logs, not a broker heartbeat.</p>
+      <p className="feed-status"><strong>{corpus.source === "feed" ? "Public live feed" : corpus.source === "bundled-fallback" ? "Feed unavailable · bundled fallback" : "Bundled snapshot"}</strong> · Last event {sgtTime(corpus.latestEventTs)}. {feedUrl ? "Checked every 60 seconds." : "Snapshot does not update automatically."} Health reflects this feed snapshot, not a broker heartbeat.</p>
       {corpus.errors.length > 0 && <div className="load-warning" role="alert"><strong>Some log lines could not be loaded.</strong> {corpus.errors.join(" · ")}</div>}
       {corpus.events.some((event) => event.dataset === "fixture") && <p className="load-warning">Includes FICTIONAL fixtures. Combined totals are not the real ledger.</p>}
       <main id="main" className="desk-main" tabIndex={-1} aria-label={view === "now" ? "Now" : "Strategy"}>

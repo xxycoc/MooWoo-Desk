@@ -56,6 +56,28 @@ published, every bundled log is downloadable, including decisions, prices, quant
 reasons and evidence headlines. Existing deployment/feed-publisher configuration
 belongs to the repository's deployment documentation, not this browser app.
 
+When state.json contains a boolean halted flag, meta.json also includes exactly:
+
+```json
+{
+  "desk": {
+    "halted": false,
+    "haltReason": "",
+    "tier": "normal",
+    "updatedAt": "2026-11-19T01:00:00Z"
+  }
+}
+```
+
+haltReason uses the same redaction as log prose, then is limited to 240 characters.
+Known private values from both state and logs are scrubbed from both outputs.
+tier is normal, reduced, exits_only, kill, or null when absent. updatedAt is UTC
+to whole seconds: the runtime file's modification time, or the last commit touching
+state.json at the pinned ledger ref. No private state fields are copied wholesale.
+Missing state or legacy state without halted omits desk; invalid typed state stops
+the export before replacing any output. --until limits events only, not the state
+snapshot. No state snapshot is inferred from those filtered events.
+
 ## Layout and navigation
 
 The sticky top bar keeps MooWoo Desk, SIMULATED FUNDS, equity/return, the next run
@@ -105,12 +127,15 @@ is retained, not rewritten to pretend retired actors never existed.
 
 ## Health and schedule
 
-Health is log-derived, not a live broker heartbeat or a read of private state.json.
+Health uses the exported desk snapshot when available, not a live broker heartbeat
+or a browser read of private state.json. The loader validates desk before use.
 Precedence is:
 
-1. **Red:** the latest halt event has not been superseded by a halt event with
-   cleared=true and a reason starting manual-restart or manual restart. Display
-   HALTED plus the latest reason. Ordinary successful runs never clear a halt.
+1. **Red:** when meta.desk exists, only desk.halted=true shows HALTED followed by
+   desk.haltReason (or reason not recorded when empty). desk.halted=false ignores
+   historical halt events, including silent operator restarts. Without desk, retain
+   the legacy event rule: a halt persists unless explicitly cleared by a manual
+   restart, marked as a run-only abort, or followed by a later run_started event.
 2. **Amber:** otherwise, the newest run contains run_aborted or the session-runner
    note Session aborted; or the last event is older than 45 minutes during US
    regular hours. An empty corpus during those hours also warns. Exactly 45
@@ -119,8 +144,9 @@ Precedence is:
    does not warn. A halt or aborted latest run continues to warn outside hours.
 
 Every state also shows the last run time/kind and next run, formatted in
-Asia/Singapore and labelled SGT. A historical halt without a logged restart stays
-red even if a private operator restart happened elsewhere.
+Asia/Singapore and labelled SGT. Old feeds and bundled data still use event-based
+health. A restarted desk becomes visible after the next successful feed export
+and refresh; last-run result text remains the historical result of that run.
 
 Schedule source is America/New_York on weekdays: morning 09:35; watchers on each
 :00/:30 from 10:00 through 15:30; close watcher 15:55; audit 16:10. On 27 November
@@ -135,8 +161,13 @@ calendar-skip events explain skipped scheduled runs.
 Dark solid panels; orange our book, yellow agents, blue core, violet drift, teal
 bounce, grey comparisons; existing green/red profit, loss and risk conventions.
 Numbers use monospace tabular figures. Strategy's stream/hit-rate panels share a
-row on desktop; all panels stack on phones. Tables scroll inside labelled focusable
-regions rather than widening the page. Keyboard focus stays visible, including
+row on desktop; all panels stack on phones. At phone widths the next-run schedule
+gets its own line. Positions stack ticker/sleeve/P&L above labelled qty/cost/last/stop;
+run results wrap below time and kind. Inner scrolling is a fallback with a visible
+sideways-scroll cue and keyboard focus when needed. Radar bounds leave room for
+bubbles and rings. The page and drawer reserve bottom space for a host badge of
+about 140 by 40 pixels, including the device's safe-area inset.
+Keyboard focus stays visible, including
 selects. Drawer traps focus, closes with Escape and restores the trigger.
 
 The original SVG duck and its persistent toggle remain. Coarse-pointer devices
@@ -155,7 +186,8 @@ whole chain needs an independently trusted terminal hash to detect.
 ## Checks
 
 npm test covers loader success/fallback/cancellation and operational selectors:
-DST, weekend and early-close scheduling, halt/restart precedence, staleness, run
+DST, weekend and early-close scheduling, state-driven and legacy halt/restart
+precedence, invalid desk fallback, radar bounds, staleness, run
 classification, closed trades, missing benchmarks and old hash routing.
 npm run check:data exercises the real bundled corpus, reducer holdings, scrub
 scan, original-chain verification/tamper detection and both new views via SSR.

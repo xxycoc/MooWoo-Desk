@@ -28,8 +28,41 @@ test('complete remote feed uses cache busters and reports latest event', async (
   assert.equal(corpus.latestEventTs, row.ts);
   assert.equal(corpus.events.length, 1);
   assert.equal(urls.length, 3);
+  assert.equal(corpus.desk, undefined);
   assert(urls.every((url) => url.startsWith(feed + '/') && /\?t=\d+$/.test(url)));
 });
+
+for (const halted of [true, false]) {
+  test(`remote desk snapshot carries explicit halted=${halted} through the loader`, async () => {
+    const desk = { halted, haltReason: halted ? 'cash mismatch' : '', tier: 'normal', updatedAt: '2026-11-19T01:00:00Z' };
+    globalThis.fetch = async (url) => String(url).includes('meta.json')
+      ? Response.json({ logs: ['run.jsonl'], latestEventTs: row.ts, desk }) : respond(url);
+    const corpus = await loadCorpus(undefined, feed);
+    assert.equal(corpus.source, 'feed');
+    assert.deepEqual(corpus.desk, desk);
+  });
+}
+
+test('desk reason limit counts Unicode characters like the exporter', async () => {
+  const desk = { halted: true, haltReason: '🦆'.repeat(240), tier: 'normal', updatedAt: null };
+  globalThis.fetch = async (url) => String(url).includes('meta.json')
+    ? Response.json({ logs: ['run.jsonl'], latestEventTs: row.ts, desk }) : respond(url);
+  const corpus = await loadCorpus(undefined, feed);
+  assert.equal(corpus.source, 'feed');
+  assert.deepEqual(corpus.desk, desk);
+});
+
+for (const invalid of [null, {}, { halted: 'false' }, { halted: 0 },
+  { halted: false, haltReason: [], tier: 'normal', updatedAt: null },
+  { halted: false, haltReason: '', tier: 'normal', updatedAt: 'invalid' }]) {
+  test(`invalid desk ${JSON.stringify(invalid)} falls back without carrying remote state`, async () => {
+    globalThis.fetch = async (url) => String(url).startsWith(feed) && String(url).includes('meta.json')
+      ? Response.json({ logs: ['run.jsonl'], latestEventTs: row.ts, desk: invalid }) : respond(url);
+    const corpus = await loadCorpus(undefined, feed);
+    assert.equal(corpus.source, 'bundled-fallback');
+    assert.equal(corpus.desk, undefined);
+  });
+}
 
 for (const failure of ['network', 'index', 'log', 'parse', 'manifest', 'metadata', 'meta-logs', 'meta-time']) {
   test(`${failure} failure falls back to a complete bundled snapshot`, async () => {

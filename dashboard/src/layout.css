@@ -1,4 +1,5 @@
-.option-b { max-width: 1280px; margin: 0 auto; }
+:root { --host-badge-space: calc(72px + env(safe-area-inset-bottom, 0px)); }
+.option-b { max-width: 1280px; margin: 0 auto; padding-bottom: var(--host-badge-space); }
 .desk-top { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; padding: 12px 18px; }
 .desk-brand { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
 .desk-balance { margin-left: auto; display: flex; gap: 12px; align-items: baseline; }
@@ -36,6 +37,7 @@
 .desk-grid .chart-summary { font-size: 11px; line-height: 1.5; }
 .desk-grid .chart-canvas { overflow: hidden; }
 .desk-grid .table-scroll { max-width: 100%; overflow-x: auto; }
+.table-scroll-cue { margin: 6px 0 0; color: var(--muted); font-size: 11px; }
 .desk-grid table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .desk-grid table th, .desk-grid table td { padding: 9px 8px; }
 .desk-grid table th { text-align: left; font-weight: 500; }
@@ -76,6 +78,7 @@
 .run-events time { color: var(--muted); font: 11px var(--mono); }
 .run-events strong { font-size: 12px; font-weight: 500; }
 .drawer-body { overflow-wrap: anywhere; }
+.drawer .drawer-body { padding-bottom: var(--host-badge-space); }
 :where(button, a, select, summary, [tabindex]):focus-visible { outline: 2px solid var(--orange); outline-offset: 3px; }
 @media (max-width: 640px) {
   .desk-top { padding: 10px 12px; gap: 8px 12px; }
@@ -83,7 +86,8 @@
   .desk-brand .brand { font-size: 15px; }
   .desk-balance { margin-left: auto; }
   .desk-balance strong { font-size: 18px; }
-  .desk-next { flex: 1; }
+  .desk-next { flex: 0 0 100%; order: 1; display: flex; flex-wrap: wrap; gap: 4px 8px; margin: 0; }
+  .desk-top .duck-toggle { flex-shrink: 0; }
   .health-banner { padding: 10px 12px; }
   .health-banner > span { width: 100%; }
   .feed-status { padding: 10px 12px 0; }
@@ -95,6 +99,27 @@
   .desk-footer { margin: 0 12px; }
   .runs-more { align-items: start; }
   .drawer { width: 100%; max-width: 100%; }
+  .desk-grid .table-scroll :is(.positions-table, .runs-table) { min-width: 0; display: block; }
+  :is(.positions-table, .runs-table) thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  :is(.positions-table, .runs-table) tbody { display: block; }
+  .desk-grid :is(.positions-table, .runs-table) tbody tr { display: grid; gap: 10px 6px; padding: 12px 8px; border-bottom: 1px solid var(--line); }
+  .desk-grid :is(.positions-table, .runs-table) tbody tr:last-child { border-bottom: 0; }
+  .desk-grid :is(.positions-table, .runs-table) tbody :is(th, td) { padding: 0; border: 0; white-space: normal; min-width: 0; letter-spacing: normal; }
+  .positions-table tbody tr { grid-template-columns: repeat(12, minmax(0, 1fr)); align-items: center; }
+  .positions-table td[data-label]::before { content: attr(data-label); display: block; color: var(--muted); font: 10px var(--sans); margin-bottom: 3px; }
+  .desk-grid .positions-table tbody :is(th, td):nth-child(1) { grid-area: 1 / 1 / 2 / 5; text-align: left; }
+  .desk-grid .positions-table tbody td:nth-child(2) { grid-area: 1 / 5 / 2 / 9; text-align: center; }
+  .desk-grid .positions-table tbody td:nth-child(6) { grid-area: 1 / 9 / 2 / 13; text-align: right; }
+  .desk-grid .positions-table tbody td:nth-child(3) { grid-area: 2 / 1 / 3 / 4; text-align: left; }
+  .desk-grid .positions-table tbody td:nth-child(4) { grid-area: 2 / 4 / 3 / 7; text-align: left; }
+  .desk-grid .positions-table tbody td:nth-child(5) { grid-area: 2 / 7 / 3 / 10; text-align: left; }
+  .desk-grid .positions-table tbody td:nth-child(7) { grid-area: 2 / 10 / 3 / 13; text-align: right; }
+  .positions-table .sleeve-tag { display: inline-block; max-width: 100%; padding: 2px 4px; font-size: 10px; }
+  .runs-table tbody tr { grid-template-columns: minmax(0, 1fr) auto; }
+  .desk-grid .runs-table tbody th:first-child { width: auto; }
+  .desk-grid .runs-table tbody td:nth-child(2) { text-align: right; }
+  .desk-grid .runs-table .run-result { grid-column: 1 / -1; min-width: 0; overflow-wrap: anywhere; line-height: 1.5; }
+  .desk-grid :is(.positions-table, .runs-table) tbody td[colspan] { grid-area: auto / 1 / auto / -1; text-align: left; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }

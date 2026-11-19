@@ -39,10 +39,10 @@ function fmtCap(value: number | null): string {
   return `$${value.toLocaleString("en-US")}`;
 }
 
-function bubbleOption(points: RadarPoint[]): EChartsOption {
+export function bubbleOption(points: RadarPoint[]): EChartsOption {
   const maxCap = Math.max(1, ...points.map((point) => point.marketCap ?? 0));
-  const minZ = Math.floor(Math.min(-2.2, ...points.map((point) => point.z)));
-  const maxZ = Math.ceil(Math.max(2.2, ...points.map((point) => point.z)));
+  const minZ = Math.floor(Math.min(-2.2, ...points.map((point) => point.z))) - 0.5;
+  const maxZ = Math.ceil(Math.max(2.2, ...points.map((point) => point.z))) + 0.5;
   const data: BubbleDatum[] = points.map((point) => ({
     name: point.ticker,
     value: [point.z, point.rvol, point.marketCap ?? 0],
@@ -61,7 +61,7 @@ function bubbleOption(points: RadarPoint[]): EChartsOption {
 
   return {
     animation: false,
-    grid: { left: 48, right: 20, top: 30, bottom: 48 },
+    grid: { left: 52, right: 36, top: 44, bottom: 52 },
     tooltip: {
       ...chartTooltip,
       trigger: "item",
@@ -96,8 +96,8 @@ function bubbleOption(points: RadarPoint[]): EChartsOption {
     yAxis: {
       type: "log",
       logBase: 10,
-      min: Math.min(1, ...points.filter((point) => point.rvol > 0).map((point) => point.rvol)),
-      max: Math.max(4, ...points.map((point) => point.rvol)) * 1.1,
+      min: Math.min(1, ...points.filter((point) => point.rvol > 0).map((point) => point.rvol)) / 1.25,
+      max: Math.max(4, ...points.map((point) => point.rvol)) * 1.5,
       splitNumber: 4,
       name: "RVOL (log)",
       nameLocation: "middle",
