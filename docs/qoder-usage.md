@@ -113,18 +113,23 @@ without updating the environment's code revision failed. For reproducibility,
 keep source revision, registered prompt content and cloud resource versions
 aligned, and preserve the original freeze plus the rule-change ledger.
 
-## Credits: measurement pending
+## Credits so far
 
-**PLACEHOLDER: no authenticated usage collection was performed for this change.**
-Do not interpret pending values as zero. Replace this table only with a reviewed
-aggregate export from the command below, recording its collection time and scope.
+Interim aggregate export, collected 2026-11-19 12:00 UTC with the command below
+(`--search "MooWoo" --timezone America/New_York`). Days are New York dates. Groups
+are inferred from session titles. Sessions still running can add credits, so this is
+not final; the full table is replaced after the last session on 27 Nov.
 
 | Day (New York) | Group | Sessions | Model credits | Sandbox credits | Total credits |
-| --- | --- | --- | --- | --- | --- |
-| Pending collection | morning | Pending | Unavailable | Unavailable | Unavailable |
-| Pending collection | watcher | Pending | Unavailable | Unavailable | Unavailable |
-| Pending collection | audit | Pending | Unavailable | Unavailable | Unavailable |
-| Pending collection | manual | Pending | Unavailable | Unavailable | Unavailable |
+| --- | --- | ---: | ---: | ---: | ---: |
+| 2026-11-17 | morning | 13 | 278.66 | 58.07 | 336.78 |
+| 2026-11-17 | watcher | 13 | 19.75 | 5.97 | 25.80 |
+| 2026-11-17 | audit | 1 | 9.16 | 1.01 | 10.18 |
+| 2026-11-17 | manual | 2 | 4.07 | 0.00 | 4.07 |
+| 2026-11-18 | morning | 3 | 60.51 | 7.49 | 68.02 |
+| 2026-11-18 | watcher | 15 | 40.07 | 14.76 | 54.93 |
+| 2026-11-18 | audit | 1 | 7.03 | 0.98 | 8.02 |
+| All | All | 48 | 419.25 | 88.28 | 507.80 |
 
 ### Collect when authorized
 
