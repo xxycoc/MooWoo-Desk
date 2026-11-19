@@ -69,6 +69,16 @@ research, not quantity decisions; the executor does not change ticket arguments.
 The auditor uses a paired schedule sink for optional Slack delivery. A generated
 report is not a confirmed delivery without an external receipt.
 
+### Slack delivery
+
+The auditor template has a Slack channel bot (`moowoo-desk-reports`) in Pairing
+mode, so only paired chats can reach it. Since 19 Nov the `audit` and
+`audit-early-close` schedules deliver their result to the paired Slack channel
+through a schedule sink (`type: im_channel`, `channel_pairing_id`). Each run's
+`push_status` records whether delivery succeeded. Only the auditor, which has no
+order tools, is connected to Slack; the coordinator and executor are not, so
+chat cannot start a trade. Show Thinking and Show Tool Calls are off.
+
 ## Dashboard, trading floor and Qoder Sites
 
 The Qoder-built dashboard is the read-only React/Vite application in
