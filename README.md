@@ -1,6 +1,6 @@
 <h1 align="center">MooWoo Desk</h1>
 
-<!-- TODO banner: docs/images/banner.png, original MooWoo Desk artwork -->
+<p align="center"><img src="docs/images/ducks-banner.svg" alt="MooWoo Desk: Coordinator, Analyst and Executor ducks at the paper-trading desk" width="100%"></p>
 
 <p align="center">
   <img alt="Python 3.11 or newer" src="https://img.shields.io/badge/Python-3.11%2B-3776AB?style=for-the-badge&amp;logo=python&amp;logoColor=white">
@@ -67,34 +67,28 @@ the host badge instead of placing controls there.
 
 ## How it works
 
-There are **three active trading agents**, plus a separate after-close auditor.
-The coordinator runs both morning and watcher sessions; watcher is a schedule,
-not a fourth trading agent. Bull, bear, manager and quick were retired on
-18 November under Addendum 19. Their files remain as experimental history.
+Three trading agents share the desk; Python screens candidates, sizes positions
+and enforces risk limits. Watch sessions manage existing positions without new
+rating calls, and positions change only after fills are reconciled.
+
+| Coordinator | Analyst | Executor |
+| :---: | :---: | :---: |
+| <img src="docs/images/duck-coordinator.svg" alt="Coordinator duck with headset and clipboard" width="96" height="96"> | <img src="docs/images/duck-analyst.svg" alt="Analyst duck with blue beret, glasses and research notes" width="96" height="96"> | <img src="docs/images/duck-executor.svg" alt="Executor duck with orange cap and backpack" width="96" height="96"> |
+| Runs the schedule and phases. | Rates moves and fetches quotes. | Forwards only code-approved paper orders. |
+
+The separate auditor checks the close and posts to Slack, with no order tools.
 
 ```mermaid
-flowchart TD
-    schedule["Qoder morning or watcher schedule"] --> coordinator["Coordinator: clock, files, run phases"]
-    coordinator --> inputs["Python: restore ledger, acquire lease, validate snapshots, reconcile"]
-    inputs --> screen["Python: completed bars and top-five screener"]
-    screen --> analyst["Analyst: researcher-rater and fresh quotes"]
-    analyst --> validation["Python: validate rating JSON and evidence cutoff"]
-    validation --> planning["Python: core allocation, sizing, exits and risk desk"]
-    planning --> dispatch["Python: prepare ticket and check each dispatch"]
-    dispatch --> executor["Executor: forward exact authorized paper-order arguments"]
-    executor --> broker["Moomoo MCP: paper account"]
-    broker --> reconciliation["Python: record receipt, reconcile actual fills, save ledger"]
-    reconciliation --> audit["Separate auditor session: grade calls and report gaps"]
-    audit --> feed["Scrubbed dashboard-feed branch"]
-    feed --> dashboard["Read-only dashboard on Qoder Sites"]
+flowchart LR
+    schedule["Schedule"] --> screen["Screen movers (Python)"]
+    screen --> analyst["Rate with news (analyst)"]
+    analyst --> risk["Size and risk-check (Python)"]
+    risk --> executor["Place paper orders (executor)"]
+    executor --> reconcile["Reconcile and log"]
+    reconcile --> audit["Close audit and Slack"]
 ```
 
-The diagram shows the morning path. Watch sessions manage existing positions
-without new rating calls. The auditor has no order tools. Public feed publication
-also runs on session completion, independently of whether an audit has produced
-a report. Broker acceptance is not a fill; positions change on reconciliation.
-Each close ends with a code-written audit summary, and only the auditor (no order
-tools) posts it to Slack through a Qoder schedule sink.
+See the [detailed session flow](docs/runtime.md#detailed-session-flow) for the full runtime path.
 
 ## Strategy in plain words
 

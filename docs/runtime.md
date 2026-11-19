@@ -9,6 +9,36 @@ access to that branch; it must not be printed, placed in a remote URL, or writte
 to a git configuration file. Runtime contains account receipts and is sensitive:
 the repository's access policy must be appropriate for those records.
 
+## Detailed session flow
+
+```mermaid
+flowchart TD
+    schedule["Qoder morning or watcher schedule"] --> coordinator["Coordinator: clock, files, run phases"]
+    coordinator --> inputs["Python: restore ledger, acquire lease, validate snapshots, reconcile"]
+    inputs --> screen["Python: completed bars and top-five screener"]
+    screen --> analyst["Analyst: researcher-rater and fresh quotes"]
+    analyst --> validation["Python: validate rating JSON and evidence cutoff"]
+    validation --> planning["Python: core allocation, sizing, exits and risk desk"]
+    planning --> dispatch["Python: prepare ticket and check each dispatch"]
+    dispatch --> executor["Executor: forward exact authorized paper-order arguments"]
+    executor --> broker["Moomoo MCP: paper account"]
+    broker --> reconciliation["Python: record receipt, reconcile actual fills, save ledger"]
+    reconciliation --> audit["Separate auditor session: grade calls and report gaps"]
+    audit --> feed["Scrubbed dashboard-feed branch"]
+    feed --> dashboard["Read-only dashboard on Qoder Sites"]
+```
+
+The diagram shows the morning path. Watch sessions manage existing positions
+without new rating calls. The auditor has no order tools. Public feed publication
+also runs on session completion, independently of whether an audit has produced
+a report. Broker acceptance is not a fill; positions change on reconciliation.
+Each close ends with a code-written audit summary, and only the auditor (no order
+tools) posts it to Slack through a Qoder schedule sink.
+
+The coordinator runs both morning and watcher sessions; watcher is a schedule,
+not a fourth trading agent. Bull, bear, manager and quick were retired on
+18 November under Addendum 19. Their files remain as experimental history.
+
 ## Persistence and ownership
 
 ```text
