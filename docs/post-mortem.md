@@ -34,12 +34,22 @@ Only paper trading, US stocks and ETFs, long only.
   Revision and prompt-hash alignment became part of the deployment contract.
 - **Addendum 21:** a small fresh-quote move rejected an otherwise marketable
   limit. Dispatch now checks marketability without changing price or identity.
+- **18 November, 20:04 UTC (15:04 New York):** a watcher halted with
+  `missing required broker field: qty` after the coordinator dropped one field
+  while copying an order-history row. Trading stayed halted through the close
+  and audit until an operator restart on 19 November. Addendum 25 made malformed
+  or missing input files abort only that run instead of setting the persistent
+  halt.
+- **After the restart:** the dashboard kept showing HALTED because a restart
+  writes no ledger event. The public feed now carries the desk's halt state
+  (`meta.desk`) so the banner reflects the runtime flag rather than the last
+  recorded halt.
 - **Addenda 22-25:** allocation was too small for the designed experiment,
   position field names were wrong, asynchronous valuation caused false halts,
-  never-sent authorizations reserved cash, a copied history row lost quantity,
-  audits lacked bars, core buys could not follow sells, and a close watcher
-  fired after closing. Each produced a code or prompt correction plus a
-  regression test where the failure is deterministic.
+  never-sent authorizations reserved cash, audits lacked bars, core buys could
+  not follow sells, and a close watcher fired after closing. Each produced a
+  code or prompt correction plus a regression test where the failure is
+  deterministic.
 - **Performance and hypothesis grading:** to be filled from
   `docs/results.md` and the final audit. No interim number is extrapolated.
 
@@ -51,19 +61,24 @@ Only paper trading, US stocks and ETFs, long only.
   guesses; optional evidence such as unavailable credit counts stays null.
 - The ledger, exporter and dashboard kept private account data out of public
   output, and the dashboard never became an order surface.
-- Every documented failure above has a matching contract test, so a repeat of the
-  same input shape fails visibly instead of silently.
+- **19 November:** Anthropic listed as ANT on Nasdaq. The desk did not trade it:
+  ANT was outside the universe frozen on 16 November and had no price history for
+  the screener. No discretionary exception was made.
+- Each deterministic failure above has a regression test, so a repeat of the same
+  input shape fails visibly instead of silently.
 
 ## What went wrong, and what changed
 
-| Problem | Response |
-| --- | --- |
-| Too many agents and a long context made a daily session impractical | One researcher-rater, inline briefs, five candidates, shorter context |
-| Prose-wrapped or batched model output broke ingestion | Strict JSON, one ticker per call, explicit null model provenance |
-| Cloud revision drift masked local fixes | Pinned revision, prompt hashes checked in deployment |
-| Quote age and marketability rejected valid tickets | Re-check at dispatch without altering the saved ticket |
-| Snapshot cash and positions came from different moments | Scaled valuation tolerance and an explicit reconciliation contract |
-| Close watchers fired after the close | Close schedules run five minutes before the early and regular closes |
+| Problem | Response | Where |
+| --- | --- | --- |
+| Too many agents and a long context made a daily session impractical | One researcher-rater, inline briefs, five candidates, shorter context | Addenda 13-19 (`9960049`, `92fecfa`, `016da7c`) |
+| Prose-wrapped or batched model output broke ingestion | Strict JSON, one ticker per call, explicit null model provenance | Addenda 17-18 (`08a9fb6`, `8ee921d`) |
+| Cloud revision drift masked local fixes | Pinned revision, prompt hashes checked in deployment | Addendum 20 (`99ba8b1`) |
+| Quote age and marketability rejected valid tickets | Re-check at dispatch without altering the saved ticket | Addendum 21 (`8390191`) |
+| Snapshot cash and positions came from different moments | Scaled valuation tolerance and an explicit reconciliation contract | Addenda 22-24 (`283c534`, `7053f49`, `ed612cb`) |
+| Close watchers fired after the close | Close schedules run five minutes before the early and regular closes | Addendum 25 (`082123d`, `9ed01e3`) |
+| A copied order-history row lost its quantity and halted the desk | Trimmed broker replies, save checks, per-run abort instead of a persistent halt | Addendum 25 (`c2d44d2`, `082123d`) |
+| The dashboard kept showing HALTED after the operator restart | Feed carries the desk halt state from runtime state (`meta.desk`) | `1c1209e`, `8adffc6` |
 
 ## Limits
 
