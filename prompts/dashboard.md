@@ -120,3 +120,67 @@ Put it in dashboard/src/components/Duck.tsx with its SVG, and mention it in dash
 ```
 Restyle the desk duck in dashboard/src/components/Duck.tsx; keep all behaviour unchanged. Style reference described in words (do not copy or trace any existing image): a chunky glossy rubber duck in side view, sticker style, with a backwards black baseball cap, black wayfarer-style sunglasses with a small white glint, a wide slightly open orange beak (#ff7a1a, darker orange inside), yellow body (#f2c230) with a lighter highlight on head and wing, a short tucked wing, a thick near-black outline and a thin light outer edge. Original inline SVG, simplified to read clearly at about 36 px tall. Walking: bob and tilt the whole sticker slightly. Dozing: sunglasses stay on, small "z". Face the direction of travel.
 ```
+
+## Stage F: Trading floor view (the game, inside the dashboard)
+
+```
+Add a sixth view to the dashboard in dashboard/: "Trading floor", in the side nav after Debate room and in the phone bottom tabs, with its own link #floor. It shows the agents at work as a small top-down 2D office, replaying the event log. Keep everything else unchanged, including the colour code, the data layer (stateAt) and the desk duck.
+
+Rendering: one <canvas> drawn with plain TypeScript (no game engine, no new libraries, no image files). Shapes and text only: characters are simple rounded figures with a name tag; desks are rounded rectangles. Dark navy floor (#0c1322), desks (#121b2e), lines (#24314a), text (#e8edf6). Scales to the panel width; at 360 px it shows the whole floor smaller with a "rotate for a bigger view" hint.
+
+Desks, left to right in the order work flows:
+Scheduler, Screener (a board of tickers), Analysts (3 desks), Debate table (Bull, Bear, Manager), Quick classifier (small kiosk), Trader, Core rebalancer, Risk desk, Executor (beside a door labelled "Moomoo paper"), Watcher (walks a patrol loop), Auditor (beside a filing cabinet), Coordinator (centre, overlooking the floor).
+Colours: yellow #f2c230 = agents (analysts, bull, bear, manager, quick, coordinator, auditor); grey #8b97ad = code steps (scheduler, screener, trader, rebalancer, risk desk, executor, watcher); orange #ff7a1a = our orders (order slips, position board); blue #5b8def core, violet #a78bfa drift, teal #2dd4bf bounce for position tiles; green #34c98a approved/passed; red #f26b6b vetoed/stop/failed.
+
+Scenes, driven by the same events the other views read (1 to 3 seconds each at 1x):
+- run_started: lights on, the Scheduler rings a bell, equity on a wall display.
+- screen: tickers light up on the Screener board; picked ones rise to the top.
+- rating: an Analyst carries a paper to the Debate table; Bull and Bear show short speech bubbles (bullSummary / bearSummary when present, else "…"); the Manager raises a card with class and confidence. tier "quick": the paper goes to the Quick kiosk, which flashes its answer.
+- order_intent: the Trader writes an orange slip and walks it to the Risk desk.
+- risk_verdict: the Risk desk stamps APPROVED (green), RESIZED (amber) or VETO (red) with the rule name; vetoed slips drop in a bin.
+- order_submitted / fill: the Executor takes the slip through the "Moomoo paper" door; on fill a tile in its sleeve colour lands on the position board.
+- stop_hit: the Watcher blows a whistle; the tile turns red and leaves the board.
+- tier_changed: the floor lighting shifts (normal, amber, deep red) with a banner.
+- drill: a "DRILL" banner with expected vs observed and PASS/FAIL.
+- outcome: a small tick or cross pops above the decision's tile.
+- daily_report: the Auditor files the report; a summary card shows equity and P&L.
+
+Controls: play, pause, speed 1x/2x/4x, a scrubber over the session's events, "next event", and a session picker (same sessions as the other views). A ticker line along the bottom describes the current event in plain words. Clicking a character lists the events it handled; clicking a slip, tile or debate card opens the existing decision drawer. Scrubbing backwards must rebuild the correct scene from stateAt (no state that cannot rewind).
+
+The desk duck: on this view it waddles onto the floor and stands beside the Coordinator as the floor's mascot instead of following the cursor; it still respects reduced motion and the Duck on/off toggle.
+
+prefers-reduced-motion: no walking; scenes switch as still frames with the ticker line. Pause the animation loop when the tab is hidden.
+Done when the 19 Nov fixture replays every scene type without console errors, scrubbing back works, and the view passes the 360 px check. Update dashboard/README.md. Run it and give me the URL.
+```
+
+### Stage F revision: 3D voxel office with the duck crew (use this instead of the 2D canvas rendering above; scenes, controls and data rules stay as written)
+
+```
+Build the Trading floor view as a small 3D isometric office in the style of a low-poly / voxel game (our own design; do not copy any existing product's layout, signage or branding).
+
+Tech: three.js (add the npm package to dashboard/; no other new libraries, no external model or texture files). Everything is built from boxes, cylinders and spheres in code. Orthographic camera at a fixed isometric angle; drag to pan, wheel or pinch to zoom within limits, a "reset view" button; no free 360 orbit. Soft lighting with one shadow-casting light. Name tags are HTML overlays above each duck (dark pill, role name, small status dot: grey idle, yellow working, green done, red problem). Keep the frame rate light: render on demand when something moves, pause when the tab is hidden.
+
+The office (left to right in work order): a wooden floor and low walls; Scheduler by a wall clock; Screener at a big ticker board on the back wall; three Analyst desks with monitors; a glass-walled Debate room with a round table (Bull, Bear, Manager); a small Quick kiosk; Trader desk; Core rebalancer desk; Risk desk in a booth with a big APPROVED / RESIZED / VETO stamp; Executor beside a door labelled "Moomoo paper"; Watcher patrolling the aisle; Auditor at a filing cabinet; Coordinator on a raised platform in the centre. A position board on one wall shows tiles in sleeve colours (blue core, violet drift, teal bounce). A small lounge corner with a sofa and a plant for life. Wall screen shows equity and the risk tier; the whole office lighting tints amber or deep red when the tier changes.
+
+The duck crew (voxel ducks built from blocks; body yellow #f2c230 = LLM agent, light grey #c3ccdc = code step; orange #ff7a1a beak and feet; each role recognisable by silhouette first):
+- Analyst: round glasses, blue beret, holds an open newspaper.
+- Bull: green horned helmet, leans forward, small up-arrow flag.
+- Bear: red bear-ear hood, arms crossed, down-arrow sign.
+- Manager: slightly larger, black top hat with violet band, gavel.
+- Quick: tiny duckling with a lightning bolt, moves fastest.
+- Coordinator: headset with mic, clipboard.
+- Auditor: violet bow tie, magnifying glass.
+- Scheduler (grey): alarm clock on its head.
+- Screener (grey): binoculars raised.
+- Trader (grey): green eyeshade, pencil behind the ear, orange order slip.
+- Risk desk (grey): green banker visor, giant red stamp.
+- Executor (grey): orange courier cap and backpack, carries slips through the Moomoo door.
+- Watcher (grey): dark patrol cap, flashlight with a soft beam, whistle.
+The mascot desk duck (backwards cap and sunglasses) stands beside the Coordinator's platform as the office mascot.
+
+Animation: ducks waddle (bob and side-to-side tilt) between desks along simple paths; speech bubbles are HTML overlays; stamps, slips and tiles are small 3D objects that move. All scenes from the 2D spec play the same way in 3D.
+
+Fallbacks: prefers-reduced-motion, no WebGL, or width under 600 px -> show the 2D still-frame version (desk map with name tags and the ticker line), same controls.
+
+Keep the decision drawer, the scrubber, session picker, speed controls and #floor link. Done when the 19 Nov fixture replays every scene type, scrubbing back rebuilds the scene, no console errors, and the fallback works at 360 px. Update dashboard/README.md. Run it and give me the URL.
+```

@@ -2831,7 +2831,7 @@ button.stamp:disabled {
     bottom: 0;
     z-index: 80;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(6, minmax(0, 1fr));
     background: var(--bg);
     border-top: 1px solid var(--line);
   }

@@ -1,4 +1,4 @@
-export type ViewKey = "mission" | "risk" | "radar" | "truth" | "debate";
+export type ViewKey = "mission" | "risk" | "radar" | "truth" | "debate" | "floor";
 
 export const VIEWS: { key: ViewKey; label: string; short: string }[] = [
   { key: "mission", label: "Mission control", short: "Mission" },
@@ -6,6 +6,7 @@ export const VIEWS: { key: ViewKey; label: string; short: string }[] = [
   { key: "radar", label: "Mover radar", short: "Radar" },
   { key: "truth", label: "Truth table", short: "Truth" },
   { key: "debate", label: "Debate room", short: "Debate" },
+  { key: "floor", label: "Trading floor", short: "Floor" },
 ];
 
 export function SideNav({ view }: { view: ViewKey }) {
@@ -31,9 +32,9 @@ export function SideNav({ view }: { view: ViewKey }) {
       <div className="side-note">
         <p className="nav-label">Build</p>
         <p>
-          Stage 2: all five views are built from the static fixture logs. Outcome grading, bull/bear
-          transcripts and the quick shadow book are not logged, so those cells say so. Stage 3 is not
-          built.
+          Stage 2 and the 3D trading floor are built from the static fixture logs. Outcome grading,
+          bull/bear transcripts and the quick shadow book are not logged, so those cells say so.
+          Stage 3 is not built.
         </p>
       </div>
     </aside>

@@ -12,6 +12,8 @@ import { RiskDesk } from "./views/RiskDesk";
 import { MoverRadar } from "./views/MoverRadar";
 import { TruthTable } from "./views/TruthTable";
 import { DebateRoom } from "./views/DebateRoom";
+import { TradingFloor } from "./views/TradingFloor";
+import { readDuckPreference, writeDuckPreference } from "./components/Duck";
 
 function viewFromHash(hash: string): ViewKey | null {
   if (hash === "#main") return null;
@@ -26,6 +28,7 @@ export default function App() {
   const [decisionId, setDecisionId] = useState<string | null>(null);
   const [verifyOpen, setVerifyOpen] = useState(false);
   const [verify, setVerify] = useState<VerifyState>({ busy: false, ran: false, results: [], error: null });
+  const [duckEnabled, setDuckEnabled] = useState<boolean>(readDuckPreference);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -52,6 +55,12 @@ export default function App() {
 
   const liveSeq = corpus?.events.length ?? 0;
   const state = useMemo(() => (corpus ? stateAt(corpus.events, liveSeq) : null), [corpus, liveSeq]);
+  const toggleDuck = () =>
+    setDuckEnabled((current) => {
+      const next = !current;
+      writeDuckPreference(next);
+      return next;
+    });
 
   const runVerify = useCallback(async () => {
     if (!corpus) return;
@@ -117,6 +126,9 @@ export default function App() {
           setVerifyOpen(opening);
           if (opening) void runVerify();
         }}
+        duckEnabled={duckEnabled}
+        onToggleDuck={toggleDuck}
+        floorMode={view === "floor"}
       />
 
       {verifyOpen ? (
@@ -142,11 +154,18 @@ export default function App() {
             <MoverRadar state={state} onOpenDecision={setDecisionId} />
           ) : view === "truth" ? (
             <TruthTable state={state} />
-          ) : (
+          ) : view === "debate" ? (
             <DebateRoom state={state} />
+          ) : (
+            <TradingFloor
+              state={state}
+              events={corpus.events}
+              duckEnabled={duckEnabled}
+              onOpenDecision={setDecisionId}
+            />
           )}
           <footer className="app-footer">
-            <span>MooWoo Desk · Stage 2</span>
+            <span>MooWoo Desk · Stage 2 + trading floor</span>
             <span>Static fixture logs only. No API keys, no broker calls, no additional network data.</span>
             <span>SIMULATED FUNDS</span>
           </footer>

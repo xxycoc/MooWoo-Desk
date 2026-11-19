@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { DeskState } from "../data/types";
 import { fmtHash, fmtSignedPct, fmtUsd, countdownText, signClass } from "../data/format";
-import { Duck, DuckToggle, readDuckPreference, writeDuckPreference } from "./Duck";
+import { Duck, DuckToggle } from "./Duck";
 import { Num, Trace } from "./Trace";
 
 const TIERS = [
@@ -66,24 +66,24 @@ export function TopBar({
   verifyBusy,
   verifyTone,
   onToggleVerify,
+  duckEnabled,
+  onToggleDuck,
+  floorMode,
 }: {
   state: DeskState;
   verifyOpen: boolean;
   verifyBusy: boolean;
   verifyTone: "ok" | "fail" | "unchecked";
   onToggleVerify: () => void;
+  duckEnabled: boolean;
+  onToggleDuck: () => void;
+  floorMode: boolean;
 }) {
   const now = useNow(1000);
   const market = usSession(now);
   const remaining = nextRunAt(now) - now.getTime();
   const pnl = state.liveSession?.pnlPct ?? null;
   const activeTier = state.tier;
-  const [duckEnabled, setDuckEnabled] = useState<boolean>(readDuckPreference);
-  const toggleDuck = () => {
-    const next = !duckEnabled;
-    writeDuckPreference(next);
-    setDuckEnabled(next);
-  };
   const verifyLabel = verifyBusy
     ? "Checking"
     : verifyTone === "ok"
@@ -97,7 +97,11 @@ export function TopBar({
       <div className="topbar-inner">
         <div className="brand-block">
           <span className="brand">MooWoo Desk</span>
-          <Duck enabled={duckEnabled} verifyBusy={verifyBusy} verifyTone={verifyTone} />
+          {floorMode ? (
+            <span className="duck-anchor" aria-hidden="true" />
+          ) : (
+            <Duck enabled={duckEnabled} verifyBusy={verifyBusy} verifyTone={verifyTone} />
+          )}
           <span className="sim-badge">SIMULATED FUNDS</span>
         </div>
 
@@ -167,7 +171,7 @@ export function TopBar({
               <code>{state.promptVersion ?? "—"}</code>
             </Trace>
           </span>
-          <DuckToggle enabled={duckEnabled} onToggle={toggleDuck} />
+          <DuckToggle enabled={duckEnabled} onToggle={onToggleDuck} />
           <button
             type="button"
             className={`verify-button tone-${verifyTone}`}

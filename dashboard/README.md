@@ -1,4 +1,4 @@
-# MooWoo Desk dashboard — Stage 2b
+# MooWoo Desk dashboard — Stage 2b + trading floor
 
 Static operations screen for the paper-trading desk. It reads the three fictional
 fixture logs and rebuilds every figure from the event stream. There are no API
@@ -39,10 +39,11 @@ npm run preview
 
 ## View links
 
-Each view has a stable fragment: `#mission`, `#risk`, `#radar`, `#truth` and
-`#debate`. Opening one of those URLs selects that view directly. Navigation
-updates the address without a reload, and browser Back/Forward moves between
-views. The `#main` skip link and unknown fragments leave the current view alone.
+Each view has a stable fragment: `#mission`, `#risk`, `#radar`, `#truth`,
+`#debate` and `#floor`. Opening one of those URLs selects that view directly.
+Navigation updates the address without a reload, and browser Back/Forward moves
+between views. The `#main` skip link and unknown fragments leave the current
+view alone.
 
 ## Desk duck
 
@@ -53,6 +54,66 @@ movement, bobs while walking and hops when verification completes. The Duck
 button stores the on/off choice in `localStorage`. Coarse-pointer devices and
 `prefers-reduced-motion` park it at its slot with no animation, and the duck is
 decorative (`aria-hidden`, `pointer-events: none`).
+
+## Trading floor (`#floor`)
+
+The floor replays one session event by event as an isometric voxel office. It is
+built from three.js primitives only (`dashboard/src/components/Floor3D.tsx`):
+boxes, cylinders and spheres, no models, textures or third-party art. The
+orthographic camera is fixed-angle; dragging pans, wheel or pinch zooms between
+0.72x and 2.35x, and **Reset view** restores the frame. There is one shadow-
+casting light. Name tags, speech bubbles, cards, stamps and the tier screen are
+HTML overlays projected from 3D positions. Frames render on demand (after a
+change, while a short scene animation runs, or on interaction) and stop while
+the tab is hidden.
+
+Layout follows the work flow left to right in zones that use the whole floor.
+Intake (Scheduler wall clock, Screener ticker board and the patrolling Watcher)
+sits along the back-left wall; the research pod puts Analysts 1-3 around one
+table; the debate pit has Bull and Bear facing each other across the round table
+with the Manager between them; Decision holds the Quick kiosk and the Trader
+desk; Controls holds the Risk booth with the APPROVED/RESIZED/VETO stamp and the
+Core rebalancer; Execution puts the Executor by the "Moomoo paper" door; and the
+back office (Auditor filing cabinet) sits in the bottom-right corner. The
+Coordinator platform stays in the centre and the mascot with the backwards cap
+and sunglasses free-roams the open floor in front of it; the **Duck** toggle
+hides it.
+
+Each duck reads at the default zoom. Agents keep yellow bodies with a distinct
+silhouette or prop: Bull's horns and broad body, the Bear's round body and dark
+cap, the Manager's tall hat, the Analysts' differently coloured clipboards,
+Quick's small frame with a stopwatch, and the Trader's headset. Code steps
+(Scheduler, Screener, Watcher, Risk desk, Executor, Core rebalancer, Auditor)
+use a grey-white body with one coloured accent each. Name tags float above the
+heads on a short leader line and fade to 50% while a replay event highlights
+other ducks. Speech bubbles and rating/report cards are positioned in screen
+space to stay clear of tags, wall overlays and each other; when the floor is
+too crowded for a clear slot they dock at the top-left of the stage.
+
+The equity/tier wall screen is unchanged. The big wall board lists only the
+five core ETFs (USMV, XLP, XLV, IEF and GLD, blue chips); a smaller satellite
+board beside it lists non-core holdings with a violet dot for drift and a teal
+dot for bounce (grey when the sleeve is unclassified). The session fixtures
+hold no drift or bounce names, so those two dot styles exist but cannot be
+exercised by the bundled data.
+
+`src/data/floor.ts` derives each scene purely from `stateAt(events, gseq)` and
+`sceneAt(sessionEvents, index, eventState)`, so scrubbing backwards rebuilds the
+same scene. Every fixture scene type is covered: run start, screen, debate and
+quick ratings, shadow books, tier changes, order intents, risk approve/resize/
+veto, submissions, fills, stop hits, halts, rule changes, drills, reflection
+notes, core rebalancing and daily reports. There are no `outcome` events in the
+fixtures, so that scene is implemented but never triggered.
+
+Controls are play/pause/replay, 1x/2x/4x, a scrubber, **Next event** and the
+session picker (same three sessions as the other views). Clicking a duck or its
+tag lists the events that role handled; clicking a slip, position tile or debate
+card opens the existing decision drawer.
+
+The floor falls back to the flat still-frame map (`FloorMap2D`) at
+`prefers-reduced-motion: reduce`, when WebGL is unavailable, or when the stage
+is narrower than 600 px (for example a 360 px phone). The fallback replays the
+same scenes and keeps the drawer, scrubber, picker and ticker line.
 
 ## Hash verification
 
@@ -98,5 +159,6 @@ tables scroll inside their own box, focus rings are visible, and
 `prefers-reduced-motion` disables animation/transition. ECharts animation is
 always off in the option objects.
 
-Stage 2 and the desk duck are complete: Mover radar, Truth table and Debate room
-are built alongside Mission control and Risk desk wall. Stage 3 is not built.
+Stage 2, the desk duck and the 3D trading floor are complete: Mover radar, Truth
+table and Debate room are built alongside Mission control, Risk desk wall and
+the floor replay. Stage 3 is not built.

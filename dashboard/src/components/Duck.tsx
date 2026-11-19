@@ -57,10 +57,12 @@ export function Duck({
   enabled,
   verifyBusy,
   verifyTone,
+  follow = true,
 }: {
   enabled: boolean;
   verifyBusy: boolean;
   verifyTone: "ok" | "fail" | "unchecked";
+  follow?: boolean;
 }) {
   const anchorRef = useRef<HTMLSpanElement | null>(null);
   const layerRef = useRef<HTMLDivElement | null>(null);
@@ -71,6 +73,7 @@ export function Duck({
   const facingRef = useRef<Facing>("right");
   const walkingRef = useRef(false);
   const enabledRef = useRef(enabled);
+  const followRef = useRef(follow);
   const fineRef = useRef(true);
   const reducedRef = useRef(false);
   const rafRef = useRef<number | null>(null);
@@ -120,7 +123,7 @@ export function Duck({
 
   const scheduleSleep = useCallback(() => {
     clearSleep();
-    if (!enabledRef.current || !fineRef.current || reducedRef.current || document.hidden) return;
+    if (!enabledRef.current || !followRef.current || !fineRef.current || reducedRef.current || document.hidden) return;
     if (modeRef.current !== "home") return;
     sleepRef.current = window.setTimeout(() => {
       if (modeRef.current === "home" && enabledRef.current && !reducedRef.current) {
@@ -132,11 +135,13 @@ export function Duck({
 
   const ensureLoop = useCallback(() => {
     if (rafRef.current != null) return;
-    if (!enabledRef.current || !fineRef.current || reducedRef.current || document.hidden) return;
+    if (!enabledRef.current || !followRef.current || !fineRef.current || reducedRef.current || document.hidden)
+      return;
 
     const tick = () => {
       rafRef.current = null;
-      if (!enabledRef.current || !fineRef.current || reducedRef.current || document.hidden) return;
+      if (!enabledRef.current || !followRef.current || !fineRef.current || reducedRef.current || document.hidden)
+        return;
 
       const current = positionRef.current;
       const target = targetRef.current;
@@ -195,7 +200,7 @@ export function Duck({
 
   const followPointer = useCallback(
     (clientX: number, clientY: number) => {
-      if (!enabledRef.current || !fineRef.current || reducedRef.current) return;
+      if (!enabledRef.current || !followRef.current || !fineRef.current || reducedRef.current) return;
 
       const margin = 6;
       let x = clientX + FOLLOW_OFFSET;
@@ -257,6 +262,11 @@ export function Duck({
     }
   }, [enabled, park]);
 
+  useEffect(() => {
+    followRef.current = follow;
+    if (!follow) park();
+  }, [follow, park]);
+
   useLayoutEffect(() => {
     if (!enabled) return;
     measureHome();
@@ -305,11 +315,11 @@ export function Duck({
   }, [reducedMotion, park]);
 
   useEffect(() => {
-    if (!enabled || !finePointer || reducedMotion) return;
+    if (!enabled || !follow || !finePointer || reducedMotion) return;
     const onMove = (event: MouseEvent) => followPointer(event.clientX, event.clientY);
     window.addEventListener("mousemove", onMove, { passive: true });
     return () => window.removeEventListener("mousemove", onMove);
-  }, [enabled, finePointer, reducedMotion, followPointer]);
+  }, [enabled, follow, finePointer, reducedMotion, followPointer]);
 
   useEffect(() => {
     const onVisibility = () => {
@@ -317,7 +327,7 @@ export function Duck({
         cancelLoop();
         return;
       }
-      if (!enabledRef.current || !fineRef.current || reducedRef.current) return;
+      if (!enabledRef.current || !followRef.current || !fineRef.current || reducedRef.current) return;
       if (modeRef.current === "follow" && Date.now() - lastMoveRef.current >= IDLE_MS) {
         beginReturn();
       } else if (modeRef.current !== "home") {
