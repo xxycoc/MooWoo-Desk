@@ -6,6 +6,10 @@ Trading window: **17-27 November 2026**. Submission: **30 November 2026**.
 Judging weights: risk-adjusted return 25%, Qoder and Cloud Agent usage 30%,
 strategy and risk design 30%, reusability and documentation 15%.
 
+Live dashboard: **https://moowoo-desk-p36f61ggjia.qoder.website** — read-only,
+built from the scrubbed public feed. It has no broker access and never loads the
+private ledger.
+
 ## How the desk works
 
 There are **three active trading agents**, plus a separate after-close auditor.
@@ -34,6 +38,21 @@ The diagram shows the morning path. Watch sessions manage existing positions
 without new rating calls. The auditor has no order tools. Public feed publication
 also runs on session completion, independently of whether an audit has produced
 a report. Broker acceptance is not a fill; positions change on reconciliation.
+
+### Trading floor
+
+The dashboard's **Floor** tab replays one loaded session as a small voxel office.
+Three ducks represent the active agents (coordinator, analyst, executor); screener,
+risk desk, watcher and auditor are code stations with no duck. Stations light from
+the event log, a halt raises an alarm, and replay offers play/pause, speed, a
+scrubber, event stepping and a session picker. The floor is a visualisation of the
+same scrubbed feed as the rest of the dashboard, not a separate order engine or a
+live broker view.
+
+At desktop widths with WebGL the floor renders in 3D; on phone widths under 640
+pixels, without WebGL, or with `prefers-reduced-motion`, it falls back to a static
+2D map with the same event lighting. The stage reserves the bottom-right area for
+the host badge instead of placing controls there.
 
 ## Strategy in plain words
 
