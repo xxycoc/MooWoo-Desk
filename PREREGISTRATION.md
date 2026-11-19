@@ -511,3 +511,22 @@ Written on 19 November 2026 at about 09:50 Singapore (18 November, 20:50 New Yor
   - The auditor fetches completed daily bars with one command, every audit abort logs its reason, and the report
     keeps what it can compute and lists what is missing instead of inventing numbers.
   - The close watcher moves to 15:55 New York, and to 12:55 on the 27 November early close.
+
+## 26. Addendum 2026-11-19: an unreadable quote gets one refresh; the close audit posts to Slack
+
+Written on 19 November 2026 at about 23:10 Singapore (10:10 New York), during the session.
+
+- promptVersion `e90c070c64e7ab5cb57e4d675111d58425978ba01906bc96465ec5b0b4d594b5` (unchanged; no prompt edits).
+- Why: in the 19 November morning run the coordinator wrote a malformed copy of the IEF quote reply
+  (`Expecting ':' delimiter`) and later rewrote it correctly, but dispatch had already read the broken file and
+  skipped the IEF core sell. Under CORE-REBALANCE-01 the USMV, XLV and GLD core buys then could not be authorized,
+  so the core rebalance did not happen that day. The TJX satellite buy was skipped separately because the fresh
+  quote moved past its limit, which is the intended behaviour.
+- Changes:
+  - A quote file that cannot be read or parsed now shares the existing one-refresh budget of a stale quote
+    (commit `9e59566`, deployed as agent version 32): the coordinator fetches one fresh single-symbol quote and
+    repeats the check; a second failure skips the ticket as before. Price past the limit, spread, symbol mismatch,
+    future timestamps and CORE-REBALANCE-01 still skip at once. No limit, threshold or sizing rule changed.
+  - The close audit ends with a fixed summary written by code from the daily report (commit `bade87f`, agent
+    version 31), and the audit schedules deliver it to a paired Slack channel. Only the auditor, which has no
+    order tools, is connected to Slack.
