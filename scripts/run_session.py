@@ -63,6 +63,16 @@ def publish_feed(root):
         return False
 
 
+def print_slack_summary(result):
+    """The audit's fixed close summary goes last so the schedule sink can copy it verbatim."""
+    text = result.get("slackText") if isinstance(result, dict) else None
+    if not isinstance(text, str) or not text.strip():
+        return
+    print("SLACK SUMMARY START")
+    print(text)
+    print("SLACK SUMMARY END")
+
+
 def run(args, now=None):
     injected_now = now
     now = calendar.local_time(now or datetime.now(timezone.utc))
@@ -115,11 +125,13 @@ def run(args, now=None):
                 atomic_json(state_path, state.to_dict())
         if args.kind == "audit":
             from audit_report import write
-            write(root, context, log, getattr(args, "reason", "operator abort; reason not supplied"))
+            written = write(root, context, log, getattr(args, "reason", "operator abort; reason not supplied"))
+        else:
+            written = {}
         log.append("reflection_note", dict(prompt="Session runner", text="Session aborted: " + getattr(args, "reason", "operator abort; reason not supplied"), skipped=True))
         saved = store.save("Abort session; preserve evidence", holder)
         control.unlink()
-        return saved | dict(feedPublished=publish_feed(root))
+        return saved | written | dict(feedPublished=publish_feed(root))
     require_owned(store, holder, injected_now)
     # Recording a receipt and persisting evidence remain mandatory if the clock crosses close.
     if args.phase not in ("record", "reconcile", "grade_calls", "score_hypotheses", "finish"):
@@ -230,7 +242,9 @@ def main():
     parser.add_argument("--reason", default="operator abort; reason not supplied")
     args = parser.parse_args()
     try:
-        print(json.dumps(run(args)))
+        result = run(args)
+        print(json.dumps(result))
+        print_slack_summary(result)
         return 0
     except (ValueError, KeyError, TypeError, OSError, LedgerError) as exc:
         # Ledger errors are deliberately free of git output; no broker payloads are echoed.
@@ -244,6 +258,7 @@ def main():
         except (ValueError, KeyError, TypeError, OSError):
             pass
         recovery = "local copy retained; run --phase abort to persist evidence when ownership permits"
+        aborted = {}
         if args.phase != "renew" and not isinstance(exc, LedgerError):
             try:
                 args.reason = f"{args.phase}: {redact_error(exc)}"
@@ -254,6 +269,7 @@ def main():
             except (ValueError, KeyError, TypeError, OSError, LedgerError):
                 pass
         print(json.dumps(dict(halted=True, reason=redact_error(exc), recovery=recovery, **feed_result)))
+        print_slack_summary(aborted)
         return 2
 
 

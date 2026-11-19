@@ -176,11 +176,16 @@ def build_payloads(settings=None, root=ROOT, *, executor_approval="ask"):
         })
 
     def instructions(kind):
-        return (f"From /data/workspace/MooWoo-Desk run python3 scripts/run_session.py --kind {kind} --phase start. "
+        text = (f"From /data/workspace/MooWoo-Desk run python3 scripts/run_session.py --kind {kind} --phase start. "
                 "If skipped or refused, stop this session without orders. Follow the phase commands in your system prompt, "
                 "retain every agent input/output under the returned inputs directory, and finish with --phase finish "
                 "(or --phase abort on failure). Never continue past lease expiry. "
                 "The runner saves checkpoints and releases the account lock only with a successful final save. ")
+        if kind == "audit":
+            text += ("When the run is complete, end the session by replying with exactly the text between "
+                     "SLACK SUMMARY START and SLACK SUMMARY END, with nothing before or after it. "
+                     "If no summary was printed, reply with one line: 'MooWoo Desk audit <date>: no summary produced, see ledger.'")
+        return text
     # Morning runs after the first-5-minutes rule; screening uses completed prior-day bars.
     schedule("morning", "coordinator", "35 9 * * 1-5", "America/New_York", instructions("morning"))
     # 10:00..15:30 and 15:55 NY; the 09:35 morning run covers the open.

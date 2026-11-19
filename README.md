@@ -38,6 +38,8 @@ The diagram shows the morning path. Watch sessions manage existing positions
 without new rating calls. The auditor has no order tools. Public feed publication
 also runs on session completion, independently of whether an audit has produced
 a report. Broker acceptance is not a fill; positions change on reconciliation.
+Each close ends with a code-written audit summary, and only the auditor (no order
+tools) posts it to Slack through a Qoder schedule sink.
 
 ### Trading floor
 

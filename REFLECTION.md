@@ -62,6 +62,9 @@ than the last recorded halt.
 - **Schedules:** six cron schedules in `America/New_York`: morning at 09:35, a
   regular watcher every 30 minutes from 10:00 to 15:30, a close watcher at 15:55,
   an audit at 16:10, and early-close variants on 27 November at 12:55 and 13:10.
+- **Slack:** each audit close summary is written in code (`scripts/audit_report.py`)
+  and posted by the audit schedule sink; only the auditor, which has no order
+  tools, is connected to Slack.
 - **Dashboard and floor:** the read-only dashboard and its 3D trading floor were
   built in Qoder and published on Qoder Sites. The floor is a visualization of
   the scrubbed feed, not an order surface.
