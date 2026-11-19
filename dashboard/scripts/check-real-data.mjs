@@ -20,8 +20,7 @@ try {
   const { loadCorpus } = await server.ssrLoadModule('/src/data/load.ts');
   const { stateAt } = await server.ssrLoadModule('/src/data/state.ts');
   const { verifyLog } = await server.ssrLoadModule('/src/data/verify.ts');
-  const { creditPlan } = await server.ssrLoadModule('/src/data/metrics.ts');
-  const { debateRecords, truthView } = await server.ssrLoadModule('/src/data/stage2.ts');
+  const { lastRuns, closedTradeScore } = await server.ssrLoadModule('/src/data/dashboard.ts');
   const corpus = await loadCorpus();
   assert.deepEqual(corpus.errors, []);
   assert(corpus.events.length > 0);
@@ -39,15 +38,14 @@ try {
   const firstFill = corpus.events.find((e) => e.type === 'fill');
   assert.deepEqual(stateAt(corpus.events, firstFill.gseq - 1).positions, [], 'proposals are not holdings');
   assert(state.ratings.some((r) => r.tier === 'single' && r.credits === null));
-  assert.equal(creditPlan(state).unavailable, true);
   assert.equal(state.creditTotal, null);
   assert(state.reflectionNotes.some((n) => n.executionAction === 'skip'));
-  assert.equal(state.skips.filter((s) => s.ev.executionAction === 'skip').length, 5);
+  assert.equal(state.skips.filter((s) => s.ev.executionAction === 'skip').length,
+    corpus.events.filter((event) => event.type === 'reflection_note' && event.executionAction === 'skip').length);
   assert(state.vetoes.some((v) => v.firedRule === 'core_target'));
   assert(state.resizes.some((v) => v.firedRule === 'core_target'));
   assert(state.halts.some((h) => h.ev.diff != null));
-  assert(debateRecords(state).some((r) => r.tier === 'single' && r.manager?.tier === 'single'));
-  assert.equal(truthView(state).bins.reduce((sum, bin) => sum + bin.single, 0), 10);
+  assert.equal(closedTradeScore(corpus.events).count, 0);
   for (const log of corpus.logs) {
     const result = await verifyLog(log.file, log.rawText);
     assert.equal(result.scrubbed, true);
@@ -65,19 +63,18 @@ try {
     assert(!/"[^"\n]*(?:acc_id|account.?id|token|secret|password|authorization|raw.?payload|broker.?payload)[^"\n]*"\s*:/i.test(text), `${name}: private key`);
     assert(!/\/data\//.test(text), `${name}: private path`);
   }
-  for (const name of ['MissionControl', 'RiskDesk', 'MoverRadar', 'TruthTable', 'DebateRoom']) {
+  for (const name of ['Now', 'Strategy', 'MoverRadar']) {
     const module = await server.ssrLoadModule(`/src/views/${name}.tsx`);
-    const html = renderToStaticMarkup(React.createElement(module[name], { state, onOpenDecision() {} }));
+    const html = renderToStaticMarkup(React.createElement(module[name], { state, events: corpus.events, runs: lastRuns(corpus.events, state), onOpenDecision() {} }));
     assert(html.length > 100);
     assert(!html.includes('NaN'), `${name}: NaN output`);
-    if (name === 'RiskDesk') assert(html.includes('CURRENT LATCH UNKNOWN'));
-    if (name === 'MissionControl') assert(html.includes('Credit usage unavailable'));
-    if (name === 'DebateRoom') assert(html.includes('Researcher-rater verdict'));
+    if (name === 'Now') assert(html.includes('Last runs'));
+    if (name === 'Strategy') assert(html.includes('daily audit'));
   }
   console.log(JSON.stringify({ logs: corpus.logs.length, events: corpus.events.length,
     asOf: state.asOf.ts, positions: state.positions.map(({ ticker, qty }) => ({ ticker, qty })),
     cash: state.cash, ratings: state.ratings.length, orders: state.orders.length,
-    checks: 'loader, reducer, scrub scan, original-chain verification, five SSR views passed' }, null, 2));
+    checks: 'loader, reducer, scrub scan, original-chain verification, Option B SSR views passed' }, null, 2));
 } finally {
   globalThis.fetch = originalFetch;
   await server.close();

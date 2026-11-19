@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import type { EChartsOption } from "echarts";
 import type { DeskState } from "../data/types";
 import { radarView, type RadarPoint } from "../data/stage2";
-import { fmtDate, fmtNum, fmtPct } from "../data/format";
+import { fmtNum } from "../data/format";
+import { sgtTime } from "../data/dashboard";
 import { Panel } from "../components/Panel";
 import { CHART_FONT, Chart, chartAxisCommon, chartTooltip } from "../components/Chart";
 
@@ -64,6 +65,7 @@ function bubbleOption(points: RadarPoint[]): EChartsOption {
     tooltip: {
       ...chartTooltip,
       trigger: "item",
+      confine: true,
       formatter: (params: unknown) => {
         const dataPoint = (params as { data?: BubbleDatum }).data;
         if (!dataPoint) return "";
@@ -94,8 +96,8 @@ function bubbleOption(points: RadarPoint[]): EChartsOption {
     yAxis: {
       type: "log",
       logBase: 10,
-      min: 1,
-      max: 4,
+      min: Math.min(1, ...points.filter((point) => point.rvol > 0).map((point) => point.rvol)),
+      max: Math.max(4, ...points.map((point) => point.rvol)) * 1.1,
       splitNumber: 4,
       name: "RVOL (log)",
       nameLocation: "middle",
@@ -123,7 +125,7 @@ function bubbleOption(points: RadarPoint[]): EChartsOption {
               opacity: point?.skipped ? 0.62 : 0.95,
             },
             label: {
-              show: true,
+              show: Boolean(point?.picked || point?.traded),
               position: "top",
               formatter: "{b}",
               color: "#e8edf6",
@@ -132,6 +134,8 @@ function bubbleOption(points: RadarPoint[]): EChartsOption {
             },
           };
         }),
+        labelLayout: { hideOverlap: true },
+        emphasis: { label: { show: true } },
         markLine: {
           silent: true,
           symbol: "none",
@@ -154,180 +158,23 @@ function bubbleOption(points: RadarPoint[]): EChartsOption {
   };
 }
 
-export function MoverRadar({
-  state,
-  onOpenDecision,
-}: {
-  state: DeskState;
-  onOpenDecision: (id: string) => void;
+export function MoverRadar({ state, onOpenDecision }: {
+  state: DeskState; onOpenDecision: (id: string) => void;
 }) {
-  const latest = state.sessions[state.sessions.length - 1]?.runId ?? "";
-  const [selected, setSelected] = useState(latest);
-  const runId = state.sessions.some((session) => session.runId === selected) ? selected : latest;
-  const radar = useMemo(() => (runId ? radarView(state, runId) : null), [state, runId]);
-  const option = useMemo(() => (radar ? bubbleOption(radar.points) : null), [radar]);
-
-  if (!radar) {
-    return <p className="empty">No screened session is loaded.</p>;
-  }
-
-  const summary = radar.points
-    .map(
-      (point) =>
-        `${point.ticker} z ${point.z.toFixed(1)}, RVOL ${point.rvol.toFixed(1)} (${point.status.toLowerCase()})`,
-    )
-    .join("; ");
-
-  return (
-    <>
-      <div className="view-head">
-        <div>
-          <h1>Mover radar</h1>
-          <p className="view-sub">
-            Every screened stock in the selected session. The bubble sits at its move z-score and
-            relative volume; the ring marks a name we traded.
-          </p>
-        </div>
-        <div className="session-bar" role="group" aria-label="Selected session">
-          {state.sessions.map((session) => (
-            <button
-              key={session.runId}
-              type="button"
-              className={session.runId === runId ? "session-chip active" : "session-chip"}
-              aria-pressed={session.runId === runId}
-              onClick={() => setSelected(session.runId)}
-            >
-              {fmtDate(session.startTs)}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="radar-grid">
-        <Panel
-          className="span-8"
-          title="Screened movers"
-          question="Move z-score against relative volume; gate lines are fixed by the preregistration"
-          id="panel-radar"
-        >
-          {option ? (
-            <Chart
-              option={option}
-              height={330}
-              ariaLabel={`Bubble chart of ${radar.points.length} screened stocks. X is move z-score, Y is relative volume on a log scale. Gate lines are at absolute z 2, RVOL 2 and RVOL 3.`}
-              summary={`${radar.points.length} screened names in ${fmtDate(radar.session.startTs)}: ${summary}.`}
-              footnote={`${radar.caveat} Market caps come from config/universe-2026-11-16.json because the screen event carries no market cap. Gate lines: |z| = 2, RVOL = 2 (drift minimum) and RVOL = 3 (bounce maximum).`}
-              onPointClick={(point) => {
-                const dataPoint = point.data as BubbleDatum | undefined;
-                if (dataPoint?.decisionId) onOpenDecision(dataPoint.decisionId);
-              }}
-            />
-          ) : null}
-          <ul className="radar-legend" aria-label="Bubble legend">
-            <li>
-              <span className="legend-swatch" style={{ background: "#a78bfa" }} /> Explained up
-            </li>
-            <li>
-              <span className="legend-swatch" style={{ background: "#f26b6b" }} /> Explained down
-            </li>
-            <li>
-              <span className="legend-swatch" style={{ background: "#5b8def" }} /> Unexplained up
-            </li>
-            <li>
-              <span className="legend-swatch" style={{ background: "#2dd4bf" }} /> Unexplained down
-            </li>
-            <li>
-              <span className="legend-swatch grey" /> Skip / not picked
-            </li>
-            <li>
-              <span className="legend-ring" /> Traded
-            </li>
-          </ul>
-          <p className="tiny">
-            Bubble size follows market cap. The chart is an accessible alternative to the ranked list
-            below; both open the decision drawer.
-          </p>
-        </Panel>
-
-        <Panel
-          className="span-4"
-          title="Universe funnel"
-          question="How the frozen universe narrows to traded names"
-          id="panel-funnel"
-        >
-          <ol className="funnel">
-            {radar.funnel.map((step) => (
-              <li key={step.key} className="funnel-step">
-                <div className="funnel-head">
-                  <span>{step.label}</span>
-                  <span className="funnel-count">{step.value.toLocaleString("en-US")}</span>
-                </div>
-                <div className="funnel-track" aria-hidden="true">
-                  <span
-                    className="funnel-fill"
-                    style={{
-                      width: `${Math.max(2, (Math.log10(step.value + 1) / Math.log10(radar.funnel[0].value + 1)) * 100)}%`,
-                    }}
-                  />
-                </div>
-                {step.drop != null ? (
-                  <p className="funnel-drop">
-                    −{step.drop.toLocaleString("en-US")} · {step.reason}
-                  </p>
-                ) : null}
-                {step.note ? <p className="tiny">{step.note}</p> : null}
-              </li>
-            ))}
-          </ol>
-          <p className="tiny">
-            The bar is log-scaled so the small stages remain visible. Screen counts come from logged
-            candidates; the 727 denominator is the preregistered gated universe.
-          </p>
-        </Panel>
-
-        <Panel
-          className="span-12"
-          title="Ranked screened names"
-          question="Sorted by absolute move z-score; click a row to open its decision"
-          id="panel-movers"
-        >
-          <div className="rank-list">
-            {radar.points.map((point, index) => (
-              <button
-                key={point.decisionId}
-                type="button"
-                className="rank-row"
-                onClick={() => onOpenDecision(point.decisionId)}
-                aria-label={`Rank ${index + 1}, ${point.ticker}, ${point.label}, z ${point.z.toFixed(2)}, RVOL ${point.rvol.toFixed(2)}, ${point.status}; open decision`}
-              >
-                <span className="rank-num">{index + 1}</span>
-                <span className="rank-ticker">{point.ticker}</span>
-                <span className="rank-class" style={{ color: point.skipped ? "#8b97ad" : point.color }}>
-                  {point.label}
-                </span>
-                <span className="num rank-metric">z {fmtNum(point.z, 2)}</span>
-                <span className="num rank-metric">RVOL {fmtNum(point.rvol, 2)}</span>
-                <span className={`num rank-metric ${point.movePct >= 0 ? "up" : "down"}`}>
-                  {fmtPct(point.movePct, 2)}
-                </span>
-                <span
-                  className={
-                    point.traded ? "rank-status traded" : point.skipped ? "rank-status skipped" : "rank-status"
-                  }
-                >
-                  {point.status}
-                </span>
-              </button>
-            ))}
-          </div>
-          <p className="tiny">
-            Class colours match the chart. A skipped name is grey even when its class is known.{" "}
-            {radar.outOfScreenTrades.length > 0
-              ? `Out-of-screen fill(s) also exist for ${radar.outOfScreenTrades.join(", ")}; they have no screen bubble.`
-              : ""}
-          </p>
-        </Panel>
-      </div>
-    </>
-  );
+  const sessions = state.sessions.filter((session) => session.events.some((event) => event.type === "screen"));
+  const latest = sessions.at(-1)?.runId ?? "";
+  const [selected, setSelected] = useState("");
+  const runId = sessions.some((session) => session.runId === selected) ? selected : latest;
+  const radar = useMemo(() => runId ? radarView(state, runId) : null, [state, runId]);
+  const points = useMemo(() => radar?.points.filter((point) => Number.isFinite(point.z) && Number.isFinite(point.rvol) && point.rvol > 0) ?? [], [radar]);
+  const option = useMemo(() => bubbleOption(points), [points]);
+  return <Panel className="wide" title="Mover radar" question="Which moves cleared the gates? Z-score against relative volume." id="radar-title"
+    actions={sessions.length > 0 ? <label className="radar-select">Screen <select value={runId} onChange={(event) => setSelected(event.target.value)}>{[...sessions].reverse().map((session) => <option key={session.runId} value={session.runId}>{sgtTime(session.startTs)}</option>)}</select></label> : undefined}>
+    {radar ? <>
+      <Chart option={option} height={260} ariaLabel="Mover bubbles: z-score against RVOL on a log scale, with gate lines and orange rings for traded names" summary={points.length + " screened movers. Orange ring: traded. Bubble size: frozen market cap, not confidence."} onPointClick={(point) => { const data = point.data as BubbleDatum | undefined; if (data?.decisionId) onOpenDecision(data.decisionId); }} />
+      <ul className="radar-legend" aria-label="Class colours">{[["Explained up", "#a78bfa"], ["Explained down", "#f26b6b"], ["Unexplained up", "#5b8def"], ["Unexplained down", "#2dd4bf"], ["Not rated / skipped", "#8b97ad"]].map(([label, color]) => <li key={label}><span className="legend-swatch" style={{ background: color }} />{label}</li>)}</ul>
+      <details className="ranked-movers"><summary>Ranked movers · {radar.points.length} names · {radar.points.filter((point) => point.traded).length} traded</summary><ol>{radar.points.map((point) => <li key={point.decisionId}><button className="text-button" onClick={() => onOpenDecision(point.decisionId)}>{point.ticker}</button><span className="num">z {fmtNum(point.z)} · RVOL {fmtNum(point.rvol)}</span><span>{point.status}</span></li>)}</ol></details>
+      {points.length !== radar.points.length && <p className="tiny">Non-positive or unavailable RVOL values cannot appear on a log axis; see the ranked list.</p>}
+    </> : <p className="empty">Mover radar appears after the first screening run.</p>}
+  </Panel>;
 }

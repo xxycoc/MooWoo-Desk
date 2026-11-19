@@ -114,18 +114,17 @@ test('cancelled load does not fall back', async () => {
 });
 
 
-test('top bar names the displayed source and latest event time', async () => {
+test('top bar keeps simulated funds and next scheduled SGT run visible', async () => {
   globalThis.window = { matchMedia: () => ({ matches: true }) };
   const React = await import('react');
   const { renderToStaticMarkup } = await import('react-dom/server');
   const { TopBar } = await server.ssrLoadModule('/src/components/TopBar.tsx');
   const { stateAt } = await server.ssrLoadModule('/src/data/state.ts');
-  for (const [source, label] of [['feed', 'Remote feed'], ['bundled-fallback', 'Bundled fallback (feed unavailable)'], ['bundled', 'Bundled snapshot']]) {
-    const html = renderToStaticMarkup(React.createElement(TopBar, {
-      state: stateAt([], 0), source, latestEventTs: row.ts,
-      verifyOpen: false, verifyBusy: false, verifyTone: 'unchecked', onToggleVerify() {},
-    }));
-    assert(html.includes(label));
-    assert(html.includes(row.ts));
-  }
+  const html = renderToStaticMarkup(React.createElement(TopBar, {
+    state: stateAt([], 0), next: { kind: 'Morning', at: new Date('2026-11-19T14:35:00Z') },
+    verifyBusy: false, verifyTone: 'unchecked',
+  }));
+  assert(html.includes('SIMULATED FUNDS'));
+  assert(html.includes('Morning'));
+  assert(html.includes('22:35 SGT'));
 });
