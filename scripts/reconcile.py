@@ -5,7 +5,7 @@ from pathlib import Path
 
 from _execution import atomic_json, command, frozen_config, read_json
 from moowoo.broker import parse_cash, parse_history, parse_positions
-from moowoo.execution import load_tickets, reconcile
+from moowoo.execution import load_tickets, reconcile, record
 from moowoo.portfolio import PortfolioState
 from moowoo.input_files import InputFileError, read_input, broker_input
 from moowoo.runtime_logs import existing_log, index_logs
@@ -52,6 +52,13 @@ def run(args, log):
         log = RuntimeLogs(logs, log)
     else:
         tickets = load_tickets(read_json(args.tickets), log, config_hash)
+    if getattr(args, "cancel_responses", None):
+        responses = read_input(args.cancel_responses)
+        if not isinstance(responses, list) or any(
+                not isinstance(response, dict) or response.get("tool") != "sim_trade_cancel_order"
+                for response in responses):
+            raise ValueError("cancel responses must contain only cancellation receipts")
+        record(tickets, responses, log)
     history = read_input(args.history)
     pages = read_input(args.history_pages) if getattr(args, "history_pages", None) else {}
     def fetch_page(cursor):
@@ -73,6 +80,7 @@ def run(args, log):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--cancel-responses", help="Exact cancellation receipts, routed to original run logs")
     parser.add_argument("--history-pages", help="JSON object mapping requested next_key to its response")
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--tickets")

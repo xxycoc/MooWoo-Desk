@@ -29,9 +29,10 @@ def run(args, log):
         raise InputFileError("quotes.json: missing or invalid sessionDate/quotes")
     frozen = frozen_config()
     state = PortfolioState.from_dict(read_json(args.state))
-    if state.halted and state.tier != "kill":
+    final = calendar.is_final_liquidation(now)
+    if state.halted and not (state.tier == "kill" and state.haltReason in ("", "peak drawdown kill")):
         raise ValueError("state halted; reconcile or explicitly restart before watching")
-    require_not_halted(log.read())
+    require_not_halted(log.read(), allow_risk_halts=final)
     snapshot["now"] = calendar.utc_stamp(now)
     session = snapshot["sessionDate"]
     opened, closed = calendar.session_open(now), calendar.session_close(now)
@@ -45,7 +46,7 @@ def run(args, log):
         raise InputFileError("bars.json: missing or invalid completed bars input") from exc
     quotes = snapshot["quotes"]
     for name, position in state.positions.items():
-        if position["kind"] in ("core", "beta") and state.tier != "kill":
+        if position["kind"] in ("core", "beta") and state.tier != "kill" and not final:
             continue
         try:
             age = (now-instant(quotes[name]["ts"])).total_seconds()
@@ -53,9 +54,9 @@ def run(args, log):
             raise InputFileError(f"quotes.json: {name}: missing or invalid timestamp") from exc
         if not 0 <= age <= C.STALE_PRICE_SECONDS:
             raise InputFileError(f"quotes.json: missing or stale watcher quote: {name}")
-        if position["kind"] not in ("core", "beta") and name in errors:
+        if position["kind"] not in ("core", "beta") and name in errors and not final:
             raise InputFileError(f"bars.json: {name}: invalid completed bars")
-    outcome = propose_exits(state, bars, quotes, session, log.runId)
+    outcome = propose_exits(state, bars, quotes, session, log.runId, now=now)
     if outcome["skipped"]:
         raise InputFileError("bars.json/quotes.json: " + str(outcome["skipped"]))
     for name, changes in outcome["updates"].items():
@@ -89,7 +90,9 @@ def run(args, log):
                 stop=payload["stop"], exitOrderId="", exitDecisionId=payload["decisionId"], pendingApproval=True))
     destination = Path(args.tickets_dir) / f"{log.runId}.json"
     atomic_json(destination, dict(runId=log.runId, configHash=frozen["configHash"],
-                tickets=list(durable.values()), executionAuthorized=False))
+                tickets=list(durable.values()),
+                cancelEntryDecisionIds=[t["decisionId"] for t in state.pendingTickets
+                    if t["side"] == "BUY" and calendar.is_final_day(now)], executionAuthorized=False))
     atomic_json(args.state, state.to_dict())
     return dict(tickets=str(destination), created=created, stopUpdates=outcome["updates"])
 

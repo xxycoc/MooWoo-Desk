@@ -5,7 +5,7 @@ import os
 import re
 from datetime import datetime, timedelta, timezone
 
-from .calendar import local_time
+from .calendar import local_time, is_final_liquidation
 from .broker import account_context, parse_accounts, parse_placement, snapshot_to_state
 from .events import canonical_bytes
 from .fees import estimate_fees
@@ -40,7 +40,7 @@ def registered_prompt(text):
     return hashes[0]
 
 
-def preflight(accounts, state, frozen, preregistration, prompt_version, universe, log):
+def preflight(accounts, state, frozen, preregistration, prompt_version, universe, log, *, now=None):
     calculated = hashlib.sha256(canonical_bytes({key: value for key, value in frozen.items()
                                                 if key != "configHash"})).hexdigest()
     if calculated != frozen["configHash"]:
@@ -56,9 +56,11 @@ def preflight(accounts, state, frozen, preregistration, prompt_version, universe
         raise ValueError("promptVersion mismatch")
     if not re.search(r"configHash[^\n]*" + re.escape(frozen["configHash"]), preregistration):
         raise ValueError("preregistered config hash mismatch")
-    if state.halted or state.tier == "kill":
+    final = is_final_liquidation(now or datetime.now(timezone.utc))
+    risk_kill = state.tier == "kill" and state.haltReason in ("", "peak drawdown kill")
+    if (state.halted or state.tier == "kill") and not (final and risk_kill):
         raise ValueError("state is halted")
-    require_not_halted(log.read())
+    require_not_halted(log.read(), allow_risk_halts=final)
     prices = {name: position.get("marketPrice", position["avgCost"])
               for name, position in state.positions.items()}
     log.append("run_started", dict(configHash=frozen["configHash"], promptVersion=prompt_version,
@@ -80,17 +82,22 @@ def load_tickets(manifest, log, config_hash):
     return tickets
 
 
-def require_not_halted(events):
+def require_not_halted(events, *, allow_risk_halts=False):
     halted = False
     for event in events:
         if event["type"] == "halt" and event["scope"] in ("run", "all") and not event["drill"]:
+            if allow_risk_halts and event.get("reason") in ("daily loss limit", "peak drawdown kill"):
+                continue
             halted = not event.get("cleared", False)
     if halted:
         raise ValueError("event log is halted")
 
 
-def execution_ready(events, config_hash, prompt_version):
-    require_not_halted(events)
+def execution_ready(events, config_hash, prompt_version, *, tickets=(), now=None):
+    tickets = list(tickets)
+    final = (is_final_liquidation(now or datetime.now(timezone.utc)) and bool(tickets)
+             and all(t.side == "SELL" and t.reason == "final liquidation" for t in tickets))
+    require_not_halted(events, allow_risk_halts=final)
     starts = [event for event in events if event["type"] == "run_started" and not event["drill"]]
     if not starts or starts[-1]["configHash"] != config_hash or starts[-1]["promptVersion"] != prompt_version:
         raise ValueError("matching preflight run_started required")

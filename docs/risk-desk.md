@@ -106,9 +106,10 @@ Missing or invalid data needed by an entry gate fails closed at that gate.
 | 12 | `bounce_count` | A new bounce name would exceed `MAX_BOUNCE_POSITIONS` = 3, including pending buys | Veto entry |
 | 13 | `satellite_invalidated` | Thesis invalidated; block new satellite exposure | Veto entry |
 | 14 | `per_name_cap` | Satellite stock exposure > `PER_NAME_CAP` = 20% of marked equity; core and beta ETFs exempt | Resize |
-| 15 | `satellite_cap` | `SATELLITE_CAP` = 60%, or `SATELLITE_CAP_STEP_UP` = 60% once effective; regime 40% still wins | Resize |
-| 16 | `cash_floor` | Cash after pending buys, proposed buy and fees must retain `CASH_FLOOR` = 10% of equity | Resize |
-| 17 | `adv` | Notional <= `MAX_ADV_FRACTION` = 0.005 times average close times volume over prior `VOLUME_PERIOD` = 20 completed sessions | Resize |
+| 15 | `ticker_cap` | Held + pending BUY + new shares at ticket limit <= `MAX_TICKER_VALUE` = USD 40,000, all sleeves | Resize or drop |
+| 16 | `satellite_cap` | `SATELLITE_CAP` = 60%, or `SATELLITE_CAP_STEP_UP` = 60% once effective; regime 40% still wins | Resize |
+| 17 | `cash_floor` | Cash after pending buys, proposed buy and fees must retain `CASH_FLOOR` = 10% of equity | Resize |
+| 18 | `adv` | Notional <= `MAX_ADV_FRACTION` = 0.005 times average close times volume over prior `VOLUME_PERIOD` = 20 completed sessions | Resize |
 
 Invalidation runs directly after bounce count, before the pure resize rules, so
 an oversized invalidated entry reports invalidation rather than a resize as its
@@ -163,10 +164,23 @@ occur in a daily bar, matching `history.py`. Drift trailing arms at close >= ent
 (1.5) ? ATR, never lowers it. A close update applies after that bar's stop check.
 Latest quotes also trigger stops or bounce targets. Completed holding sessions
 trigger time exits at `DRIFT_MAX_SESSIONS` = 5 or `BOUNCE_MAX_SESSIONS` = 3.
-On final day, suppress time liquidation and hold to the valuation close; protective
-stops, bounce targets and kill liquidation remain active. Final valuation itself
-is a mark, not a new-entry or forced-close ticket. Exit tickets use the available
-marketable limit, not an invented historical stop fill.
+FINAL-CLOSE-01: only realised results count. On 27 Nov, no BUYs are permitted in
+any sleeve, including cash-funded core rebalances and SPY. From
+`FINAL_LIQUIDATION_FROM` = 12:00 New York, morning/watch runs propose "final liquidation"
+SELLs for every holding, net of pending sells. Reconcile and cancel unfilled orders,
+then retry remaining quantities at 12:30 and 12:55 before the 13:00 early close.
+Time exits and protective exits remain active before noon. Final-liquidation limits
+are 1% below the current bid (last price fallback), rounded down to cents, to allow
+price movement during dispatch. Ordinary exits retain their existing limit pricing.
+Fresh-quote marketability checks still apply; a limit order cannot guarantee a fill.
+Daily-loss and drawdown halts do not block final liquidation, but unrelated safety
+halts still do. Open BUYs are listed for cancellation; unsubmitted BUYs are skipped.
+
+TICKER-CAP-01: `MAX_TICKER_VALUE` = USD 40,000 is an absolute BUY backstop for all
+sleeves. Held + pending BUY + new shares, all valued at the new ticket limit, must
+fit under the cap. Pending SELLs do not create room until filled, including during
+conditional core rebalancing. Shrink to whole shares or drop if zero (the existing
+minimum-entry-notional gate still applies). Dispatch rechecks the cap.
 
 At session close, `stepup.evaluate` compares matched decision IDs. At least
 `STEP_UP_MIN_GRADED_CALLS` = 15 graded calls and mean LLM net excess > follow-all

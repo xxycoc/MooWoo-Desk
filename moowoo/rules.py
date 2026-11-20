@@ -57,3 +57,17 @@ BETA_CHANGE = dict(
     after=dict(BETA_ETF="SPY", BETA_WEIGHT=0.30),
     reason="decided by Siang Woo 19 Nov: hold 30% in SPY at all times so idle cash is invested; satellites use the room left above the 10% cash floor; loss limits unchanged",
     effectiveFrom="first session after 20 Nov 00:00 SGT", triggerDecisionIds=[])
+
+
+FINAL_CLOSE_CHANGE = dict(
+    type="rule_change", ruleId="FINAL-CLOSE-01", date="2026-11-20",
+    before=dict(FINAL_LIQUIDATION_FROM=None), after=dict(FINAL_LIQUIDATION_FROM="12:00"),
+    reason="organiser clarification: only realised results count; no final-day buys; liquidate every sleeve from 12:00 New York before the 27 Nov 13:00 early close, retrying remaining quantities",
+    effectiveFrom="first session after 20 Nov 00:00 SGT", triggerDecisionIds=[])
+
+
+TICKER_CAP_CHANGE = dict(
+    type="rule_change", ruleId="TICKER-CAP-01", date="2026-11-20",
+    before=dict(MAX_TICKER_VALUE=None), after=dict(MAX_TICKER_VALUE=40_000),
+    reason="organiser clarification: cap each ticker at 40% of the USD 100000 start; shrink or drop buys using held and pending buy quantities at the ticket limit price",
+    effectiveFrom="first session after 20 Nov 00:00 SGT", triggerDecisionIds=[])

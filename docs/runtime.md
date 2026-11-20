@@ -484,3 +484,32 @@ Also create `schedule.watcher-early-close` with `55 12 27 11 *` for 27 November.
 The late ordinary close tick is skipped that day. Both keep the existing stop_at
 and cross-schedule lease. The 12:55 run has only five minutes for new orders;
 record/reconcile/save may continue after close, but order authorization may not.
+
+### Final session: 27 November 2026
+
+FINAL-CLOSE-01 prohibits all BUYs for the entire session. Morning and watch
+manifests list open BUY decision IDs for cancellation; never dispatch them.
+Use the existing baseline/reconciliation cancellation requests and record exact
+broker replies before releasing reservations. Save exact cancellation receipt
+envelopes to the run input `cancel-responses.json` (only `sim_trade_cancel_order`),
+refresh broker snapshots, and repeat the reconcile phase. The runner passes these
+to `reconcile.py --cancel-responses`, which records them in the original decision
+logs before reconciling fills; repeated baseline reconciliation preserves the
+baseline phase. Failed cancellations keep their reservations. From 12:00 New York every sleeve
+is liquidated via the normal SELL preparation and per-ticket dispatch check.
+The scheduled 12:00, 12:30 and 12:55 ticks retry reconciled remaining holdings,
+net of pending sells. A partial fill is not a full close: cancel its unfilled
+remainder through reconciliation before a new run can reserve those shares.
+The session closes at 13:00; no orders are allowed at or after that time.
+Only realised results count. Final limits are 1% below bid, rounded down to cents;
+dispatch requires a fresh bid at least as high as the fixed limit. Fills are not
+guaranteed; report any residual holdings explicitly. Daily-loss and drawdown
+halts allow final-liquidation SELLs, while unrelated safety halts remain binding.
+
+TICKER-CAP-01 shrinks or drops BUYs so held shares, pending buys and the new order
+at its limit price never exceed USD 40,000 per ticker. This applies to core, SPY
+and satellites; pending sells do not release cap room before reconciliation.
+
+The coordinator prompt changed. Recompute `scripts/hash_prompts.py` and register
+the matching prompt addendum before deployment; this implementation does not
+change PREREGISTRATION.md or authorize deployment.

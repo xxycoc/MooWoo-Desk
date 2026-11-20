@@ -11,7 +11,7 @@ def run(args, log):
     frozen = frozen_config()
     tickets = load_tickets(read_json(args.tickets), log, frozen["configHash"])
     if args.action == "prepare":
-        execution_ready(log.read(), frozen["configHash"], prompt_version())
+        execution_ready(log.read(), frozen["configHash"], prompt_version(), tickets=tickets.values())
         return prepare(tickets, log)
     return record(tickets, read_json(args.responses), log)
 

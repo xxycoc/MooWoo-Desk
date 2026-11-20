@@ -92,7 +92,10 @@ def test_preregistration_matches_frozen_artifact():
     additions = next(json.loads(line)["after"] for line in (ROOT / "config/rule-ledger.jsonl").read_text().splitlines()
                      if json.loads(line)["ruleId"] == "FEES-01")
     from moowoo.rules import CORE_REBALANCE_CHANGE, CORE_CASH_CHANGE, BETA_CHANGE
-    assert {k: v for k, v in vars(config).items() if not k.startswith("_") and k not in namespace} == additions | CORE_REBALANCE_CHANGE["after"] | CORE_CASH_CHANGE["after"] | BETA_CHANGE["after"]
+    from moowoo.rules import FINAL_CLOSE_CHANGE, TICKER_CAP_CHANGE
+    assert {k: v for k, v in vars(config).items() if not k.startswith("_") and k not in namespace} == (
+        additions | CORE_REBALANCE_CHANGE["after"] | CORE_CASH_CHANGE["after"] | BETA_CHANGE["after"]
+        | FINAL_CLOSE_CHANGE["after"] | TICKER_CAP_CHANGE["after"])
 
 
 @pytest.mark.parametrize("damage", [None, "missing", "changed", "extra"])
@@ -132,19 +135,21 @@ def test_core_rebalance_addendum_is_canonical_and_recognized():
     assert frozen_config()["configHash"]
 
 
-@pytest.mark.parametrize("rule_id", ["SIZING-02", "CORE-REBALANCE-02", "SLEEVE-01"])
+@pytest.mark.parametrize("rule_id", ["SIZING-02", "CORE-REBALANCE-02", "SLEEVE-01", "FINAL-CLOSE-01", "TICKER-CAP-01"])
 @pytest.mark.parametrize("damage", [None, "missing", "changed"])
 def test_more_risk_addenda_are_exact(tmp_path, monkeypatch, rule_id, damage):
     import plan_session
     from moowoo.rules import REGIME_SIZING_CHANGE, CORE_CASH_CHANGE, BETA_CHANGE
-    rule = next(r for r in (REGIME_SIZING_CHANGE, CORE_CASH_CHANGE, BETA_CHANGE) if r["ruleId"] == rule_id)
+    from moowoo.rules import FINAL_CLOSE_CHANGE, TICKER_CAP_CHANGE
+    rule = next(r for r in (REGIME_SIZING_CHANGE, CORE_CASH_CHANGE, BETA_CHANGE,
+                           FINAL_CLOSE_CHANGE, TICKER_CAP_CHANGE) if r["ruleId"] == rule_id)
     directory = tmp_path / "config"
     directory.mkdir()
     frozen = (ROOT / "config/frozen-2026-11-17.json").read_bytes()
     (directory / "frozen-2026-11-17.json").write_bytes(frozen)
     lines = (ROOT / "config/rule-ledger.jsonl").read_bytes().splitlines()
     index = lines.index(canonical_bytes(rule))
-    assert rule["date"] == "2026-11-19"
+    assert rule["date"] == ("2026-11-20" if rule_id in ("FINAL-CLOSE-01", "TICKER-CAP-01") else "2026-11-19")
     assert rule["effectiveFrom"] == "first session after 20 Nov 00:00 SGT"
     if damage == "missing":
         lines.pop(index)

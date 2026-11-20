@@ -54,7 +54,7 @@ def run(args, now=None):
     log = logs[run_id]
     frozen = frozen_config()
     ticket = load_tickets(manifest | dict(tickets=selected), log, frozen["configHash"])[args.decision_id]
-    execution_ready(log.read(), frozen["configHash"], prompt_version())
+    execution_ready(log.read(), frozen["configHash"], prompt_version(), tickets=[ticket], now=now)
     events = decision_events(log, args.decision_id)
     attempts = [event for event in events if event.get("executionAction") == "prepared"]
     if not attempts or attempts[-1]["ticketHash"] != ticket.ticketHash:
@@ -109,6 +109,14 @@ def run(args, now=None):
         fresh = limit_price(quote, ticket.side)
         if (fresh > ticket.limitPrice) if ticket.side == "BUY" else (fresh < ticket.limitPrice):
             raise ValueError("fresh quote moved past the ticket limit price")
+        if ticket.side == "BUY":
+            state = PortfolioState.from_dict(read_json(root / "state.json"))
+            held = state.positions.get(ticket.ticker, {}).get("qty", 0)
+            pending = sum(t["qty"] for t in state.pendingTickets
+                          if t["side"] == "BUY" and t["ticker"] == ticket.ticker
+                          and t["decisionId"] != ticket.decisionId)
+            if (held + pending + ticket.qty) * ticket.limitPrice > config.MAX_TICKER_VALUE + 1e-9:
+                raise ValueError("ticker value exceeds absolute cap")
         if ticket.sleeve in ("core", "beta") and ticket.side == "BUY":
             state = PortfolioState.from_dict(read_json(root / "state.json"))
             prices = {name: p["marketPrice"] for name, p in state.positions.items()}

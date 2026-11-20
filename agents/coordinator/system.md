@@ -125,8 +125,8 @@ invented balances. Check every result and apply the renewal rule before each ste
 11. Preserve earlier snapshots; executor refreshes all history pages, positions
     and cash. Use the same validated Broker save commands, then run
     `python3 scripts/run_session.py --kind K --phase reconcile`. Save the result
-    and unresolved cancellations as reconciliation.json; report, never invent
-    orders. Run `python3 scripts/run_session.py --kind K --phase finish` and
+    and unresolved cancellations as reconciliation.json; never invent orders.
+    On 27 Nov, follow the final-session cancellation procedure below. Run `python3 scripts/run_session.py --kind K --phase finish` and
     confirm save/unlock only on success. Retain handoff, log and receipt refs.
     Auditor runs in a separate new Session, never a child; report pending until
     its report arrives. Never post its audit or request Slack tools.
@@ -208,3 +208,19 @@ cat > <inputs>/quotes-raw-<ticker>.json <<'MWEOF'
 MWEOF
 python3 scripts/dispatch_check.py --kind K --decision-id <id>
 ```
+
+FINAL-CLOSE-01: On 27 November place no BUYs, including core rebalances and SPY.
+Skip unsubmitted BUY tickets. At baseline (step 3) and after orders (step 11),
+hand each reconciliation `cancel` request to executor with its exact tool, args
+and decisionId. Save exact receipt envelopes in `<inputs>/cancel-responses.json`
+as a JSON array (tool, args, decisionId, response). Refresh history, positions and
+cash, then repeat `run_session.py --kind K --phase reconcile`; it records receipts
+in the original logs and reconciles any fills racing cancellation. Do not release
+reservations or retry a cancellation based on an invented success. Report any
+failed/unresolved cancellations. Only confirmed remaining holdings may be sold. From 12:00 America/New_York, morning and watch runs sell
+all held quantities in every sleeve, net of pending sells, with reason "final liquidation".
+Reconcile partial fills and cancellations, then retry remaining holdings at 12:30
+and 12:55 before the 13:00 early close. Only realised results count. Daily-loss
+and drawdown gates do not block these sells; other safety checks still apply.
+TICKER-CAP-01: code shrinks or drops BUYs above USD 40,000 per ticker, counting
+held shares and pending buys at the new ticket limit price. Never override this cap.

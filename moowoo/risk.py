@@ -10,10 +10,10 @@ from .portfolio import positive
 
 RULES = ("kill_or_halted", "exits_only", "daily_loss", "final_day", "first_minutes",
          "regime", "duplicate_decision", "max_orders", "stale_price", "spread",
-         "correlation", "bounce_count", "satellite_invalidated", "per_name_cap", "satellite_cap", "cash_floor", "adv", "core_target", "beta_target")
+         "correlation", "bounce_count", "satellite_invalidated", "per_name_cap", "ticker_cap", "satellite_cap", "cash_floor", "adv", "core_target", "beta_target")
 
 
-def check(proposal, state, market):
+def check(proposal, state, market, *, ticker_state=None):
     ticker, side, quantity = proposal["ticker"], proposal["side"], proposal["qty"]
     if side not in ("BUY", "SELL") or type(quantity) is not int or quantity < 1:
         raise ValueError("proposal requires BUY/SELL and positive whole shares")
@@ -47,6 +47,14 @@ def check(proposal, state, market):
 
     def ceiling(budget):
         return max(0, math.floor((budget + 1e-9) / price))
+
+    def ticker_cap():
+        # Conditional core sells cannot free ticker room before reconciled fills.
+        actual = ticker_state if ticker_state is not None else state
+        held = actual.positions.get(ticker, {}).get("qty", 0)
+        pending = sum(t["qty"] for t in actual.pendingTickets
+                      if t["ticker"] == ticker and t["side"] == "BUY")
+        return max(0, math.floor(ceiling(C.MAX_TICKER_VALUE) - held - pending))
 
     def satellite_room(cap):
         return ceiling(cap * equity() - state.exposure(market["prices"], sleeve="satellite"))
@@ -146,6 +154,7 @@ def check(proposal, state, market):
         ("satellite_invalidated", lambda: satellite and state.stepUp.get("invalidated", False), "veto"),
         ("per_name_cap", lambda: ceiling(C.PER_NAME_CAP * equity() - state.exposure(
             market["prices"], ticker=ticker)) if satellite else None, "resize"),
+        ("ticker_cap", ticker_cap, "resize"),
         ("satellite_cap", satellite_cap, "resize"),
         ("cash_floor", lambda: ceiling(state.cash - state.reservedCash - C.CASH_FLOOR * equity() - C.FEE_PER_ORDER), "resize"),
         ("adv", adv_cap, "resize"),

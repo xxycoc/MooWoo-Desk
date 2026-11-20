@@ -71,6 +71,14 @@ def is_final_day(now):
     return local_time(now).date() >= FINAL_DAY
 
 
+def is_final_liquidation(now):
+    from . import config as C
+    local = local_time(now)
+    return (local.date() == FINAL_DAY and
+            local.time() >= time.fromisoformat(C.FINAL_LIQUIDATION_FROM) and
+            local < session_close(local))
+
+
 def run_allowed(kind, now):
     """Audits get a 35-minute window starting ten minutes after actual close."""
     now = local_time(now)

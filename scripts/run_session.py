@@ -142,7 +142,7 @@ def run(args, now=None):
             return skipped | saved | dict(feedPublished=publish_feed(root))
     previous = context["phase"]
     allowed = {"preflight": {"start"}, "plan": {"baseline"}, "prepare": {"plan"},
-               "record": {"prepare", "record"}, "reconcile": {"preflight", "record", "reconcile"},
+               "record": {"prepare", "record"}, "reconcile": {"preflight", "baseline", "record", "reconcile"},
                "finish": {"reconcile"}}
     if args.kind == "audit":
         allowed = {"reconcile": {"start", "reconcile"}, "grade_calls": {"reconcile"},
@@ -185,8 +185,10 @@ def run(args, now=None):
                    "--positions", inputs / "positions.json", "--cash", inputs / "cash.json"]
         if (inputs / "history-pages.json").exists():
             command += ["--history-pages", inputs / "history-pages.json"]
+        if (inputs / "cancel-responses.json").exists():
+            command += ["--cancel-responses", inputs / "cancel-responses.json"]
         result = invoke("reconcile.py", *command)
-        if previous == "preflight":
+        if previous in ("preflight", "baseline"):
             next_phase = "baseline"
         elif previous == "record" and getattr(args, "continue_orders", False):
             next_phase = "record"

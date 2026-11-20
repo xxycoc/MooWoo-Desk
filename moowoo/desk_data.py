@@ -1,7 +1,7 @@
 """Pure input validation and market calculations shared by the decision desk."""
 
 from datetime import datetime
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal, ROUND_HALF_UP, ROUND_FLOOR
 import math
 
 import pandas as pd
@@ -46,13 +46,19 @@ def volatility(bars, period):
     return positive(value, "daily return volatility")
 
 
-def limit_price(quote, side="BUY"):
+def limit_price(quote, side="BUY", *, final_liquidation=False):
     key, factor = ("ask", 1.001) if side == "BUY" else ("bid", .999)
     value = quote.get(key)
     if value is None:
         value = positive(quote.get("last"), "last") * factor
     positive(value, key)
-    price = float(Decimal(str(value)).quantize(Decimal(".01"), rounding=ROUND_HALF_UP))
+    if final_liquidation and side == "SELL":
+        # A bid-priced ticket can become unmarketable during dispatch, especially at 12:55.
+        reference = quote.get("bid")
+        if reference is None:
+            reference = quote.get("last")
+        value = Decimal(str(positive(reference, "bid"))) * Decimal("0.99")
+    price = float(Decimal(str(value)).quantize(Decimal(".01"), rounding=ROUND_FLOOR if final_liquidation else ROUND_HALF_UP))
     return positive(price, "limitPrice")
 
 

@@ -97,6 +97,9 @@ def prepared(tmp_path, monkeypatch):
     log = EventLog(tmp_path / f"logs/{RUN}.jsonl", runId=RUN)
     prereg = f"configHash: {frozen['configHash']}\n## Addendum 2026-11-17\npromptVersion={prompt_version()}\n"
     preflight(fixture("accounts"), PortfolioState(cash=100000), frozen, prereg, prompt_version(), ["AAA"], log)
+    state = PortfolioState(cash=100000)
+    state.reserve(ticket)
+    atomic_json(tmp_path / "state.json", state.to_dict())
     result = prepare({ticket.decisionId: ticket}, log)
     atomic_json(tmp_path / f"receipts/{RUN}/prepare-test.json", result)
     atomic_json(tmp_path / f"tickets/{RUN}.json", dict(runId=RUN, configHash=frozen["configHash"], tickets=[ticket.to_dict()]))

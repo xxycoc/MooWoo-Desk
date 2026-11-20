@@ -97,6 +97,10 @@ def test_every_rule_independently_in_order(desk, rule):
         p["kind"] = "bounce"
         for ticker in ("BBB", "CCC", "DDD"): s.positions[ticker] = position("bounce")
     elif rule == "satellite_invalidated": s.stepUp["invalidated"] = True
+    elif rule == "ticker_cap":
+        s.cash = 300000
+        s.positions["AAA"] = position(qty=370)
+        expected = "resize"
     elif rule == "per_name_cap":
         p["qty"] = 240
         expected = "resize"
@@ -291,13 +295,13 @@ def test_entry_day_range_before_fill_is_ignored():
 
 
 @pytest.mark.parametrize("kind,horizon", [("drift", 5), ("bounce", 3)])
-def test_time_exits_and_final_day_hold(kind, horizon):
+def test_time_exits_including_final_day(kind, horizon):
     s = PortfolioState(cash=90000, positions={"AAA": position(kind)})
     q = {"AAA": dict(last=100, bid=100)}
     b = exit_bars([100]*horizon)
     assert not propose_exits(s, {"AAA": b.iloc[:-1]}, q, str(b.index[-2].date()), RUN)["proposals"]
     assert propose_exits(s, {"AAA": b}, q, str(b.index[-1].date()), RUN)["proposals"][0]["reason"] == "time exit"
-    assert not propose_exits(s, {"AAA": b}, q, C.FINAL_DAY, RUN)["proposals"]
+    assert propose_exits(s, {"AAA": b}, q, C.FINAL_DAY, RUN)["proposals"][0]["reason"] == "time exit"
     s.tier = "kill"
     assert propose_exits(s, {}, q, C.FINAL_DAY, RUN)["proposals"][0]["reason"] == "kill liquidation"
 

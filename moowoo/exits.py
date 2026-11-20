@@ -3,15 +3,17 @@
 import math
 
 from . import config as C
+from . import calendar
 from .desk_data import daily_frame, limit_price
 from .portfolio import positive
 
 
-def propose_exits(state, bars, quotes, session, run_id):
+def propose_exits(state, bars, quotes, session, run_id, *, now=None):
+    final = now is not None and session == C.FINAL_DAY and calendar.is_final_liquidation(now)
     proposals, updates, skipped = [], {}, []
     for ticker, position in sorted(state.positions.items()):
         try:
-            reason = "kill liquidation" if state.tier == "kill" else None
+            reason = "final liquidation" if final else "kill liquidation" if state.tier == "kill" else None
             stop = float(position.get("stop", 0))
             armed = bool(position.get("trailArmed", False))
             highest = float(position.get("highestClose", position.get("entryPrice", position["avgCost"])))
@@ -51,7 +53,7 @@ def propose_exits(state, bars, quotes, session, run_id):
                     elif target is not None and quote_price >= target:
                         reason = "bounce target"
                 horizon = C.DRIFT_MAX_SESSIONS if position["kind"] == "drift" else C.BOUNCE_MAX_SESSIONS
-                if reason is None and len(held) >= horizon and session != C.FINAL_DAY:
+                if reason is None and len(held) >= horizon:
                     reason = "time exit"
                 updates[ticker] = dict(stop=stop, trailArmed=bool(armed), highestClose=highest,
                                        lastExitCheck=checked)
@@ -62,7 +64,7 @@ def propose_exits(state, bars, quotes, session, run_id):
                 if qty < 1:
                     continue
                 proposals.append(dict(ticker=ticker, decisionId=f"{run_id}:{ticker}", side="SELL",
-                                      qty=qty, limitPrice=limit_price(quotes[ticker], "SELL"),
+                                      qty=qty, limitPrice=limit_price(quotes[ticker], "SELL", final_liquidation=final),
                                       sleeve=position["sleeve"], kind=position["kind"], stop=stop,
                                       signalAtr=position.get("signalAtr"),
                                       preDropClose=position.get("preDropClose"), reason=reason,
