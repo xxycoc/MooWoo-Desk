@@ -451,7 +451,9 @@ def test_bounce_entry_gates_target_and_fixed_atr(desk):
     result = propose_entry(rating, b, q, 100000)
     assert result["status"] == "proposal", result
     assert result["preDropClose"] == previous
-    assert result["stop"] == max(result["limitPrice"]-C.K_bounce*result["signalAtr"],
+    # Stops use the quote reference; the ticket limit adds the LIMIT-01 cushion on top.
+    assert result["limitPrice"] == round(q["ask"]*(1+C.LIMIT_BUFFER), 2)
+    assert result["stop"] == max(q["ask"]-C.K_bounce*result["signalAtr"],
                                   result["sizing"]["support"]-result["signalAtr"])
     b.loc[b.index[-1], "volume"] = 6_000_000
     assert propose_entry(rating, b, q, 100000)["status"] == "skip"

@@ -278,3 +278,10 @@ def test_final_dispatch_quote_window(prepared, reason, age, ok):
     args.decision_id = ticket.decisionId
     result = dispatch_check.run(args, now)
     assert bool(result.get("ok")) is ok
+
+
+def test_limit_cushion_keeps_dispatch_marketable_after_small_moves():
+    from moowoo.desk_data import order_limit
+    quote = dict(bid=100.00, ask=100.02, last=100.01)
+    assert order_limit(quote, "BUY") == round(100.02*(1+C.LIMIT_BUFFER), 2)
+    assert order_limit(quote, "SELL") == round(100.00*(1-C.LIMIT_BUFFER), 2)

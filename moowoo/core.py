@@ -3,7 +3,7 @@
 import math
 
 from . import config as C
-from .desk_data import daily_frame, limit_price, volatility
+from .desk_data import order_limit, daily_frame, limit_price, volatility
 
 
 def weights(bars):
@@ -36,7 +36,7 @@ def propose_core(state, bars, quotes, prices, run_id):
             qty = min(qty, math.floor(state.positions.get(ticker, {}).get("qty", 0)-reserved))
         if qty >= 1:
             proposals.append(dict(ticker=ticker, decisionId=f"{run_id}:{ticker}", side=side,
-                                  qty=qty, limitPrice=price, sleeve="core", kind="core", stop=0,
+                                  qty=qty, limitPrice=order_limit(quotes[ticker], side), sleeve="core", kind="core", stop=0,
                                   reason="core initial buy" if actual == 0 else "core rebalance band",
                                   sizing=dict(targetWeight=target, actualWeight=actual)))
     return sorted(proposals, key=lambda proposal: proposal["side"] != "SELL")
@@ -65,7 +65,7 @@ def propose_beta(state, quotes, prices, run_id):
     if qty < 1:
         return []
     return [dict(ticker=ticker, decisionId=f"{run_id}:{ticker}", side=side,
-                 qty=qty, limitPrice=price, sleeve="beta", kind="beta", stop=0,
+                 qty=qty, limitPrice=order_limit(quotes[ticker], side), sleeve="beta", kind="beta", stop=0,
                  reason="SPY initial buy" if actual == 0 else "SPY rebalance band",
                  sizing=dict(targetWeight=target, actualWeight=actual))]
 

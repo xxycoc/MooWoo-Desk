@@ -62,6 +62,16 @@ def limit_price(quote, side="BUY", *, final_liquidation=False):
     return positive(price, "limitPrice")
 
 
+def order_limit(quote, side="BUY"):
+    """Ticket limit: the quote reference plus a marketable cushion (LIMIT-01).
+
+    Sizing, stops and bounce targets keep using limit_price; the order still fills at the best
+    available price, so the cushion only stops a small quote move from making it unmarketable."""
+    reference = Decimal(str(limit_price(quote, side)))
+    factor = Decimal(str(1 + C.LIMIT_BUFFER if side == "BUY" else 1 - C.LIMIT_BUFFER))
+    return positive(float((reference * factor).quantize(Decimal(".01"), rounding=ROUND_HALF_UP)), "limitPrice")
+
+
 def instant(value):
     parsed = datetime.fromisoformat(value.replace("Z", "+00:00")) if isinstance(value, str) else value
     if parsed.tzinfo is None or parsed.utcoffset() is None:

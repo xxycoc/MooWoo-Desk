@@ -3,7 +3,7 @@
 import math
 
 from . import config as C
-from .desk_data import daily_frame, limit_price, volatility
+from .desk_data import daily_frame, limit_price, order_limit, volatility
 from .indicators import atr, ema, rvol
 from .portfolio import positive
 from .fees import estimate_fees
@@ -52,7 +52,7 @@ def propose_entry(rating, bars, quote, equity, tier="normal"):
         if target is not None and price >= target:
             return skip("bounce target already reached before entry")
         return dict(status="proposal", decisionId=rating["decisionId"], ticker=rating["ticker"],
-                    side="BUY", qty=qty, limitPrice=price, estFees=estimate_fees("BUY", qty), sleeve="satellite", kind=kind,
+                    side="BUY", qty=qty, limitPrice=order_limit(quote), estFees=estimate_fees("BUY", qty), sleeve="satellite", kind=kind,
                     stop=stop, signalAtr=signal_atr, preDropClose=target,
                     reason=f"{kind} from {rating['class']}",
                     sizing=dict(confidence=confidence, dailySd=sigma, factor=factor,

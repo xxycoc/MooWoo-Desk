@@ -14,7 +14,7 @@ import pandas as pd
 
 from moowoo import config as C
 from moowoo import calendar
-from moowoo.rules import AUTONOMY_CHANGE, PICKS_CHANGE, SIZING_CHANGE, TOPOLOGY_CHANGE, CORE_REBALANCE_CHANGE, REGIME_SIZING_CHANGE, CORE_CASH_CHANGE, BETA_CHANGE, FINAL_CLOSE_CHANGE, TICKER_CAP_CHANGE
+from moowoo.rules import AUTONOMY_CHANGE, PICKS_CHANGE, SIZING_CHANGE, TOPOLOGY_CHANGE, CORE_REBALANCE_CHANGE, REGIME_SIZING_CHANGE, CORE_CASH_CHANGE, BETA_CHANGE, FINAL_CLOSE_CHANGE, TICKER_CAP_CHANGE, LIMIT_BUFFER_CHANGE
 from moowoo.core import propose_core, propose_beta, projected_core_state
 from moowoo.desk_data import daily_frame, instant
 from moowoo.events import canonical_bytes
@@ -54,12 +54,12 @@ def frozen_config():
     expected_addendum = dict(date="2026-11-17", ruleId="FEES-01", before=None,
         after=dict(FEE_PER_ORDER=.99, FEE_PER_SHARE_SOLD=.000166, FEE_SELL_CAP=8.30, MIN_ENTRY_NOTIONAL=2000),
         reason="competition rules section 8 fees; addendum before first trade", effectiveFrom="first session")
-    if additions != [expected_addendum, AUTONOMY_CHANGE, PICKS_CHANGE, TOPOLOGY_CHANGE, SIZING_CHANGE, CORE_REBALANCE_CHANGE, REGIME_SIZING_CHANGE, CORE_CASH_CHANGE, BETA_CHANGE, FINAL_CLOSE_CHANGE, TICKER_CAP_CHANGE]:
+    if additions != [expected_addendum, AUTONOMY_CHANGE, PICKS_CHANGE, TOPOLOGY_CHANGE, SIZING_CHANGE, CORE_REBALANCE_CHANGE, REGIME_SIZING_CHANGE, CORE_CASH_CHANGE, BETA_CHANGE, FINAL_CLOSE_CHANGE, TICKER_CAP_CHANGE, LIMIT_BUFFER_CHANGE]:
         raise ValueError("unrecognized rule addendum")
     expected = (frozen["config"] | expected_addendum["after"] | PICKS_CHANGE["after"]
                 | SIZING_CHANGE["after"] | CORE_REBALANCE_CHANGE["after"]
                 | REGIME_SIZING_CHANGE["after"] | CORE_CASH_CHANGE["after"] | BETA_CHANGE["after"]
-                | FINAL_CLOSE_CHANGE["after"] | TICKER_CAP_CHANGE["after"])
+                | FINAL_CLOSE_CHANGE["after"] | TICKER_CAP_CHANGE["after"] | LIMIT_BUFFER_CHANGE["after"])
     if calculated != frozen["configHash"] or canonical_bytes(actual) != canonical_bytes(expected):
         raise ValueError("frozen configuration mismatch; planning refused")
     return frozen

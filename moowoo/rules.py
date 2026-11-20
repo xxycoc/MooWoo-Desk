@@ -67,6 +67,13 @@ FINAL_CLOSE_CHANGE = dict(
     effectiveFrom="first session after 20 Nov 00:00 SGT", triggerDecisionIds=[])
 
 
+LIMIT_BUFFER_CHANGE = dict(
+    type="rule_change", ruleId="LIMIT-01", date="2026-11-20",
+    before=dict(LIMIT_BUFFER=None), after=dict(LIMIT_BUFFER=0.005),
+    reason="20 Nov morning: all eight approved tickets were skipped because quotes moved 0.1-0.8% between plan and dispatch; buy limits are set 0.5% above the ask and sell limits 0.5% below the bid, and dispatch only requires the fresh ask (buy) or bid (sell) to be within the limit",
+    effectiveFrom="first session after 20 Nov 23:00 SGT", triggerDecisionIds=[])
+
+
 TICKER_CAP_CHANGE = dict(
     type="rule_change", ruleId="TICKER-CAP-01", date="2026-11-20",
     before=dict(MAX_TICKER_VALUE=None), after=dict(MAX_TICKER_VALUE=40_000),

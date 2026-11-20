@@ -36,7 +36,7 @@ def test_beta_target_with_ample_cash(desk):
     assert proposal["sizing"]["targetWeight"] == .30 and proposal["qty"] == 300
     verdict = check(proposal, state, market)
     ticket = OrderTicket.from_proposal(proposal, verdict, frozen_config()["configHash"], NOW)
-    assert ticket.qty == 299  # Whole shares keep the target after the flat fee.
+    assert ticket.qty == 298  # Whole shares at the cushioned limit keep the target after the flat fee.
     assert ticket.sleeve == ticket.kind == "beta" and ticket.stop == 0
 
 
@@ -258,7 +258,7 @@ def test_morning_cli_prioritizes_stocks_then_spy(desk, tmp_path, stock_count):
     assert [t["ticker"] for t in tickets] == [r["ticker"] for r in ratings]+["SPY"]
     assert tickets[-1]["sleeve"] == "beta"
     if stock_count == 0:
-        assert tickets[-1]["qty"] == 299
+        assert tickets[-1]["qty"] == 298
     else:
         assert 90 <= tickets[-1]["qty"] <= 110
     saved = PortfolioState.from_dict(json.loads((tmp_path / "state.json").read_text()))

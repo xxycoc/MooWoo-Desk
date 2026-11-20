@@ -72,6 +72,8 @@ FINAL_LIQUIDATION_FROM = "12:00"
 # Kept at 300 s so an unreceipted 12:30 dispatch ages out (deadline + 15 min) before the 12:55 retry.
 FINAL_STALE_PRICE_SECONDS = 300
 MAX_TICKER_VALUE = 40_000
+# Marketable-limit cushion: quotes move 0.1-0.8% in the minutes between plan and dispatch.
+LIMIT_BUFFER = 0.005
 NO_NEW_ENTRIES_ON_FINAL_DAY = True
 SETUP_SCORE_USE = "log_only"
 REGIME_BENCHMARK = "SPY"

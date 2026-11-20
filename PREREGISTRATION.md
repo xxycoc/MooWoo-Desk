@@ -585,3 +585,24 @@ Holdings: ACM 130 (satellite), IEF 218 and XLP 40 (core); cash about 66% of equi
 - Unchanged: all sizing, stops, horizons, tiers, the daily loss halt for entries, the kill switch and long-only.
 - Consequence: the final equity is cash, realised before the close, rather than a mark at the close. Selling about
   one hour early gives up or avoids the last hour's move. Code: branch `fix/35-final-close`.
+
+## 29. Addendum 2026-11-20: a price cushion on order limits (LIMIT-01)
+
+Written on 20 November 2026 at about 23:40 Singapore (10:40 New York), during the session, after the morning
+run `2026-11-20-morning-7c93b9d5e17a`.
+Holdings: ACM 130 (satellite), IEF 218 and XLP 40 (core); cash about 66% of equity.
+
+- promptVersion `000293a43af6094844f8d79c1856eee7072af3a37607b49f9da96e5371395075`, unchanged from addendum 28;
+  this addendum changes code only.
+- Why: the morning run approved eight tickets (sell 84 IEF; buy 63 USMV, 22 XLV, 9 GLD, 122 PDD, 30 WWD, 57 P
+  and 23 SPY) and dispatched none. Each buy limit equalled the ask at planning, and addendum 21 skips a buy
+  whenever the fresh ask is above that limit. In the one to four minutes between planning and dispatch the
+  market rose: SPY 0.2%, USMV, XLV and GLD 0.13 to 0.19%, PDD 0.8%; IEF's bid fell. P was skipped for its
+  spread. With no cushion the desk can only buy when the price is flat or falling.
+- Change (rule ledger LIMIT-01, from the first session after 20 November 23:00 Singapore): ticket limits are
+  set 0.5% above the ask for buys and 0.5% below the bid for sells. At dispatch a buy proceeds while the fresh
+  ask is at or below its limit, and a sell while the fresh bid is at or above it. Orders still fill at the
+  best available price. Sizing, stops and bounce targets keep using the unbuffered quote; risk checks, cash
+  reservations and the ticker cap use the cushioned limit, so buys are about 0.5% smaller in shares.
+  Final-liquidation sells keep their 1% cushion from addendum 28.
+- Unchanged: the 60-second quote rule, the spread rule, sizing, stops, tiers and all loss limits.

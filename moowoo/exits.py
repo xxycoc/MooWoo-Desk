@@ -4,7 +4,7 @@ import math
 
 from . import config as C
 from . import calendar
-from .desk_data import daily_frame, limit_price
+from .desk_data import daily_frame, limit_price, order_limit
 from .portfolio import positive
 
 
@@ -64,7 +64,8 @@ def propose_exits(state, bars, quotes, session, run_id, *, now=None):
                 if qty < 1:
                     continue
                 proposals.append(dict(ticker=ticker, decisionId=f"{run_id}:{ticker}", side="SELL",
-                                      qty=qty, limitPrice=limit_price(quotes[ticker], "SELL", final_liquidation=final),
+                                      qty=qty, limitPrice=(limit_price(quotes[ticker], "SELL", final_liquidation=True) if final
+                                                  else order_limit(quotes[ticker], "SELL")),
                                       sleeve=position["sleeve"], kind=position["kind"], stop=stop,
                                       signalAtr=position.get("signalAtr"),
                                       preDropClose=position.get("preDropClose"), reason=reason,
