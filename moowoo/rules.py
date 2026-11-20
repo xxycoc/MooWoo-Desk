@@ -61,8 +61,9 @@ BETA_CHANGE = dict(
 
 FINAL_CLOSE_CHANGE = dict(
     type="rule_change", ruleId="FINAL-CLOSE-01", date="2026-11-20",
-    before=dict(FINAL_LIQUIDATION_FROM=None), after=dict(FINAL_LIQUIDATION_FROM="12:00"),
-    reason="organiser clarification: only realised results count; no final-day buys; liquidate every sleeve from 12:00 New York before the 27 Nov 13:00 early close, retrying remaining quantities",
+    before=dict(FINAL_LIQUIDATION_FROM=None, FINAL_STALE_PRICE_SECONDS=None),
+    after=dict(FINAL_LIQUIDATION_FROM="12:00", FINAL_STALE_PRICE_SECONDS=300),
+    reason="organiser clarification: only realised results count; no final-day buys; liquidate every sleeve from 12:00 New York before the 27 Nov 13:00 early close, retrying remaining quantities; final-liquidation sells accept quotes up to 300 s old",
     effectiveFrom="first session after 20 Nov 00:00 SGT", triggerDecisionIds=[])
 
 

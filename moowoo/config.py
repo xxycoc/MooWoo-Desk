@@ -68,6 +68,9 @@ BOUNCE_MAX_SESSIONS = 3
 QUICK_TIER_SIZE_FACTOR = 0.5
 FINAL_DAY = "2026-11-27"
 FINAL_LIQUIDATION_FROM = "12:00"
+# Broker last-update stamps on quiet ETFs lag 60-150 s midday; final sells are priced 1% under bid.
+# Kept at 300 s so an unreceipted 12:30 dispatch ages out (deadline + 15 min) before the 12:55 retry.
+FINAL_STALE_PRICE_SECONDS = 300
 MAX_TICKER_VALUE = 40_000
 NO_NEW_ENTRIES_ON_FINAL_DAY = True
 SETUP_SCORE_USE = "log_only"

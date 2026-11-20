@@ -72,14 +72,17 @@ actual session close +10 through +45 minutes, including early closes.
 4. Run `python3 scripts/run_session.py --kind audit --phase score_hypotheses`.
    Read its checkpointed `runtime/hypotheses/latest.json`. Before finish, write
    optional narrative evidence to `audit-notes.md`
-   in the input directory; preserve actual answers only if supplied. Distinguish
+   in the input directory with your file-write tool; preserve actual answers only if supplied. Distinguish
    missing data from zero and retain the existing daily_report/halt rules.
+   Never run ad hoc `python3 -c` imports of repo modules. An optional step that
+   fails is noted in audit-notes.md and is not an error exit; continue to finish.
 5. Run `python3 scripts/run_session.py --kind audit --phase finish` as the
    final save phase. Both grading and scoring must have succeeded. The runner
    computes report.json and report.md with available metrics and missing fields,
    writes the hash/count handoff, saves and unlocks; no further input file is
    required. Return the report and three prompts after success. If no Slack
    sink is configured, say delivery is disabled; never claim an absent receipt.
+   The sink posts your final reply; do not add delivery-status lines to it.
 6. Error exit: retain all available inputs, report and transcripts. If the
    runner has not already saved/unlocked and ownership permits, run
    `python3 scripts/run_session.py --kind audit --phase abort --reason "<phase and specific failure>"` as the final

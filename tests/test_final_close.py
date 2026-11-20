@@ -35,13 +35,14 @@ def holdings():
             "BBB": position("bounce", qty=10, entryDate=C.FINAL_DAY)}
 
 
-def watch_tick(tmp_path, state, time, run="watch", halt=None):
+def watch_tick(tmp_path, state, time, run="watch", halt=None, quote_age=0):
     now = stamp(time)
+    quoted = (datetime.fromisoformat(now) - timedelta(seconds=quote_age)).isoformat()
     atomic_json(tmp_path / "state.json", state.to_dict())
     atomic_json(tmp_path / "bars.json", {t: [dict(date="2026-11-25", open=100,
         high=101, low=99, close=100, volume=100000)] for t in state.positions})
     atomic_json(tmp_path / "quotes.json", dict(now=now, sessionDate=C.FINAL_DAY,
-        quotes={t: dict(last=100, bid=100, ask=100.01, ts=now) for t in state.positions}))
+        quotes={t: dict(last=100, bid=100, ask=100.01, ts=quoted) for t in state.positions}))
     log = EventLog(tmp_path / f"{run}.jsonl", runId=run)
     if halt:
         log.append("halt", dict(reason=halt, scope="all"))
@@ -247,3 +248,33 @@ def test_final_limit_rounds_down_and_keeps_ordinary_pricing():
     assert limit_price(quote, "SELL") == 100.03
     assert limit_price(quote, "SELL", final_liquidation=True) == 99.02
     assert limit_price(dict(bid=None, last=100), "SELL", final_liquidation=True) == 99
+
+
+def test_final_watch_accepts_quiet_etf_quotes_up_to_300s(tmp_path):
+    state = PortfolioState(cash=90000, positions=holdings())
+    manifest, _ = watch_tick(tmp_path, state, "12:00", quote_age=150)
+    assert {t["ticker"] for t in manifest["tickets"]} == {"IEF", "SPY", "AAA", "BBB"}
+    with pytest.raises(Exception, match="stale"):
+        watch_tick(tmp_path, state, "12:00", quote_age=301)
+    with pytest.raises(Exception, match="stale"):
+        watch_tick(tmp_path, state, "11:30", quote_age=150)
+
+
+@pytest.mark.parametrize("reason,age,ok", [("final liquidation", 150, True), ("final liquidation", 301, False),
+                                           ("stop hit", 150, False)])
+def test_final_dispatch_quote_window(prepared, reason, age, ok):
+    args, _, log, _, lock = prepared
+    now = datetime.fromisoformat(stamp("12:30"))
+    lock.update(startedAt=now.isoformat(), expiresAt=(now+timedelta(minutes=5)).isoformat())
+    ticket = OrderTicket(decisionId=RUN+":IEF", ticker="IEF", side="SELL", qty=25, limitPrice=89,
+        sleeve="core", kind="core", stop=0, reason=reason,
+        configHash=frozen_config()["configHash"], createdTs=calendar.utc_stamp(now), estFees=estimate_fees("SELL", 25))
+    atomic_json(args.dir / f"tickets/{RUN}.json", dict(runId=RUN, configHash=ticket.configHash,
+        tickets=[ticket.to_dict()]))
+    atomic_json(args.dir / f"receipts/{RUN}/prepare-final.json", prepare({ticket.decisionId: ticket}, log))
+    atomic_json(args.dir / f"inputs/{RUN}/quotes-raw-IEF.json", dict(ret_code=0, ret_msg="success",
+        data=dict(snapshot_list=[dict(code="US.IEF", update_time=(now.timestamp()-age)*1000,
+            last_price=90.0, bid_price=90.0, ask_price=90.01)])))
+    args.decision_id = ticket.decisionId
+    result = dispatch_check.run(args, now)
+    assert bool(result.get("ok")) is ok

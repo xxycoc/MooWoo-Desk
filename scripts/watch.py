@@ -52,7 +52,7 @@ def run(args, log):
             age = (now-instant(quotes[name]["ts"])).total_seconds()
         except (ValueError, KeyError, TypeError, AttributeError) as exc:
             raise InputFileError(f"quotes.json: {name}: missing or invalid timestamp") from exc
-        if not 0 <= age <= C.STALE_PRICE_SECONDS:
+        if not 0 <= age <= (C.FINAL_STALE_PRICE_SECONDS if final else C.STALE_PRICE_SECONDS):
             raise InputFileError(f"quotes.json: missing or stale watcher quote: {name}")
         if position["kind"] not in ("core", "beta") and name in errors and not final:
             raise InputFileError(f"bars.json: {name}: invalid completed bars")

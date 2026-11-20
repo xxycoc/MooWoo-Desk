@@ -93,7 +93,9 @@ def run(args, now=None):
         except (ValueError, KeyError, TypeError, OSError, OverflowError, AttributeError) as exc:
             raise QuoteUnreadable(QuoteUnreadable.refresh_reason) from exc
         stamp = calendar.local_time(quote["ts"])
-        deadline = calendar.utc_stamp(stamp + timedelta(seconds=config.STALE_PRICE_SECONDS))
+        final_sell = ticket.side == "SELL" and ticket.reason == "final liquidation"
+        window = config.FINAL_STALE_PRICE_SECONDS if final_sell else config.STALE_PRICE_SECONDS
+        deadline = calendar.utc_stamp(stamp + timedelta(seconds=window))
         current = now or datetime.now(timezone.utc)
         validate_dispatch(dict(tickets=selected), current)
         if symbol != ticket.ticker:
@@ -122,7 +124,7 @@ def run(args, now=None):
             prices = {name: p["marketPrice"] for name, p in state.positions.items()}
             prices[ticket.ticker] = quote["last"]
             require_core_fills(ticket, manifest, state, log, prices)
-        if age > config.STALE_PRICE_SECONDS:
+        if age > window:
             raise StaleQuote("stale quote timestamp")
 
     def skip_quote(exc, *, before_authorization=False):

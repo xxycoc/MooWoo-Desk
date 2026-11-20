@@ -79,6 +79,14 @@ through a schedule sink (`type: im_channel`, `channel_pairing_id`). Each run's
 order tools, is connected to Slack; the coordinator and executor are not, so
 chat cannot start a trade. Show Thinking and Show Tool Calls are off.
 
+The first delivered post, after the 19 November close (05:16 Singapore):
+
+![Auditor close summary posted to Slack](images/slack-audit.png)
+
+Cloud sessions are ephemeral, so every session pulls the private ledger
+branch at start and pushes its checkpoints back with git. The organisers
+confirmed this is the supported way to keep state between Cloud Agent sessions.
+
 ## Dashboard, trading floor and Qoder Sites
 
 The Qoder-built dashboard is the read-only React/Vite application in

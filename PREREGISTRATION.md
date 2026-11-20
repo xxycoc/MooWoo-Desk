@@ -557,3 +557,31 @@ Holdings: ACM 130 (satellite), IEF 218 and XLP 40 (core); cash about 66% of equi
   follow the market much more closely. SPY is also the comparison benchmark, so excess return over SPY will be
   smaller in size by construction. Results are reported separately before and after this addendum, as for
   SIZING-01. Code: commits `3f015ad` and `59ffd3e`.
+
+## 28. Addendum 2026-11-20: close every position before the final close (FINAL-CLOSE-01, TICKER-CAP-01)
+
+Written on 20 November 2026 at about 11:00 Singapore (19 November, 22:00 New York), between sessions.
+Holdings: ACM 130 (satellite), IEF 218 and XLP 40 (core); cash about 66% of equity.
+
+- promptVersion `000293a43af6094844f8d79c1856eee7072af3a37607b49f9da96e5371395075` (coordinator prompt: final-day
+  procedure; auditor prompt: optional notes are written with the file tool and cannot abort the audit).
+- Why: on 20 November the organisers clarified the competition rules. Only realised results count, so every
+  position must be closed before the 27 November 13:00 New York early close. Sharpe uses daily close-to-close
+  account value from 17 to 27 November, as `moowoo/audit.py` already computes. No ticker may hold more than
+  USD 40,000 (40% of the USD 100,000 start). This replaces the "Final day" rule in the risk table ("mark remaining positions at that day's
+  regular-market close").
+- Rule changes (rule ledger), effective from the first session after 20 November 00:00 Singapore:
+  - FINAL-CLOSE-01: on 27 November no BUYs are placed, including core rebalances and SPY. From 12:00 New York,
+    morning and watch runs sell every held quantity in every sleeve, net of pending sells, with reason
+    "final liquidation". The 12:30 and 12:55 watchers retry what is left. These sells are priced at 99% of the
+    bid, rounded down, and accept quotes up to 300 seconds old (the broker's last-update time on quiet ETFs lags
+    60 to 150 seconds at midday). The daily loss halt and the drawdown tiers do not block them; other halts do.
+    Time exits are no longer suppressed on the final day.
+  - TICKER-CAP-01: a BUY is shrunk or dropped so that held shares, pending buys and the new order stay at or
+    below USD 40,000 at the ticket limit price. Dispatch rechecks it.
+- Auditor: the 19 November audit ended as an abort after the auditor ran an improvised Python import while
+  writing optional notes. The report and Slack summary were still produced and delivered. The prompt now says
+  optional steps cannot abort the audit, and the reply carries no delivery-status lines.
+- Unchanged: all sizing, stops, horizons, tiers, the daily loss halt for entries, the kill switch and long-only.
+- Consequence: the final equity is cash, realised before the close, rather than a mark at the close. Selling about
+  one hour early gives up or avoids the last hour's move. Code: branch `fix/35-final-close`.
