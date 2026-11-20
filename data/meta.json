@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-11-20T15:07:56Z",
-  "latestEventTs": "2026-11-20T15:03:55.758738Z",
+  "generatedAt": "2026-11-20T15:34:19Z",
+  "latestEventTs": "2026-11-20T15:34:05.171597Z",
   "logs": [
     "2026-11-17-morning-398eae7c55ee.jsonl",
     "2026-11-17-morning-d369db15a7cf.jsonl",
@@ -62,12 +62,13 @@
     "2026-11-19-watch-4e2101cad516.jsonl",
     "2026-11-19-audit-0b92a33b990b.jsonl",
     "2026-11-20-morning-7c93b9d5e17a.jsonl",
-    "2026-11-20-watch-35f822e45048.jsonl"
+    "2026-11-20-watch-35f822e45048.jsonl",
+    "2026-11-20-morning-c140f058ebb3.jsonl"
   ],
   "desk": {
-    "halted": false,
-    "haltReason": "",
+    "halted": true,
+    "haltReason": "unexplained broker/book difference",
     "tier": "normal",
-    "updatedAt": "2026-11-20T15:07:28Z"
+    "updatedAt": "2026-11-20T15:34:05Z"
   }
 }
