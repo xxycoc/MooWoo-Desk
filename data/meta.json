@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-11-20T21:00:18Z",
-  "latestEventTs": "2026-11-20T21:00:04.325606Z",
+  "generatedAt": "2026-11-20T21:17:23Z",
+  "latestEventTs": "2026-11-20T21:17:09.144970Z",
   "logs": [
     "2026-11-17-morning-398eae7c55ee.jsonl",
     "2026-11-17-morning-d369db15a7cf.jsonl",
@@ -75,12 +75,13 @@
     "2026-11-20-watch-6a2197c20e6b.jsonl",
     "2026-11-20-watch-449ebid-mjlbadlemfekniim.jsonl",
     "2026-11-20-watch-ac4e7ba6cbdf.jsonl",
-    "2026-11-20-watch-04ae179b9537.jsonl"
+    "2026-11-20-watch-04ae179b9537.jsonl",
+    "2026-11-20-audit-38did-japiimhiodegcgjnfc.jsonl"
   ],
   "desk": {
     "halted": false,
     "haltReason": "",
     "tier": "normal",
-    "updatedAt": "2026-11-20T20:59:49Z"
+    "updatedAt": "2026-11-20T21:13:38Z"
   }
 }
