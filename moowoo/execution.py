@@ -338,6 +338,10 @@ def reconcile(tickets, history, positions, cash, state, log, *, history_complete
             else:
                 if not current or delta > current["qty"]:
                     raise ValueError("sell fill exceeds saved long position")
+                # Moomoo reports diluted cost: gross sale proceeds reduce the remaining shares' cost.
+                if current["qty"] > delta:
+                    current["avgCost"] = ((current["qty"]*current["avgCost"] - (notional-old["notional"]))
+                                          / (current["qty"]-delta))
                 current["qty"] -= delta
                 if not current["qty"]:
                     del expected.positions[ticket.ticker]

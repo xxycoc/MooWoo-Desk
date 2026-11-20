@@ -606,3 +606,21 @@ Holdings: ACM 130 (satellite), IEF 218 and XLP 40 (core); cash about 66% of equi
   reservations and the ticker cap use the cushioned limit, so buys are about 0.5% smaller in shares.
   Final-liquidation sells keep their 1% cushion from addendum 28.
 - Unchanged: the 60-second quote rule, the spread rule, sizing, stops, tiers and all loss limits.
+
+## 30. Addendum 2026-11-20: the book follows the broker's diluted cost after a sale
+
+Written on 20 November 2026 at about 23:45 Singapore (10:45 New York), during the session, after the
+off-schedule rerun `2026-11-20-morning-c140f058ebb3`.
+
+- promptVersion `000293a43af6094844f8d79c1856eee7072af3a37607b49f9da96e5371395075`, unchanged; code only.
+- Why: the rerun, under addendum 29, dispatched its first ticket (sell 84 IEF), which filled at 91.475. The
+  next reconciliation halted on "unexplained broker/book difference": quantities matched (134 IEF on both
+  sides), but the book kept the average cost at 90.62 while the broker reported 90.084. Moomoo reports
+  diluted cost: gross sale proceeds reduce the cost of the remaining shares, (218 x 90.62 - 84 x 91.475) / 134
+  = 90.084. This was the desk's first sale, so the case had not occurred before. The other six tickets
+  (USMV, XLV, GLD, WWD, P, SPY) were skipped by the abort.
+- Change: on a sell fill that leaves shares, the book's average cost becomes (previous cost - gross sale
+  proceeds) / remaining shares, matching the broker. Entry prices, stops and trailing logic are unchanged.
+  Quantity, cash and missing-position checks are unchanged.
+- Operator action: the run halt was cleared by an operator restart after this fix was deployed, and the morning
+  session was rerun once.

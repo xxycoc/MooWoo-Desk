@@ -495,3 +495,30 @@ def test_record_expired_receipt_after_reconcile_is_idempotent(setup):
     assert len([e for e in log.read() if e.get("executionAction") == "skip"]) == 1
     assert not updated.pendingTickets
     assert updated.ticketedDecisionIds == [ticket.decisionId]
+
+
+def test_sell_at_gain_matches_broker_diluted_cost(setup):
+    # 20 Nov: sold 84 of 218 IEF at 91.475 from cost 90.62; the broker then showed 134 at 90.084.
+    entry, log, state, prereg = setup
+    state.pendingTickets = []
+    state.ticketedDecisionIds = []
+    state.positions["AAA"] = dict(qty=50, avgCost=100, sleeve="satellite", kind="drift",
+        stop=94, entryPrice=100, entryDate="2026-11-16", decisionId="prior:AAA")
+    state.cash = 95000
+    ticket = OrderTicket(**(entry.body() | dict(side="SELL", estFees=estimate_fees("SELL", 50))))
+    state.reserve(ticket)
+    preflight(fixture("accounts"), state, frozen_config(), prereg, prompt_version(), ["AAA"], log)
+    tickets = {ticket.decisionId: ticket}
+    request = prepare(tickets, log)["orders"][0]
+    record(tickets, [request | dict(status="placed", response=fixture("placement"))], log)
+    history = fixture("history")
+    history["data"]["orders"][0].update(side=2, cum_qty="20", avg_fill_price="110", status=2)
+    positions = fixture("positions")
+    positions["data"][0].update(qty=30, cost_price=round((50*100-20*110)/30, 3), text="prior:AAA")
+    cash = dict(cash=95000+20*110-estimate_fees("SELL", 20),
+                equity=95000+20*110-estimate_fees("SELL", 20)+30*100)
+    history, positions, cash = parse_history(history), parse_positions(positions), parse_cash(cash)
+    updated, result = reconcile(tickets, history, positions, cash, state, log)
+    assert not result["halted"], result
+    assert updated.positions["AAA"]["avgCost"] == pytest.approx((50*100-20*110)/30, abs=.001)
+    assert updated.positions["AAA"]["entryPrice"] == 100
