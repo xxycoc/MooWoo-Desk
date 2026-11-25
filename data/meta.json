@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-11-25T20:36:20Z",
-  "latestEventTs": "2026-11-25T20:35:52.270984Z",
+  "generatedAt": "2026-11-25T21:03:36Z",
+  "latestEventTs": "2026-11-25T21:02:44.546912Z",
   "logs": [
     "2026-11-17-morning-398eae7c55ee.jsonl",
     "2026-11-17-morning-d369db15a7cf.jsonl",
@@ -117,12 +117,13 @@
     "2026-11-25-watch-4b422946f51e.jsonl",
     "2026-11-25-watch-id-cmkcfiapclkchgajbd2b.jsonl",
     "2026-11-25-watch-bea706aac35b.jsonl",
-    "2026-11-25-watch-8b51d562675e.jsonl"
+    "2026-11-25-watch-8b51d562675e.jsonl",
+    "2026-11-25-watch-0fddc20d11b8.jsonl"
   ],
   "desk": {
     "halted": true,
     "haltReason": "order history mismatch: qty",
     "tier": "normal",
-    "updatedAt": "2026-11-25T20:31:11Z"
+    "updatedAt": "2026-11-25T20:57:22Z"
   }
 }
