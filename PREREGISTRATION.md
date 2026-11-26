@@ -624,3 +624,30 @@ off-schedule rerun `2026-11-20-morning-c140f058ebb3`.
   Quantity, cash and missing-position checks are unchanged.
 - Operator action: the run halt was cleared by an operator restart after this fix was deployed, and the morning
   session was rerun once.
+
+## 31. Addendum 2026-11-26: closed broker rows and part-filled orders no longer stop the desk
+
+Written on 26 November 2026 at about 22:30 Singapore (09:30 New York), during the Thanksgiving market
+holiday, after every session on 25 November aborted.
+
+- promptVersion `000293a43af6094844f8d79c1856eee7072af3a37607b49f9da96e5371395075`, unchanged; code only.
+- Why: the 25 November morning run `2026-11-25-morning-2c22f7e3a63a` placed the time exit for ACM (sell 130,
+  limit 79.79). Two broker behaviours that had not occurred before then stopped the desk:
+  1. While the order was resting and partly filled, Moomoo's order history listed it as 70 shares with
+     `cum_qty` 0; the 60 sold shares showed only in the positions list. Reconciliation raised
+     "order history mismatch: qty" and the book halted.
+  2. After the order completed (130 at 80.724), Moomoo kept a closed ACM row with `qty` 0 and
+     `cost_price` 0. The positions validator rejected the zero cost, so all 12 later watchers and the
+     audit aborted before preflight. No orders were placed or cancelled by any of them.
+- Change:
+  1. A broker position row with zero shares is treated as closed and dropped; open rows are validated as before.
+  2. If a submitted order is still resting (observed status 2) and the broker lists fewer shares than the
+     ticket with no fill reported, reconciliation treats the order as in flight. The book and the pending
+     ticket stay unchanged until the broker reports the completed order, which is then applied as normal.
+     The broker's position must differ from the book by exactly the implied filled shares, and cash must
+     move in the right direction within the order's limit price plus a 10% band; anything else still halts.
+     Every other quantity mismatch still halts.
+- Verification: the real 25 November broker replies (history, positions, cash) replayed through the fixed
+  reconciliation give no difference. The book drops ACM and its cash matches the broker's 21,563.17.
+- Operator action: the 25 November halt is cleared by an operator restart after deployment, before the
+  27 November morning run. No session is rerun; the market is closed on 26 November.

@@ -11,6 +11,12 @@ from .events import canonical_bytes
 from .fees import estimate_fees
 from .portfolio import PortfolioState
 from .tickets import OrderTicket, reconcile_fill, to_sim_order, verify_placed
+from . import broker_fields as fields
+
+RESTING_STATUS = next(code for code, label in fields.ORDER_STATUS_LABELS_PROVISIONAL.items()
+                      if label.startswith("accepted/resting"))
+# Widest believable gap between a marketable limit and its partial-fill price.
+IN_FLIGHT_PRICE_BAND = 0.10
 
 
 def safe_reason(reason):
@@ -307,13 +313,24 @@ def reconcile(tickets, history, positions, cash, state, log, *, history_complete
     released_ids = {ticket.decisionId for ticket, _ in released}
     expected.pendingTickets = [pending for pending in expected.pendingTickets
                                if pending["decisionId"] not in released_ids]
-    cancellations, fill_events = [], []
+    cancellations, fill_events, in_flight = [], [], {}
     for order_id, submission in submissions.items():
         ticket = tickets[submission["decisionId"]]
         row = orders[order_id]
-        for name in ("ticker", "side", "qty", "limitPrice"):
+        for name in ("ticker", "side", "limitPrice"):
             if row[name] != getattr(ticket, name):
                 raise ValueError(f"order history mismatch: {name}")
+        if row["qty"] != ticket.qty:
+            # Observed 25 Nov: a resting, partly filled order lists only its unfilled shares with
+            # cum_qty 0. The fill is unknown until the order completes, so the book waits for it.
+            if not (row["status"] == RESTING_STATUS and row["filledQty"] == 0
+                    and 0 < row["qty"] < ticket.qty and order_id not in checkpoints):
+                raise ValueError("order history mismatch: qty")
+            in_flight[ticket.ticker] = dict(ticket=ticket, filledQty=ticket.qty - row["qty"])
+            expected.pendingTickets = [pending for pending in expected.pendingTickets
+                                       if pending["decisionId"] != ticket.decisionId]
+            expected.pendingTickets.append(ticket.to_dict() | dict(submitted=True))
+            continue
         fill = reconcile_fill(ticket, row["filledQty"], row["avgPrice"], row["status"], at_session_close=True)
         old = checkpoints.get(order_id, dict(filledQty=0, cashDelta=0, notional=0))
         delta = fill["filledQty"] - old["filledQty"]
@@ -380,20 +397,39 @@ def reconcile(tickets, history, positions, cash, state, log, *, history_complete
                   if len(values) == 1 or expected.positions.get(name, {}).get("sleeve") == "beta"}
     differences = {}
     observed_cash = cash["cash"] + cash.get("reserved", 0)
-    if abs(observed_cash-expected.cash) > 1:
+    # An in-flight partial fill moves cash by an unknown price: at or above the limit for a sale,
+    # at or below it for a purchase. Bound the gap instead of matching it exactly.
+    low = high = 0
+    for item in in_flight.values():
+        notional = item["filledQty"] * item["ticket"].limitPrice
+        if item["ticket"].side == "SELL":
+            high += notional * (1 + IN_FLIGHT_PRICE_BAND)
+            low += notional - estimate_fees("SELL", item["filledQty"])
+        else:
+            low -= notional + estimate_fees("BUY", item["filledQty"])
+    if not low - 1 <= observed_cash - expected.cash <= high + 1:
         differences["cash"] = dict(expected=expected.cash, observed=observed_cash)
     observed_positions = {row["ticker"]: row for row in positions if row["qty"]}
     for name in expected.positions.keys() | observed_positions.keys():
         wanted = expected.positions.get(name, {})
         observed = observed_positions.get(name, {})
+        if name in in_flight:
+            item = in_flight[name]
+            sign = -1 if item["ticket"].side == "SELL" else 1
+            if observed.get("qty", 0) != wanted.get("qty", 0) + sign * item["filledQty"]:
+                differences[name] = dict(expected=dict(qty=wanted.get("qty", 0), inFlight=item["filledQty"]),
+                                        observed=dict(qty=observed.get("qty", 0)))
+            continue
         if wanted.get("qty", 0) != observed.get("qty", 0) or abs(
                 wanted.get("qty", 0)*wanted.get("avgCost", 0)-observed.get("qty", 0)*observed.get("avgCost", 0)) > 1:
             differences[name] = dict(expected={key: wanted.get(key, 0) for key in ("qty", "avgCost")},
                                     observed={key: observed.get(key, 0) for key in ("qty", "avgCost")})
-    try:
-        independent = snapshot_to_state(positions, cash, expected, decisions=identities)
-    except ValueError as exc:
-        differences["snapshot"] = safe_reason(exc)
+    independent = None
+    if not in_flight:
+        try:
+            independent = snapshot_to_state(positions, cash, expected, decisions=identities)
+        except ValueError as exc:
+            differences["snapshot"] = safe_reason(exc)
     for ticket, attempt in released:
         note(log, ticket, "skip", attempt=attempt,
              reason="authorization expired before handoff; never submitted")
@@ -406,6 +442,13 @@ def reconcile(tickets, history, positions, cash, state, log, *, history_complete
         halt(log, "unexplained broker/book difference", diff=differences)
         expected.halted, expected.haltReason = True, "unexplained broker/book difference"
         return expected, dict(cancel=cancellations, diff=differences, halted=True)
+    if in_flight:
+        # Keep the book until the broker reports the completed fill; then the normal path applies it.
+        for row in positions:
+            if row["ticker"] in expected.positions:
+                expected.positions[row["ticker"]]["marketPrice"] = row["marketPrice"]
+        return expected, dict(cancel=cancellations, diff={}, halted=expected.halted,
+                              inFlight=sorted(in_flight))
     for row in positions:
         if row["ticker"] in independent.positions:
             independent.positions[row["ticker"]]["marketPrice"] = row["marketPrice"]

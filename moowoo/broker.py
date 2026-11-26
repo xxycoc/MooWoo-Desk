@@ -101,7 +101,7 @@ def parse_cash(payload):
 
 def parse_positions(payload):
     data = successful_data(payload) if "ret_code" in payload else {"positions": payload.get("data")}
-    result = rows(data, fields.POSITION_LIST)
+    result, open_rows = rows(data, fields.POSITION_LIST), []
     seen = set()
     for row in result:
         routing(row)
@@ -109,9 +109,14 @@ def parse_positions(payload):
         if row["ticker"] in seen:
             raise ValueError("duplicate broker position")
         seen.add(row["ticker"])
-        for name in ("qty", "avgCost", "marketPrice"):
-            row[name] = decimal_number(row[name], name, zero=name == "qty", whole=name == "qty")
-    return result
+        row["qty"] = decimal_number(row["qty"], "qty", zero=True, whole=True)
+        # Moomoo keeps a fully sold row with qty 0 and cost_price 0; it is closed, not invalid.
+        if not row["qty"]:
+            continue
+        for name in ("avgCost", "marketPrice"):
+            row[name] = decimal_number(row[name], name)
+        open_rows.append(row)
+    return open_rows
 
 
 def successful_data(payload):

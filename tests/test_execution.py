@@ -522,3 +522,71 @@ def test_sell_at_gain_matches_broker_diluted_cost(setup):
     assert not result["halted"], result
     assert updated.positions["AAA"]["avgCost"] == pytest.approx((50*100-20*110)/30, abs=.001)
     assert updated.positions["AAA"]["entryPrice"] == 100
+
+
+def _sell_setup(setup):
+    entry, log, state, prereg = setup
+    state.pendingTickets = []
+    state.ticketedDecisionIds = []
+    state.positions["AAA"] = dict(qty=50, avgCost=100, sleeve="satellite", kind="drift",
+        stop=94, entryPrice=100, entryDate="2026-11-16", decisionId="prior:AAA")
+    state.cash = 95000
+    ticket = OrderTicket(**(entry.body() | dict(side="SELL", estFees=estimate_fees("SELL", 50))))
+    state.reserve(ticket)
+    preflight(fixture("accounts"), state, frozen_config(), prereg, prompt_version(), ["AAA"], log)
+    tickets = {ticket.decisionId: ticket}
+    request = prepare(tickets, log)["orders"][0]
+    record(tickets, [request | dict(status="placed", response=fixture("placement"))], log)
+    return tickets, ticket, log, state
+
+
+def _sell_snapshot(order, held, cash_value, closed=False):
+    history = fixture("history")
+    history["data"]["orders"][0].update(side=2, **order)
+    positions = fixture("positions")
+    positions["data"][0].update(qty=held, text="prior:AAA")
+    if closed:
+        positions["data"][0].update(qty="0", cost_price="0", cur_price="0")
+    cash = dict(cash=cash_value, equity=cash_value + held * 100)
+    return parse_history(history), parse_positions(positions), parse_cash(cash)
+
+
+def test_closed_zero_quantity_position_row_is_dropped():
+    positions = fixture("positions")
+    positions["data"].append(positions["data"][0] | dict(symbol="US.ZZZ", qty="0", cost_price="0", cur_price="0"))
+    parsed = parse_positions(positions)
+    assert [row["ticker"] for row in parsed] == ["AAA"]
+
+
+def test_resting_partial_sell_listed_as_unfilled_shares_waits_then_completes(setup):
+    tickets, ticket, log, state = _sell_setup(setup)
+    # 20 of 50 sold at 100.6; the broker lists the order as 30 shares with cum_qty 0.
+    history, positions, cash = _sell_snapshot(dict(qty="30", cum_qty="0", avg_fill_price="0", status=2),
+                                              30, 95000 + 20 * 100.6)
+    waiting, result = reconcile(tickets, history, positions, cash, state, log)
+    assert not result["halted"] and not result["diff"] and result["inFlight"] == ["AAA"]
+    assert waiting.positions["AAA"]["qty"] == 50 and waiting.cash == pytest.approx(95000)
+    assert [p["qty"] for p in waiting.pendingTickets] == [50] and waiting.pendingTickets[0]["submitted"]
+    proceeds = 50 * 100.5 - estimate_fees("SELL", 50)
+    history, positions, cash = _sell_snapshot(dict(qty="50", cum_qty="50", avg_fill_price="100.5", status=4),
+                                              0, 95000 + proceeds, closed=True)
+    done, result = reconcile(tickets, history, positions, cash, waiting, log)
+    assert not result["halted"] and "AAA" not in done.positions and not done.pendingTickets
+    assert done.cash == pytest.approx(95000 + proceeds)
+
+
+@pytest.mark.parametrize("held, cash_gain", [(25, 2012), (30, -5), (30, 20 * 100 * 1.2)])
+def test_resting_partial_with_inconsistent_broker_state_halts(setup, held, cash_gain):
+    tickets, ticket, log, state = _sell_setup(setup)
+    history, positions, cash = _sell_snapshot(dict(qty="30", cum_qty="0", avg_fill_price="0", status=2),
+                                              held, 95000 + cash_gain)
+    updated, result = reconcile(tickets, history, positions, cash, state, log)
+    assert updated.halted and result["diff"]
+
+
+def test_qty_mismatch_outside_resting_partial_still_halts(setup):
+    tickets, ticket, log, state = _sell_setup(setup)
+    history, positions, cash = _sell_snapshot(dict(qty="30", cum_qty="0", avg_fill_price="0", status=4),
+                                              30, 95000 + 2012)
+    with pytest.raises(ValueError, match="order history mismatch: qty"):
+        reconcile(tickets, history, positions, cash, state, log)
