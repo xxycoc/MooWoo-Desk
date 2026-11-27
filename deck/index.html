@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MooWoo Desk: AI reads the news. Code handles the money.</title>
+<link rel="stylesheet" href="deck.css">
+</head>
+<body>
+<main class="deck" id="deck">
+
+  <section class="slide title" aria-label="Slide 1 of 16" aria-hidden="true">
+    <h1 class="headline">MooWoo Desk: AI reads the news. Code handles the money.</h1>
+    <p class="sub">Moomoo x Qoder AI Paper Trading Agent Challenge &middot; Siang Woo &middot; 17-27 Nov 2026</p>
+    <img class="banner" src="img/ducks-banner.svg" alt="MooWoo Desk banner: the Coordinator, Analyst and Executor ducks">
+    <p class="num">1 / 16</p>
+  </section>
+
+  <section class="slide" aria-label="Slide 2 of 16" aria-hidden="true">
+    <p class="kicker">The question</p>
+    <h2 class="headline">When a stock suddenly jumps or drops, is there a reason?</h2>
+    <img class="duck" src="img/duck-analyst.svg" alt="Analyst duck">
+    <div class="content body">
+      <p>On 19 Nov, Woodward (WWD) rose 8% on three times its usual volume. The reason was in that morning's news: earnings came in 13% above forecasts.</p>
+      <p>Some big moves have a clear reason. Others don't. We bet that <span class="accent">the difference matters</span>.</p>
+    </div>
+    <p class="num">2 / 16</p>
+  </section>
+
+  <section class="slide" aria-label="Slide 3 of 16" aria-hidden="true">
+    <p class="kicker">Our bet</p>
+    <h2 class="headline">Moves with a clear reason tend to keep going. Drops without one tend to bounce back.</h2>
+    <img class="duck" src="img/duck-analyst.svg" alt="Analyst duck">
+    <div class="content">
+      <div class="bet">
+        <div class="col"></div>
+        <div class="col">Reason in the news</div>
+        <div class="col">No clear reason</div>
+        <div class="rowlabel">Up</div>
+        <div class="cell buy">Buy and ride it</div>
+        <div class="cell">Stay out</div>
+        <div class="rowlabel">Down</div>
+        <div class="cell">Stay out</div>
+        <div class="cell buy">Buy the bounce</div>
+      </div>
+      <p class="foot">We wrote these rules down on 16 Nov, before the first trade, so we could not bend them after seeing results.</p>
+    </div>
+    <p class="num">3 / 16</p>
+  </section>
+
+  <section class="slide" aria-label="Slide 4 of 16" aria-hidden="true">
+    <p class="kicker">The desk</p>
+    <h2 class="headline">Three AI agents do the reading. Python makes every money decision.</h2>
+    <div class="content">
+      <div class="crew">
+        <div class="member">
+          <img src="img/duck-coordinator.svg" alt="Coordinator duck">
+          <b>Coordinator</b>
+          <span>Runs the timetable</span>
+        </div>
+        <div class="member">
+          <img src="img/duck-analyst.svg" alt="Analyst duck">
+          <b>Analyst</b>
+          <span>Reads the news and rates the move</span>
+        </div>
+        <div class="member">
+          <img src="img/duck-executor.svg" alt="Executor duck">
+          <b>Executor</b>
+          <span>Sends only orders that code approved</span>
+        </div>
+      </div>
+      <p class="crew-note">A fourth agent, the Auditor, checks the books every evening. It has no way to trade.</p>
+      <p class="claim">No AI agent ever chooses what to buy or how much.</p>
+    </div>
+    <p class="num">4 / 16</p>
+  </section>
+
+  <section class="slide" aria-label="Slide 5 of 16" aria-hidden="true">
+    <p class="kicker">A trade, start to finish</p>
+    <h2 class="headline">Woodward jumped 8% on an earnings beat. Here is what the desk did with it.</h2>
+    <img class="duck" src="img/duck-executor.svg" alt="Executor duck">
+    <div class="content">
+      <div class="steps">
+        <div class="step">
+          <b>1 Spotted</b>
+          <span>+8% on 19 Nov, 3&times; usual volume</span>
+        </div>
+        <div class="step">
+          <b>2 Read the news</b>
+          <span>Analyst: earnings beat, "explained up", 84% sure</span>
+        </div>
+        <div class="step">
+          <b>3 Sized by code</b>
+          <span>24 shares, about $7,900</span>
+        </div>
+        <div class="step">
+          <b>4 Bought</b>
+          <span>Filled 20 Nov at $327.59</span>
+        </div>
+        <div class="step">
+          <b>5 Exit</b>
+          <span id="wwd-exit"></span>
+        </div>
+      </div>
+      <p class="foot">The analyst never picked the number of shares. Python did.</p>
+    </div>
+    <p class="num">5 / 16</p>
+  </section>
+
+  <section class="slide" aria-label="Slide 6 of 16" aria-hidden="true">
+    <p class="kicker">Where the money sits</p>
+    <h2 class="headline">Most of the money sat in steady funds. Only part chased news.</h2>
+    <img class="duck" src="img/duck-coordinator.svg" alt="Coordinator duck">
+    <div class="content">
+      <div class="split" id="alloc-bar"></div>
+      <div class="alloc" id="alloc-list"></div>
+      <p class="foot">If the news idea is wrong, most of the account still follows the market.</p>
+    </div>
+    <p class="num">6 / 16</p>
+  </section>
+
+  <section class="slide" aria-label="Slide 7 of 16" aria-hidden="true">
+    <p class="kicker">Saying no</p>
+    <h2 class="headline">The desk has rules for saying no, and it used them.</h2>
+    <img class="duck" src="img/duck-coordinator.svg" alt="Coordinator duck">
+    <div class="content">
+      <table class="table rules">
+        <thead>
+          <tr><th>If this happens</th><th>The desk does this</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>The market is weak (S&amp;P 500 below its recent trend)</td>
+            <td>Blocks new news trades. Blocked Disney and Target on 19 Nov and PDD on 23 Nov.</td>
+          </tr>
+          <tr>
+            <td>The account loses 1.5% in a day</td>
+            <td>No new buys until tomorrow.</td>
+          </tr>
+          <tr>
+            <td>The account is down 2%, 4% or 6%</td>
+            <td>Smaller trades, then sells only, then sell everything.</td>
+          </tr>
+          <tr>
+            <td>A trade rises by a normal day's move</td>
+            <td>Lock in profit with a stop that follows the price up.</td>
+          </tr>
+          <tr>
+            <td>A trade goes nowhere for 5 days</td>
+            <td>Sell it.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="num">7 / 16</p>
+  </section>
+
+  <section class="slide" aria-label="Slide 8 of 16" aria-hidden="true">
+    <p class="kicker">Results</p>
+    <h2 class="headline">Over 8 trading days the account returned <span data-field="return" data-percent></span>, against <span data-field="spyReturn" data-percent></span> for the S&amp;P 500.</h2>
+    <div class="content">
+      <div class="chart-head">
+        <span id="chart-label"></span>
+        <span id="spy-note"></span>
+      </div>
+      <div id="equity-chart"></div>
+      <div class="metrics">
+        <div>
+          <div class="value" data-field="return" data-percent></div>
+          <div class="label">Return</div>
+        </div>
+        <div>
+          <div class="value" data-field="sharpe"></div>
+          <div class="label">Sharpe ratio</div>
+        </div>
+        <div>
+          <div class="value" data-field="largestDrop"></div>
+          <div class="label">Largest drop</div>
+        </div>
+      </div>
+    </div>
+    <p class="num">8 / 16</p>
+  </section>
+
+  <section class="slide" aria-label="Slide 9 of 16" aria-hidden="true">
+    <p class="kicker">Every trade</p>
+    <h2 class="headline">Every news trade, and what it taught us.</h2>
+    <div class="content">
+      <table class="table trades">
+        <colgroup>
+          <col class="c-stock">
+          <col class="c-why">
+          <col class="c-result">
+        </colgroup>
+        <thead>
+          <tr><th>Stock</th><th>Why we bought</th><th>Result</th><th>Lesson</th></tr>
+        </thead>
+        <tbody id="trades-body"></tbody>
+      </table>
+    </div>
+    <p class="num">9 / 16</p>
+  </section>
+
+  <section class="slide" aria-label="Slide 10 of 16" aria-hidden="true">
+    <p class="kicker">Did the news help?</p>
+    <h2 class="headline" id="verdict-headline"></h2>
+    <div class="content">
+      <div id="verdict-chart"></div>
+      <p class="foot">Eight days is a small sample. We report it as it is.</p>
+    </div>
+    <p class="num">10 / 16</p>
+  </section>
+
+  <section class="slide" aria-label="Slide 11 of 16" aria-hidden="true">
+    <p class="kicker">What broke: day one</p>
+    <h2 class="headline">On the first day, 13 attempts produced zero trades.</h2>
+    <img class="duck" src="img/duck-coordinator.svg" alt="Coordinator duck">
+    <div class="content">
+      <div class="breaks">
+        <p>Too many agents argued (bull, bear, manager and more) and passed long text to each other.</p>
+        <p>Answers came back as essays instead of clean data.</p>
+        <p>We cut it to one analyst giving short, strict answers. The next day the desk traded.</p>
+      </div>
+    </div>
+    <p class="num">11 / 16</p>
+  </section>
+
+  <section class="slide" aria-label="Slide 12 of 16" aria-hidden="true">
+    <p class="kicker">What broke: the brakes</p>
+    <h2 class="headline">The desk stopped itself twice. Both times, stopping was the right call.</h2>
+    <img class="duck" src="img/duck-executor.svg" alt="Executor duck">
+    <div class="content">
+      <div class="timeline">
+        <div class="stop">
+          <span class="when">18 Nov</span>
+          <p>A copied broker record lost a field. The desk refused to guess and stopped.</p>
+        </div>
+        <div class="stop">
+          <span class="when">25 Nov</span>
+          <p>A sell order filled in two parts and looked like a mismatch. The desk stopped.</p>
+        </div>
+      </div>
+      <p class="after">No bad trade was made. Each time: find the cause, fix it, write it down, add a test.</p>
+      <p class="foot">A desk that stops when unsure is safer than one that guesses with money.</p>
+    </div>
+    <p class="num">12 / 16</p>
+  </section>
+
+  <section class="slide" aria-label="Slide 13 of 16" aria-hidden="true">
+    <p class="kicker">Lessons</p>
+    <h2 class="headline">What we would do differently.</h2>
+    <img class="duck" src="img/duck-analyst.svg" alt="Analyst duck">
+    <div class="content">
+      <ol class="lessons">
+        <li><span class="n">1</span><span>Start with one agent and one full day, then add more.</span></li>
+        <li><span class="n">2</span><span>Treat every broker reply as possibly wrong.</span></li>
+        <li><span class="n">3</span><span>Build the audit trail before the trading logic.</span></li>
+      </ol>
+    </div>
+    <p class="num">13 / 16</p>
+  </section>
+
+  <section class="slide" aria-label="Slide 14 of 16" aria-hidden="true">
+    <p class="kicker">How Qoder ran it</p>
+    <h2 class="headline">Qoder ran the desk every 30 minutes without anyone pressing a button.</h2>
+    <img class="duck" src="img/duck-coordinator.svg" alt="Coordinator duck">
+    <div class="content">
+      <div class="qoder">
+        <ul>
+          <li>4 Cloud Agents</li>
+          <li>6 schedules: morning, every 30 minutes, close, audit</li>
+          <li>Dashboard and 3D trading floor built in Qoder, hosted on Qoder Sites</li>
+          <li>Evening summary posted to Slack by the Auditor</li>
+          <li>Credits used: <span id="credits"></span></li>
+        </ul>
+        <img src="img/trading-floor.png" alt="The trading floor replaying a real session">
+      </div>
+    </div>
+    <p class="num">14 / 16</p>
+  </section>
+
+  <section class="slide" aria-label="Slide 15 of 16" aria-hidden="true">
+    <p class="kicker">Reuse it</p>
+    <h2 class="headline">Anyone can rerun the desk or borrow its parts.</h2>
+    <img class="duck" src="img/duck-coordinator.svg" alt="Coordinator duck">
+    <div class="content links">
+      <p>GitHub: <a href="https://github.com/xxycoc/MooWoo-Desk">github.com/xxycoc/MooWoo-Desk</a></p>
+      <p>15 reusable skills, such as market regime, risk desk and news-vs-noise</p>
+      <p>Rules written before trading, every decision logged, tests for every fix</p>
+      <p class="small">Live dashboard: <a href="https://moowoo-desk-p36f61ggjia.qoder.website">moowoo-desk-p36f61ggjia.qoder.website</a></p>
+    </div>
+    <p class="num">15 / 16</p>
+  </section>
+
+  <section class="slide" aria-label="Slide 16 of 16" aria-hidden="true">
+    <p class="kicker">Honest summary</p>
+    <h2 class="headline">What we claim, and what we don't.</h2>
+    <div class="content">
+      <div class="summary">
+        <div>
+          <h3>We claim</h3>
+          <p>A desk where code, not AI, controls the money.</p>
+          <p>It ran on its own for 8 trading days.</p>
+          <p>Every decision is on record.</p>
+        </div>
+        <div>
+          <h3>We don't claim</h3>
+          <p>A proven way to beat the market. Eight days is too short to know.</p>
+        </div>
+      </div>
+    </div>
+    <p class="num">16 / 16</p>
+  </section>
+
+  <aside class="notes" id="notes" hidden aria-label="Speaker note">
+    <p class="notes-label">Speaker note</p>
+    <p id="notes-text"></p>
+  </aside>
+</main>
+
+<noscript><p style="padding:40px;font:20px/1.5 Georgia,serif">This deck needs JavaScript for navigation.</p></noscript>
+
+<script id="deck-data" type="application/json">
+{
+  "window": "17-27 Nov 2026",
+  "chartLabel": "to 25 Nov",
+  "endDate": "2026-11-27",
+  "equity": [
+    {"date": "2026-11-17", "label": "17 Nov", "value": 100000},
+    {"date": "2026-11-20", "label": "20 Nov", "value": 98562},
+    {"date": "2026-11-23", "label": "23 Nov", "value": 101322},
+    {"date": "2026-11-24", "label": "24 Nov", "value": 101074},
+    {"date": "2026-11-25", "label": "25 Nov", "value": 101086}
+  ],
+  "spy": null,
+  "return": null,
+  "spyReturn": null,
+  "sharpe": null,
+  "largestDrop": null,
+  "trades": [
+    {
+      "ticker": "ACM",
+      "why": "Earnings beat, rated explained up",
+      "result": "Sold after 5 days, about \u2212$300",
+      "resultTone": "loss",
+      "lesson": "Good news, flat price: the time limit got us out."
+    },
+    {"ticker": "WWD", "why": null, "result": null, "resultTone": null, "lesson": null},
+    {"ticker": "PDD", "why": null, "result": null, "resultTone": null, "lesson": null},
+    {"ticker": "NVDA", "why": null, "result": null, "resultTone": null, "lesson": null}
+  ],
+  "verdictHeadline": null,
+  "verdict": [
+    {"label": "Our news-rated calls", "value": null},
+    {"label": "Always follow the move", "value": null},
+    {"label": "Always bet against the move", "value": null}
+  ],
+  "wwdExit": null,
+  "credits": null,
+  "allocation": [
+    {"label": "Safe-haven funds", "value": 30, "valueLabel": "30%", "detail": "USMV, XLP, XLV, IEF, GLD", "accent": false},
+    {"label": "S&P 500 fund", "value": 30, "valueLabel": "30%", "detail": "SPY", "accent": false},
+    {"label": "News trades", "value": 30, "valueLabel": "up to 30%", "detail": "the rest, when cash allows", "accent": true},
+    {"label": "Cash", "value": 10, "valueLabel": "at least 10%", "detail": "", "accent": false}
+  ],
+  "notes": [
+    "A paper-trading desk that ran on its own for eight trading days.",
+    null,
+    null,
+    null,
+    null,
+    "The rules allow news trades up to 60%, but in practice they are what is left after the core, SPY and the cash floor.",
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null,
+    null
+  ]
+}
+</script>
+<script src="deck.js"></script>
+</body>
+</html>
