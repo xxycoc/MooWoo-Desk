@@ -60,13 +60,38 @@
     svg.appendChild(d);
   }
 
+  function dayGapMissing(a, b) {
+    var cursor = Date.parse(a + 'T00:00:00Z') + 86400000;
+    var end = Date.parse(b + 'T00:00:00Z');
+    while (cursor < end) {
+      var day = new Date(cursor).getUTCDay();
+      if (day >= 1 && day <= 5) return true;
+      cursor += 86400000;
+    }
+    return false;
+  }
+
+  function lineSegments(points) {
+    if (!points.length) return [];
+    var segments = [[points[0]]];
+    for (var index = 1; index < points.length; index += 1) {
+      var current = segments[segments.length - 1];
+      if (dayGapMissing(current[current.length - 1].date, points[index].date)) {
+        segments.push([points[index]]);
+      } else {
+        current.push(points[index]);
+      }
+    }
+    return segments.filter(function (segment) { return segment.length > 1; });
+  }
+
   function equityChart() {
     var equity = state.data.equity || [];
     if (!equity.length) return null;
     var spy = Array.isArray(state.data.spy) ? state.data.spy : [];
     var end = state.data.endDate || equity[equity.length - 1].date;
     var start = equity[0].date;
-    var W = 1120, H = 300, L = 84, R = 192, T = 18, B = 46;
+    var W = 1120, H = 360, L = 96, R = 210, T = 24, B = 56;
     var plotW = W - L - R, plotH = H - T - B;
     var values = equity.map(function (p) { return p.value; })
       .concat(spy.map(function (p) { return p.value; }), [100000]);
@@ -93,13 +118,14 @@
       'Account value, ' + (state.data.chartLabel || ''),
       'Account value: ' + equity.map(function (p) {
         return p.label + ' ' + money(p.value);
-      }).join('; ') + '. S&P 500: ' + (spy.length ? 'plotted as a muted line.' : '[28 Nov].'));
+      }).join('; ') + '. The line breaks where daily closes are missing. S&P 500: ' +
+        (spy.length ? 'plotted as a muted line.' : '[28 Nov].'));
 
     for (var tick = dmin; tick <= dmax; tick += step) {
       svg.appendChild(svgNode('line', {
-        x1: L - 5, y1: y(tick), x2: L, y2: y(tick), class: 'axis'
+        x1: L - 6, y1: y(tick), x2: L, y2: y(tick), class: 'axis'
       }));
-      svg.appendChild(svgText(L - 10, y(tick), money(tick), null, 'end'));
+      svg.appendChild(svgText(L - 12, y(tick), money(tick), null, 'end'));
     }
     svg.appendChild(svgNode('line', { x1: L, y1: T, x2: L, y2: H - B, class: 'axis' }));
     svg.appendChild(svgNode('line', { x1: L, y1: H - B, x2: W - R, y2: H - B, class: 'axis' }));
@@ -109,22 +135,24 @@
     svg.appendChild(svgText(W - R + 12, y(100000), 'Start $100,000'));
 
     equity.forEach(function (point) {
-      svg.appendChild(svgText(x(point.date), H - B + 24, point.label, null, 'middle'));
+      svg.appendChild(svgText(x(point.date), H - B + 28, point.label, null, 'middle'));
     });
 
-    if (spy.length) {
+    lineSegments(spy).forEach(function (segment) {
       svg.appendChild(svgNode('polyline', {
         class: 'spy',
-        points: spy.map(function (p) { return x(p.date) + ',' + y(p.value); }).join(' ')
+        points: segment.map(function (p) { return x(p.date) + ',' + y(p.value); }).join(' ')
       }));
-    }
+    });
 
-    svg.appendChild(svgNode('polyline', {
-      class: 'equity',
-      points: equity.map(function (p) { return x(p.date) + ',' + y(p.value); }).join(' ')
-    }));
+    lineSegments(equity).forEach(function (segment) {
+      svg.appendChild(svgNode('polyline', {
+        class: 'equity',
+        points: segment.map(function (p) { return x(p.date) + ',' + y(p.value); }).join(' ')
+      }));
+    });
     equity.forEach(function (point) {
-      svg.appendChild(svgNode('circle', { class: 'dot', cx: x(point.date), cy: y(point.value), r: 4 }));
+      svg.appendChild(svgNode('circle', { class: 'dot', cx: x(point.date), cy: y(point.value), r: 5 }));
     });
 
     var last = equity[equity.length - 1];
@@ -139,7 +167,7 @@
   function verdictChart() {
     var rows = state.data.verdict || [];
     if (!rows.length) return null;
-    var W = 1120, H = 280, axisY = 190, maxBar = 130;
+    var W = 1120, H = 330, axisY = 225, maxBar = 160;
     var xs = [200, 560, 920];
     var values = rows.map(function (row) { return row.value; })
       .filter(function (v) { return typeof v === 'number' && isFinite(v); });
@@ -151,15 +179,19 @@
         return row.label + ': ' + (present(row.value) ? percent(row.value) : '[28 Nov]');
       }).join('; ') + '.');
 
-    svg.appendChild(svgNode('line', { x1: 60, y1: axisY, x2: 1060, y2: axisY, class: 'axis' }));
+    svg.appendChild(svgNode('line', { x1: 50, y1: axisY, x2: 1070, y2: axisY, class: 'axis' }));
 
     rows.forEach(function (row, index) {
       var cx = xs[index] || (200 + index * 360);
-      var label = svgText(cx, axisY + 46, row.label, 'label', 'middle');
+      var label = svgText(cx, axisY + 48, row.label, 'label', 'middle');
       svg.appendChild(label);
 
       if (!present(row.value) || typeof row.value !== 'number' || !maxAbs) {
-        var missing = svgText(cx, axisY - 14, '[28 Nov]', 'tag', 'middle');
+        var guideTop = axisY - maxBar;
+        svg.appendChild(svgNode('line', {
+          x1: cx, y1: axisY - 8, x2: cx, y2: guideTop, class: 'pending'
+        }));
+        var missing = svgText(cx, guideTop - 14, '[28 Nov]', 'tag', 'middle');
         svg.appendChild(missing);
         return;
       }
@@ -167,13 +199,13 @@
       var height = Math.max(4, Math.abs(value) / maxAbs * maxBar);
       var positive = value >= 0;
       svg.appendChild(svgNode('rect', {
-        x: cx - 45,
+        x: cx - 60,
         y: positive ? axisY - height : axisY,
-        width: 90,
+        width: 120,
         height: height,
         class: positive ? 'gain' : 'loss'
       }));
-      var valueY = positive ? axisY - height - 14 : axisY + height + 22;
+      var valueY = positive ? axisY - height - 16 : axisY + height + 26;
       svg.appendChild(svgText(cx, valueY, percent(value), 'value', 'middle'));
     });
     return svg;

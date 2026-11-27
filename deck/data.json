@@ -41,21 +41,21 @@
     {"label": "Cash", "value": 10, "valueLabel": "at least 10%", "detail": "", "accent": false}
   ],
   "notes": [
-    "A paper-trading desk that ran on its own for eight trading days.",
-    null,
-    null,
-    null,
-    null,
-    "The rules allow news trades up to 60%, but in practice they are what is left after the core, SPY and the cash floor.",
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null
+    "A paper-trading desk that ran on a schedule for eight trading days.",
+    "Point at the Woodward move and the morning news that explained it. The desk's question is whether a big move comes with a reason or without one.",
+    "Point at the two orange cells. They are the only cases where the rules say buy; the other two say stay out.",
+    "Point at each agent's job, then the line at the bottom. The agents read and report; Python sizes and sends every order.",
+    "Walk the five steps from spotted to exit. The analyst's answer never included the number of shares.",
+    "Point at the orange section. News trades are the flexible part, after the core funds, SPY and the cash floor.",
+    "Point at the blocked names. The weak-market rule blocked Disney and Target on 19 Nov and PDD on 23 Nov.",
+    "Point at the orange line and the dashed start line. The last plotted close is above the starting $100,000.",
+    "Point at the ACM row and its lesson. Good news with a flat price hit the five-day time limit.",
+    "Point at the three labels. The comparison is our news-rated calls against two simple rules.",
+    "Point at the three lines. The fix was fewer agents and short, strict answers, and the desk traded the next day.",
+    "Point at the five dates. Each time the desk stopped rather than guessed, and a person restarted it.",
+    "Read the three lessons in order. They cover the team, the broker data, and the audit trail.",
+    "Point at the list, then the floor image. Qoder ran the timetable; people still restarted the desk after a stop.",
+    "Point at the GitHub line and the live dashboard. Both are public ways into the work.",
+    "Point at the two columns. The claim is about who controls the money; the limit is the length of the run."
   ]
 }

@@ -12,7 +12,20 @@
   <section class="slide title" aria-label="Slide 1 of 16" aria-hidden="true">
     <h1 class="headline">MooWoo Desk: AI reads the news. Code handles the money.</h1>
     <p class="sub">Moomoo x Qoder AI Paper Trading Agent Challenge &middot; Siang Woo &middot; 17-27 Nov 2026</p>
-    <img class="banner" src="img/ducks-banner.svg" alt="MooWoo Desk banner: the Coordinator, Analyst and Executor ducks">
+    <div class="title-ducks">
+      <div class="title-duck">
+        <img src="img/duck-coordinator-plain.svg" alt="Coordinator duck">
+        <b>Coordinator</b>
+      </div>
+      <div class="title-duck">
+        <img src="img/duck-analyst-plain.svg" alt="Analyst duck">
+        <b>Analyst</b>
+      </div>
+      <div class="title-duck">
+        <img src="img/duck-executor-plain.svg" alt="Executor duck">
+        <b>Executor</b>
+      </div>
+    </div>
     <p class="num">1 / 16</p>
   </section>
 
@@ -22,7 +35,7 @@
     <img class="duck" src="img/duck-analyst.svg" alt="Analyst duck">
     <div class="content body">
       <p>On 19 Nov, Woodward (WWD) rose 8% on three times its usual volume. The reason was in that morning's news: earnings came in 13% above forecasts.</p>
-      <p>Some big moves have a clear reason. Others don't. We bet that <span class="accent">the difference matters</span>.</p>
+      <p class="pull">Some big moves have a clear reason. Others don't. We bet that <span class="accent">the difference matters</span>.</p>
     </div>
     <p class="num">2 / 16</p>
   </section>
@@ -31,7 +44,7 @@
     <p class="kicker">Our bet</p>
     <h2 class="headline">Moves with a clear reason tend to keep going. Drops without one tend to bounce back.</h2>
     <img class="duck" src="img/duck-analyst.svg" alt="Analyst duck">
-    <div class="content">
+    <div class="content has-foot">
       <div class="bet">
         <div class="col"></div>
         <div class="col">Reason in the news</div>
@@ -79,7 +92,7 @@
     <p class="kicker">A trade, start to finish</p>
     <h2 class="headline">Woodward jumped 8% on an earnings beat. Here is what the desk did with it.</h2>
     <img class="duck" src="img/duck-executor.svg" alt="Executor duck">
-    <div class="content">
+    <div class="content has-foot">
       <div class="steps">
         <div class="step">
           <b>1 Spotted</b>
@@ -111,7 +124,7 @@
     <p class="kicker">Where the money sits</p>
     <h2 class="headline">Most of the money sat in steady funds. Only part chased news.</h2>
     <img class="duck" src="img/duck-coordinator.svg" alt="Coordinator duck">
-    <div class="content">
+    <div class="content has-foot">
       <div class="split" id="alloc-bar"></div>
       <div class="alloc" id="alloc-list"></div>
       <p class="foot">If the news idea is wrong, most of the account still follows the market.</p>
@@ -204,7 +217,7 @@
   <section class="slide" aria-label="Slide 10 of 16" aria-hidden="true">
     <p class="kicker">Did the news help?</p>
     <h2 class="headline" id="verdict-headline"></h2>
-    <div class="content">
+    <div class="content has-foot">
       <div id="verdict-chart"></div>
       <p class="foot">Eight days is a small sample. We report it as it is.</p>
     </div>
@@ -227,20 +240,32 @@
 
   <section class="slide" aria-label="Slide 12 of 16" aria-hidden="true">
     <p class="kicker">What broke: the brakes</p>
-    <h2 class="headline">The desk stopped itself twice. Both times, stopping was the right call.</h2>
+    <h2 class="headline">The desk stopped itself five times. Each time, it stopped rather than guessed.</h2>
     <img class="duck" src="img/duck-executor.svg" alt="Executor duck">
-    <div class="content">
-      <div class="timeline">
-        <div class="stop">
+    <div class="content has-foot">
+      <ol class="stops">
+        <li>
           <span class="when">18 Nov</span>
-          <p>A copied broker record lost a field. The desk refused to guess and stopped.</p>
-        </div>
-        <div class="stop">
+          <p>The broker named a price field differently from what we expected.</p>
+        </li>
+        <li>
+          <span class="when">18 Nov</span>
+          <p>Cash and holdings were read seconds apart, prices moved, and the totals were $9.75 apart.</p>
+        </li>
+        <li>
+          <span class="when">18 Nov</span>
+          <p>A copied broker record lost a field.</p>
+        </li>
+        <li>
+          <span class="when">20 Nov</span>
+          <p>After a part-sale, the broker's average cost differed from ours.</p>
+        </li>
+        <li>
           <span class="when">25 Nov</span>
-          <p>A sell order filled in two parts and looked like a mismatch. The desk stopped.</p>
-        </div>
-      </div>
-      <p class="after">No bad trade was made. Each time: find the cause, fix it, write it down, add a test.</p>
+          <p>A sell order filled in two parts and looked like a mismatch.</p>
+        </li>
+      </ol>
+      <p class="after">No bad trade was made. Each time: find the cause, fix it, write it down, add a test. Then a person restarted the desk.</p>
       <p class="foot">A desk that stops when unsure is safer than one that guesses with money.</p>
     </div>
     <p class="num">12 / 16</p>
@@ -262,7 +287,7 @@
 
   <section class="slide" aria-label="Slide 14 of 16" aria-hidden="true">
     <p class="kicker">How Qoder ran it</p>
-    <h2 class="headline">Qoder ran the desk every 30 minutes without anyone pressing a button.</h2>
+    <h2 class="headline">Qoder ran the desk on a timetable: a check every 30 minutes, all day.</h2>
     <img class="duck" src="img/duck-coordinator.svg" alt="Coordinator duck">
     <div class="content">
       <div class="qoder">
@@ -300,7 +325,7 @@
         <div>
           <h3>We claim</h3>
           <p>A desk where code, not AI, controls the money.</p>
-          <p>It ran on its own for 8 trading days.</p>
+          <p>It traded on a schedule for 8 days. People only restarted it after it stopped itself.</p>
           <p>Every decision is on record.</p>
         </div>
         <div>
@@ -326,11 +351,31 @@
   "chartLabel": "to 25 Nov",
   "endDate": "2026-11-27",
   "equity": [
-    {"date": "2026-11-17", "label": "17 Nov", "value": 100000},
-    {"date": "2026-11-20", "label": "20 Nov", "value": 98562},
-    {"date": "2026-11-23", "label": "23 Nov", "value": 101322},
-    {"date": "2026-11-24", "label": "24 Nov", "value": 101074},
-    {"date": "2026-11-25", "label": "25 Nov", "value": 101086}
+    {
+      "date": "2026-11-17",
+      "label": "17 Nov",
+      "value": 100000
+    },
+    {
+      "date": "2026-11-20",
+      "label": "20 Nov",
+      "value": 98562
+    },
+    {
+      "date": "2026-11-23",
+      "label": "23 Nov",
+      "value": 101322
+    },
+    {
+      "date": "2026-11-24",
+      "label": "24 Nov",
+      "value": 101074
+    },
+    {
+      "date": "2026-11-25",
+      "label": "25 Nov",
+      "value": 101086
+    }
   ],
   "spy": null,
   "return": null,
@@ -345,41 +390,92 @@
       "resultTone": "loss",
       "lesson": "Good news, flat price: the time limit got us out."
     },
-    {"ticker": "WWD", "why": null, "result": null, "resultTone": null, "lesson": null},
-    {"ticker": "PDD", "why": null, "result": null, "resultTone": null, "lesson": null},
-    {"ticker": "NVDA", "why": null, "result": null, "resultTone": null, "lesson": null}
+    {
+      "ticker": "WWD",
+      "why": null,
+      "result": null,
+      "resultTone": null,
+      "lesson": null
+    },
+    {
+      "ticker": "PDD",
+      "why": null,
+      "result": null,
+      "resultTone": null,
+      "lesson": null
+    },
+    {
+      "ticker": "NVDA",
+      "why": null,
+      "result": null,
+      "resultTone": null,
+      "lesson": null
+    }
   ],
   "verdictHeadline": null,
   "verdict": [
-    {"label": "Our news-rated calls", "value": null},
-    {"label": "Always follow the move", "value": null},
-    {"label": "Always bet against the move", "value": null}
+    {
+      "label": "Our news-rated calls",
+      "value": null
+    },
+    {
+      "label": "Always follow the move",
+      "value": null
+    },
+    {
+      "label": "Always bet against the move",
+      "value": null
+    }
   ],
   "wwdExit": null,
   "credits": null,
   "allocation": [
-    {"label": "Safe-haven funds", "value": 30, "valueLabel": "30%", "detail": "USMV, XLP, XLV, IEF, GLD", "accent": false},
-    {"label": "S&P 500 fund", "value": 30, "valueLabel": "30%", "detail": "SPY", "accent": false},
-    {"label": "News trades", "value": 30, "valueLabel": "up to 30%", "detail": "the rest, when cash allows", "accent": true},
-    {"label": "Cash", "value": 10, "valueLabel": "at least 10%", "detail": "", "accent": false}
+    {
+      "label": "Safe-haven funds",
+      "value": 30,
+      "valueLabel": "30%",
+      "detail": "USMV, XLP, XLV, IEF, GLD",
+      "accent": false
+    },
+    {
+      "label": "S&P 500 fund",
+      "value": 30,
+      "valueLabel": "30%",
+      "detail": "SPY",
+      "accent": false
+    },
+    {
+      "label": "News trades",
+      "value": 30,
+      "valueLabel": "up to 30%",
+      "detail": "the rest, when cash allows",
+      "accent": true
+    },
+    {
+      "label": "Cash",
+      "value": 10,
+      "valueLabel": "at least 10%",
+      "detail": "",
+      "accent": false
+    }
   ],
   "notes": [
-    "A paper-trading desk that ran on its own for eight trading days.",
-    null,
-    null,
-    null,
-    null,
-    "The rules allow news trades up to 60%, but in practice they are what is left after the core, SPY and the cash floor.",
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null,
-    null
+    "A paper-trading desk that ran on a schedule for eight trading days.",
+    "Point at the Woodward move and the morning news that explained it. The desk's question is whether a big move comes with a reason or without one.",
+    "Point at the two orange cells. They are the only cases where the rules say buy; the other two say stay out.",
+    "Point at each agent's job, then the line at the bottom. The agents read and report; Python sizes and sends every order.",
+    "Walk the five steps from spotted to exit. The analyst's answer never included the number of shares.",
+    "Point at the orange section. News trades are the flexible part, after the core funds, SPY and the cash floor.",
+    "Point at the blocked names. The weak-market rule blocked Disney and Target on 19 Nov and PDD on 23 Nov.",
+    "Point at the orange line and the dashed start line. The last plotted close is above the starting $100,000.",
+    "Point at the ACM row and its lesson. Good news with a flat price hit the five-day time limit.",
+    "Point at the three labels. The comparison is our news-rated calls against two simple rules.",
+    "Point at the three lines. The fix was fewer agents and short, strict answers, and the desk traded the next day.",
+    "Point at the five dates. Each time the desk stopped rather than guessed, and a person restarted it.",
+    "Read the three lessons in order. They cover the team, the broker data, and the audit trail.",
+    "Point at the list, then the floor image. Qoder ran the timetable; people still restarted the desk after a stop.",
+    "Point at the GitHub line and the live dashboard. Both are public ways into the work.",
+    "Point at the two columns. The claim is about who controls the money; the limit is the length of the run."
   ]
 }
 </script>
