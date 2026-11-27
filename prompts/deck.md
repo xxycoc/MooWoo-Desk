@@ -139,6 +139,43 @@ Two columns. "We claim": "A desk where code, not AI, controls the money." / "It 
 
 ---
 
+## Stage 1b: review fixes (27 Nov)
+
+Fix these in `deck/`, then re-run the Stage 1 checks and commit "Deck review fixes (Stage 1b)". Do not push.
+
+### 1. Fill the slide (most important)
+Every slide uses only the top half; the bottom half is empty and the text is too small for a projector.
+- Raise the type scale: headline 52-56 px, body and table text 26-28 px, small notes and footers at least 20 px, kicker 16 px.
+- Spread each slide's content over the full height: headline at the top, the main visual or table taking the middle, footer line near the bottom. No slide should have more than about a quarter of its height empty.
+- Slide 1: centre the title block vertically. Replace the dark banner image with the three duck SVGs side by side on the paper background (about 140 px each) with their names under them. No dark box.
+- Slide 8: the chart takes most of the slide height.
+
+### 2. Correct the facts
+The ledger shows the desk stopped itself five times, not twice, and a person restarted it each time. Change:
+- Slide 12 headline: "The desk stopped itself five times. Each time, it stopped rather than guessed."
+  Replace the two-point timeline with five short points, in order:
+  - 18 Nov: "The broker named a price field differently from what we expected."
+  - 18 Nov: "Cash and holdings were read seconds apart, prices moved, and the totals were $9.75 apart."
+  - 18 Nov: "A copied broker record lost a field."
+  - 20 Nov: "After a part-sale, the broker's average cost differed from ours."
+  - 25 Nov: "A sell order filled in two parts and looked like a mismatch."
+  Keep the line "No bad trade was made. Each time: find the cause, fix it, write it down, add a test." and add "Then a person restarted the desk."
+  Keep the footer "A desk that stops when unsure is safer than one that guesses with money."
+- Slide 14 headline: "Qoder ran the desk on a timetable: a check every 30 minutes, all day." (It did need people to restart it, so do not say "without anyone pressing a button".)
+- Slide 16, "We claim" second line: "It traded on a schedule for 8 days. People only restarted it after it stopped itself."
+- Speaker note for slide 1: "A paper-trading desk that ran on a schedule for eight trading days."
+
+### 3. Chart
+Slide 8 draws a straight line from 17 Nov to 20 Nov across the missing 18 and 19 Nov closes. Break the line where days are missing (draw separate segments), as the Stage 1 prompt asked.
+
+### 4. Speaker notes
+Write a note for every slide: one to three plain sentences that say what to point at and why it matters. Use only facts already on the slide or in this prompt. Store them in `data.json` `notes`.
+
+### 5. Offline copy stays in sync
+Add `deck/sync_data.py` (standard library only) that copies `deck/data.json` into the inline snapshot in `deck/index.html`, and fails loudly if the snapshot markers are missing. Run it now and mention it in a short `deck/README.md` (how to open, keys, how to update numbers).
+
+---
+
 ## Stage 2 (28 Nov): fill the numbers
 
-Read `docs/results.md` and the generated results files in `docs/`. Fill every null in `deck/data.json`: full daily equity and SPY series 17-27 Nov, return, SPY return, Sharpe, largest drop, credits, WWD exit, the trades table (WWD, PDD, NVDA rows plus ACM), and the follow/fade comparison with `verdictHeadline`. Write the slide 8 and slide 10 headlines as plain sentences from the actual numbers, even if the result is a loss or "too few trades to tell". Do not change any other slide text. Re-run the checks above, then commit "Fill deck results (Stage 2)". Do not push.
+Read `docs/results.md` and the generated results files in `docs/`. Fill every null in `deck/data.json`: full daily equity and SPY series 17-27 Nov, return, SPY return, Sharpe, largest drop, credits, WWD exit, the trades table (WWD, PDD, NVDA rows plus ACM), and the follow/fade comparison with `verdictHeadline`. Write the slide 8 and slide 10 headlines as plain sentences from the actual numbers, even if the result is a loss or "too few trades to tell". Do not change any other slide text. Run `python deck/sync_data.py`, re-run the checks above, then commit "Fill deck results (Stage 2)". Do not push.
