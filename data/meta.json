@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-11-26T21:12:09Z",
-  "latestEventTs": "2026-11-26T21:11:12.789164Z",
+  "generatedAt": "2026-11-27T14:50:41Z",
+  "latestEventTs": "2026-11-27T14:46:06.734529Z",
   "logs": [
     "2026-11-17-morning-398eae7c55ee.jsonl",
     "2026-11-17-morning-d369db15a7cf.jsonl",
@@ -133,12 +133,13 @@
     "2026-11-26-watch-6e36cf913e5f.jsonl",
     "2026-11-26-watch-ea58a744d9fd.jsonl",
     "2026-11-26-watch-1934e11ff0fc.jsonl",
-    "2026-11-26-audit-3e2cdceb8c56.jsonl"
+    "2026-11-26-audit-3e2cdceb8c56.jsonl",
+    "2026-11-27-morning-460b1ac09625.jsonl"
   ],
   "desk": {
     "halted": false,
     "haltReason": "",
     "tier": "normal",
-    "updatedAt": "2026-11-26T21:11:15Z"
+    "updatedAt": "2026-11-27T14:49:37Z"
   }
 }
