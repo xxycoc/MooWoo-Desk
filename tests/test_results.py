@@ -207,3 +207,41 @@ def test_spy_close_must_match_latest_equity_day(tmp_path):
     assert results["spy"]["reason"] == "unavailable for 2026-11-18"
     text = (out / "results.md").read_text(encoding="utf-8")
     assert "- SPY return: unavailable for 2026-11-18." in text
+
+
+def test_after_close_audit_snapshot_beats_earlier_run_and_fill_keeps_order_time(tmp_path):
+    ledger = tmp_path / "ledger"
+    (ledger / "logs").mkdir(parents=True)
+    reports(ledger, {"2026-11-17": 100000, "2026-11-19": 100100})
+
+    def snapshot(run, cash, rows):
+        inputs = ledger / "inputs" / run
+        inputs.mkdir(parents=True)
+        (inputs / "cash.json").write_text(json.dumps({"ret_code": 0, "ret_msg": "success", "data": {
+            "balance": cash, "total_asset": "1.00", "hold": "0.00"}}), encoding="utf-8")
+        (inputs / "positions.json").write_text(json.dumps({"ret_code": 0, "ret_msg": "success", "data": {
+            "positions": rows}}), encoding="utf-8")
+
+    # The morning run saw ACM before its sale filled; the aborted audit (no run_started) saw the sale.
+    morning = "2026-11-18-morning-before"
+    snapshot(morning, "10000.00", [{"symbol": "US.ACM", "qty": "100", "cost_price": "80", "cur_price": "80"}])
+    snapshot("2026-11-18-audit-after", "18000.00",
+             [{"symbol": "US.ACM", "qty": "0", "cost_price": "0", "cur_price": "0"}])
+    log = EventLog(ledger / "logs" / f"{morning}.jsonl", runId=morning)
+    log.append("run_started", dict(universe=["ACM"], equity=18000, cash=10000, tier="normal",
+                                   configHash="a" * 64, promptVersion="test-v0", trdEnv="SIMULATE"),
+               ts="2026-11-18T14:40:00Z")
+    log.append("order_submitted", dict(ticker="ACM", orderId="SIM-1", qty=100, limitPrice=80,
+                                       trdEnv="SIMULATE"), ts="2026-11-18T14:45:00Z")
+    log.append("fill", dict(ticker="ACM", orderId="SIM-1", status="filled", filledQty=100,
+                            avgPrice=80, source="order_status", fees=1), ts="2026-11-19T14:41:00Z")
+    bars = ledger / "inputs" / "bars-run"
+    bars.mkdir(parents=True)
+    (bars / "bars.json").write_text(json.dumps({"ACM": [
+        {"date": "2026-11-18", "open": 80, "close": 82}]}), encoding="utf-8")
+
+    results = build_results.build(ledger, tmp_path / "docs")
+    day = {row["day"]: row for row in results["days"]}["2026-11-18"]
+    assert day["equity"] == pytest.approx(18000.0)
+    assert day["source"] == "rebuilt close (after-close audit cash and positions × session close)"
+    assert results["trades"][0]["timeEt"] == "2026-11-18 09:45 ET"

@@ -208,8 +208,22 @@ def daily_rows(ledger: Path, starts: dict[str, dict], latest: date | None,
         if report is not None:
             equity, source = report, "audit report"
         else:
+            # The audit runs after the close, so its snapshot is the day's closing book even when
+            # the audit aborted before run_started; an earlier run's snapshot misses later fills.
+            audits = sorted(path.name for path in (ledger / "inputs").glob(f"{day.isoformat()}-audit-*")
+                            if broker_snapshot(ledger, path.name) is not None)
+            audit_equity = audit_source = None
+            if audits:
+                snapshot = broker_snapshot(ledger, audits[-1])
+                audit_equity = rebuild_equity(ledger, audits[-1], day, datasets, snapshot)
+                audit_source = "rebuilt close (after-close audit cash and positions × session close)"
+                if audit_equity is None and snapshot["totalAsset"] is not None:
+                    audit_equity = snapshot["totalAsset"]
+                    audit_source = "after-close audit broker total"
             snapshots = day_snapshots(ledger, starts, day)
-            if snapshots:
+            if audit_equity is not None:
+                equity, source = audit_equity, audit_source
+            elif snapshots:
                 _, run_id, local, snapshot = snapshots[-1]
                 rebuilt = rebuild_equity(ledger, run_id, day, datasets, snapshot)
                 if rebuilt is not None:
@@ -328,7 +342,8 @@ def trade_rows(events: list[dict]) -> list[dict]:
         if order is not None:
             filled.add(order["hash"])
         rows.append(dict(
-            timeEt=et_stamp(fill["ts"]),
+            # A fill reconciled in a later session keeps its order's placement time.
+            timeEt=et_stamp((order or fill)["ts"]),
             ticker=fill.get("ticker") or (order or {}).get("ticker", "unavailable"),
             side=side(fill["decisionId"], order, fill),
             filledQty=number(fill.get("filledQty")),
