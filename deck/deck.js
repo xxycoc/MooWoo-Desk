@@ -292,14 +292,6 @@
     window.setTimeout(function () {
       if (video.readyState === 0) missing();
     }, 1500);
-    video.addEventListener('click', function (event) {
-      if (event.offsetY > video.clientHeight - 44) return;
-      if (video.paused) {
-        video.play();
-      } else {
-        video.pause();
-      }
-    });
   }
 
   function bind() {
@@ -307,12 +299,6 @@
       if (event.altKey || event.ctrlKey || event.metaKey) return;
       var key = event.key;
       if (key === ' ' && event.target && event.target.tagName === 'VIDEO') {
-        event.preventDefault();
-        if (event.target.paused) {
-          event.target.play();
-        } else {
-          event.target.pause();
-        }
         return;
       }
       if (key === 'ArrowRight' || key === 'PageDown' || key === ' ') {
