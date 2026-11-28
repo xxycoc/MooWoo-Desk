@@ -13,6 +13,7 @@
   <b>A paper-trading experiment with research agents and code-enforced risk limits.</b><br>
   Moomoo x Qoder AI Paper Trading Agent Challenge<br>
   <a href="https://moowoo-desk-p36f61ggjia.qoder.website">Live dashboard</a> &middot;
+  <a href="https://moowoo-results-p36f61ggjia.qoder.website/">Results deck</a> &middot;
   <a href="PREREGISTRATION.md">Pre-registration</a> &middot;
   <a href="docs/">Documentation</a>
 </p>

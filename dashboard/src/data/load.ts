@@ -94,13 +94,27 @@ async function loadSource(base: string, signal?: AbortSignal, remote = false): P
   const events: LoadedEvent[] = [];
   let gseq = 0;
 
-  for (const file of index.files) {
-    const fileRes = await fetch(`${base}${encodeURIComponent(file)}${query}`, { signal });
-    if (!fileRes.ok) {
-      errors.push(`${file}: HTTP ${fileRes.status}`);
-      continue;
+  // The feed holds one file per run (149 by the end of the window); fetching them
+  // one by one overran the 15 s feed timeout, so fetch a few at a time and keep order.
+  const texts: (string | null)[] = new Array(index.files.length).fill(null);
+  let next = 0;
+  const worker = async () => {
+    while (next < index.files.length) {
+      const i = next++;
+      const file = index.files[i];
+      const fileRes = await fetch(`${base}${encodeURIComponent(file)}${query}`, { signal });
+      if (!fileRes.ok) {
+        errors.push(`${file}: HTTP ${fileRes.status}`);
+        continue;
+      }
+      texts[i] = await fileRes.text();
     }
-    const rawText = await fileRes.text();
+  };
+  await Promise.all(Array.from({ length: Math.min(8, index.files.length) }, worker));
+
+  for (const [i, file] of index.files.entries()) {
+    const rawText = texts[i];
+    if (rawText === null) continue;
     const rawLines = rawText.split("\n");
     if (rawLines.length > 0 && rawLines[rawLines.length - 1] === "") rawLines.pop();
     const fileEvents: LoadedEvent[] = [];
