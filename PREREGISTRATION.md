@@ -676,7 +676,7 @@ This records an outcome and an operator decision.
   because the next watcher ran; on the last day there were only three attempts.
 - Result at the 27 November close: account value USD 101,942.17 (broker total), USD 101,980.54 marked
   at session closes in `docs/results.md`. Realised result about −USD 242 (ACM −302.25, IEF part-sale
-  +71.82, all fees −11.92); the rest is unrealised in the nine holdings.
+  +71.82, all fees −11.91); the rest is unrealised in the nine holdings.
 - Operator decision: the organiser said actions after the competition date are the entrant's decision.
   We place no trades after 27 November, so every reported number comes from 17-27 November and every
   trade on record was authorised by the desk's code. All schedules were paused on 28 November.
