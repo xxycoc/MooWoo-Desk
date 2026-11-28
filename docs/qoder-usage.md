@@ -161,7 +161,7 @@ Groups are inferred from session titles.
 Model credits were 1,458.27 and sandbox credits 288.44. The first day cost the most
 (thirteen failed morning attempts with the old multi-agent debate). A holiday watcher
 that only checks the calendar costs about 1 credit; a full watcher on a normal day
-costs 5 to 12.
+costs about 4 to 12.
 
 ### Collect when authorized
 
