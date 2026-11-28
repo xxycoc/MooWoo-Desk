@@ -179,11 +179,29 @@ Add `deck/sync_data.py` (standard library only) that copies `deck/data.json` int
 ### Final-day failure (added 28 Nov, applies to Stage 2)
 
 The desk did not sell its holdings before the 27 Nov close. The organiser said to disclose it in the report. Show it plainly:
-- Slide 8: show two numbers side by side, "Account value at the close: $101,942 (+1.9%)" and "Locked in (realised): about -$315". Add one line under them: "Nine holdings were never sold. See slide 12." Headline from the real figures, for example "The account ended up 1.9%, but most of that gain was never locked in."
+- Slide 8: show two numbers side by side, "Account value at the close: $101,942 (+1.9%)" and "Locked in (realised): about -$242". Add one line under them: "Nine holdings were never sold. See slide 12." Headline from the real figures, for example "The account ended up 1.9%, but most of that gain was never locked in."
 - Slide 12: add a sixth point, in accent colour: "27 Nov: one quiet ETF's price was 106 seconds old. The 60-second check stopped the final sell-off twice, and the last retry started after the close. Nine holdings were never sold." Change the headline to "The desk stopped itself six times. The last time, it cost us the final sell-off." Replace "No bad trade was made." with "No bad trade was made, but the last stop meant no final sale."
 - Slide 13: add a fourth lesson: "Test the last day on its own. It only had three chances to work."
 - Slide 16, "We claim": keep the lines; under "We don't claim" add "A clean finish: the final sell-off failed, and we said so."
 
 ## Stage 2 (28 Nov): fill the numbers
+
+Final numbers, all from `docs/results.md`, `docs/post-mortem.md` and `docs/qoder-usage.md` on this branch. Use exactly these:
+
+- `equity` (daily close, USD): 17 Nov 100000, 18 Nov 99903, 19 Nov 99625, 20 Nov 98562, 23 Nov 101322, 24 Nov 101074, 25 Nov 101086, 27 Nov 101981. No gaps now; set `chartLabel` to "17-27 Nov".
+- `spy` (SPY rebased to USD 100,000 at the 17 Nov open): 17 Nov 99194, 18 Nov 98891, 19 Nov 96950, 20 Nov 93421, 23 Nov 97820, 24 Nov 97344, 25 Nov 97063, 27 Nov 98636.
+- `return` "+2.0%", `spyReturn` "−1.4%", `sharpe` "3.44", `largestDrop` "−1.4%".
+- Slide 8 headline: "The account ended up 2.0% while the S&P 500 fell 1.4%, but most of the gain was never locked in." Under the chart show "Account value at the close: $101,942 (+1.9%)" and "Locked in (realised): about −$242", and the line "Nine holdings were never sold. See slide 12." Footnote: "Sharpe ratio over 8 days is unstable."
+- `wwdExit`: "Never sold: final sell-off failed. Worth $352.03 at the close, +$587 on paper."
+- `trades`:
+  - ACM: keep as is.
+  - WWD: why "Earnings beat 13%, rated explained up"; result "Not sold; +$587 on paper"; tone gain; lesson "The trade worked; the exit didn't run."
+  - PDD: why "Earnings beat, rated explained up"; result "Not sold; +$230 on paper"; tone gain; lesson "A later bounce trade on PDD was blocked by the weak-market rule."
+  - NVDA: why "Earnings move, rated explained up"; result "Not sold; −$123 on paper"; tone loss; lesson "Bought late in the window, with little time to work."
+- Slide 10: `verdictHeadline` "Too few graded trades to tell whether reading the news helped." Replace the three bars with two plain facts from `docs/results.md`: "The analyst's up/down calls were right 52% of the time (50 graded calls)" and "Its confidence scores were not well calibrated (Brier 0.29; target was below 0.25)". Footer: "We could not score the follow-the-move and fade-the-move comparison: the matched records were missing."
+- `credits`: "1,748 credits over 158 cloud sessions".
+- Slide 12 now lists six stops (see "Final-day failure" above).
+
+Read `docs/post-mortem.md` before writing slide 12's sixth point and the slide 8 headline, so wording matches it.
 
 Read `docs/results.md` and the generated results files in `docs/`. Fill every null in `deck/data.json`: full daily equity and SPY series 17-27 Nov, return, SPY return, Sharpe, largest drop, credits, WWD exit, the trades table (WWD, PDD, NVDA rows plus ACM), and the follow/fade comparison with `verdictHeadline`. Write the slide 8 and slide 10 headlines as plain sentences from the actual numbers, even if the result is a loss or "too few trades to tell". Also on slide 5, align the five steps with the left margin and spread them across the full width so each step wraps less. Do not change any other slide text. Run `python deck/sync_data.py`, re-run the checks above, then commit "Fill deck results (Stage 2)". Do not push.
