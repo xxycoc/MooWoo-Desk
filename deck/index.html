@@ -9,7 +9,7 @@
 <body>
 <main class="deck" id="deck">
 
-  <section class="slide title" aria-label="Slide 1 of 16" aria-hidden="true">
+  <section class="slide title" aria-label="Slide 1 of 21" aria-hidden="true">
     <h1 class="headline">MooWoo Desk: AI reads the news. Code handles the money.</h1>
     <p class="sub">Moomoo x Qoder AI Paper Trading Agent Challenge &middot; Siang Woo &middot; 17-27 Nov 2026</p>
     <div class="title-ducks">
@@ -26,10 +26,10 @@
         <b>Executor</b>
       </div>
     </div>
-    <p class="num">1 / 16</p>
+    <p class="num">1 / 21</p>
   </section>
 
-  <section class="slide" aria-label="Slide 2 of 16" aria-hidden="true">
+  <section class="slide" aria-label="Slide 2 of 21" aria-hidden="true">
     <p class="kicker">The question</p>
     <h2 class="headline">When a stock suddenly jumps or drops, is there a reason?</h2>
     <img class="duck" src="img/duck-analyst.svg" alt="Analyst duck">
@@ -37,10 +37,10 @@
       <p>On 19 Nov, Woodward (WWD) rose 8% on three times its usual volume. The reason was in that morning's news: earnings came in 13% above forecasts.</p>
       <p class="pull">Some big moves have a clear reason. Others don't. We bet that <span class="accent">the difference matters</span>.</p>
     </div>
-    <p class="num">2 / 16</p>
+    <p class="num">2 / 21</p>
   </section>
 
-  <section class="slide" aria-label="Slide 3 of 16" aria-hidden="true">
+  <section class="slide" aria-label="Slide 3 of 21" aria-hidden="true">
     <p class="kicker">Our bet</p>
     <h2 class="headline">Moves with a clear reason tend to keep going. Drops without one tend to bounce back.</h2>
     <img class="duck" src="img/duck-analyst.svg" alt="Analyst duck">
@@ -58,10 +58,10 @@
       </div>
       <p class="foot">We wrote these rules down on 16 Nov, before the first trade, so we could not bend them after seeing results.</p>
     </div>
-    <p class="num">3 / 16</p>
+    <p class="num">3 / 21</p>
   </section>
 
-  <section class="slide" aria-label="Slide 4 of 16" aria-hidden="true">
+  <section class="slide" aria-label="Slide 4 of 21" aria-hidden="true">
     <p class="kicker">The desk</p>
     <h2 class="headline">Three AI agents do the reading. Python makes every money decision.</h2>
     <div class="content">
@@ -85,10 +85,71 @@
       <p class="crew-note">A fourth agent, the Auditor, checks the books every evening. It has no way to trade.</p>
       <p class="claim">No AI agent ever chooses what to buy or how much.</p>
     </div>
-    <p class="num">4 / 16</p>
+    <p class="num">4 / 21</p>
   </section>
 
-  <section class="slide" aria-label="Slide 5 of 16" aria-hidden="true">
+  <section class="slide flow-slide" aria-label="Slide 5 of 21" aria-hidden="true">
+    <p class="kicker">How the agents work together</p>
+    <h2 class="headline">Every 30 minutes, one run goes from schedule to order to record.</h2>
+    <div class="content has-foot">
+      <div class="flow">
+        <div class="flow-step">
+          <div class="flow-icon"><span class="plat">Qoder</span></div>
+          <div class="flow-title"><span class="idx">1</span>Qoder schedule</div>
+          <p class="flow-desc">Starts a cloud session (morning, then every 30 minutes).</p>
+        </div>
+        <div class="flow-step">
+          <div class="flow-icon"><img src="img/duck-coordinator-plain.svg" alt="Coordinator duck"></div>
+          <div class="flow-title"><span class="idx">2</span>Coordinator</div>
+          <p class="flow-desc">Restores the ledger and runs each step in order.</p>
+        </div>
+        <div class="flow-step">
+          <div class="flow-icon"><img src="img/duck-analyst-plain.svg" alt="Analyst duck"></div>
+          <div class="flow-title"><span class="idx">3</span>Analyst</div>
+          <p class="flow-desc">Reads the news, rates each unusual move, fetches fresh quotes.</p>
+        </div>
+        <div class="flow-step">
+          <div class="flow-icon"><span class="plat">Python</span></div>
+          <div class="flow-title"><span class="idx">4</span>Python</div>
+          <p class="flow-desc">Checks the rating, sizes the trade, applies the risk rules, writes the order ticket.</p>
+        </div>
+        <div class="flow-step">
+          <div class="flow-icon"><img src="img/duck-executor-plain.svg" alt="Executor duck"></div>
+          <div class="flow-title"><span class="idx">5</span>Executor</div>
+          <p class="flow-desc">Sends exactly that paper order to moomoo.</p>
+        </div>
+        <div class="flow-step">
+          <div class="flow-icon"><span class="plat">Python</span></div>
+          <div class="flow-title"><span class="idx">6</span>Python</div>
+          <p class="flow-desc">Matches the fill to the books and saves the ledger.</p>
+        </div>
+      </div>
+      <div class="after-close">
+        <div>
+          <h3>After the close</h3>
+          <p>The Auditor (duck) checks the books. Code writes the summary. It is posted to Slack.</p>
+        </div>
+        <img src="img/slack-close.png" alt="The 19 Nov close summary posted to Slack">
+      </div>
+      <p class="foot">Watcher runs skip the news step and look after open positions. The Auditor has no order tools.</p>
+    </div>
+    <p class="num">5 / 21</p>
+  </section>
+
+  <section class="slide media" aria-label="Slide 6 of 21" aria-hidden="true">
+    <p class="kicker">See it run</p>
+    <h2 class="headline">The desk in 30 seconds.</h2>
+    <div class="content">
+      <figure class="video-frame" id="video-frame">
+        <video id="desk-video" src="video/moowoo-desk-30s.mp4" poster="video/poster.jpg" controls preload="metadata"></video>
+        <div class="video-placeholder" aria-hidden="true"></div>
+        <div class="poster-print" role="img" aria-label="Video poster"></div>
+      </figure>
+    </div>
+    <p class="num">6 / 21</p>
+  </section>
+
+  <section class="slide" aria-label="Slide 7 of 21" aria-hidden="true">
     <p class="kicker">A trade, start to finish</p>
     <h2 class="headline">Woodward jumped 8% on an earnings beat. Here is what the desk did with it.</h2>
     <img class="duck" src="img/duck-executor.svg" alt="Executor duck">
@@ -117,10 +178,10 @@
       </div>
       <p class="foot">The analyst never picked the number of shares. Python did.</p>
     </div>
-    <p class="num">5 / 16</p>
+    <p class="num">7 / 21</p>
   </section>
 
-  <section class="slide" aria-label="Slide 6 of 16" aria-hidden="true">
+  <section class="slide" aria-label="Slide 8 of 21" aria-hidden="true">
     <p class="kicker">Where the money sits</p>
     <h2 class="headline">Most of the money sat in steady funds. Only part chased news.</h2>
     <img class="duck" src="img/duck-coordinator.svg" alt="Coordinator duck">
@@ -129,10 +190,10 @@
       <div class="alloc" id="alloc-list"></div>
       <p class="foot">If the news idea is wrong, most of the account still follows the market.</p>
     </div>
-    <p class="num">6 / 16</p>
+    <p class="num">8 / 21</p>
   </section>
 
-  <section class="slide" aria-label="Slide 7 of 16" aria-hidden="true">
+  <section class="slide" aria-label="Slide 9 of 21" aria-hidden="true">
     <p class="kicker">Saying no</p>
     <h2 class="headline">The desk has rules for saying no, and it used them.</h2>
     <img class="duck" src="img/duck-coordinator.svg" alt="Coordinator duck">
@@ -151,8 +212,8 @@
             <td>No new buys until tomorrow.</td>
           </tr>
           <tr>
-            <td>The account is down 2%, 4% or 6%</td>
-            <td>Smaller trades, then sells only, then sell everything.</td>
+            <td>The account is down 2%, 4% or 6% from its peak</td>
+            <td>Smaller trades, then sells only, then sell everything (the kill switch).</td>
           </tr>
           <tr>
             <td>A trade rises by a normal day's move</td>
@@ -165,10 +226,37 @@
         </tbody>
       </table>
     </div>
-    <p class="num">7 / 16</p>
+    <p class="num">9 / 21</p>
   </section>
 
-  <section class="slide results" aria-label="Slide 8 of 16" aria-hidden="true">
+  <section class="slide" aria-label="Slide 10 of 21" aria-hidden="true">
+    <p class="kicker">When to stop</p>
+    <h2 class="headline">We wrote down in advance what would prove the idea wrong.</h2>
+    <div class="content">
+      <div class="stop-grid">
+        <div class="stop-col">
+          <h3>The idea fails if</h3>
+          <p>After 15 closed news trades, the analyst's picks do worse than simply following every move, or simply fading every move.</p>
+          <p>Then news trades stop for the rest of the window, money moves to the steady funds, and we report the idea as failed.</p>
+          <p class="muted-line">We closed only one news trade, so this test never ran.</p>
+        </div>
+        <div class="stop-col">
+          <h3>Hard limits on every order</h3>
+          <ul>
+            <li>At most 20% of the account in one stock</li>
+            <li>At most 60% in news trades, 40% when the market is weak</li>
+            <li>At least 10% kept in cash</li>
+            <li>Price spread at most 0.5%; prices no older than 60 seconds</li>
+            <li>Missing data can never approve a buy</li>
+            <li>Real-money order tools are switched off for every agent</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <p class="num">10 / 21</p>
+  </section>
+
+  <section class="slide results" aria-label="Slide 11 of 21" aria-hidden="true">
     <p class="kicker">Results</p>
     <h2 class="headline wide" data-field="resultsHeadline"></h2>
     <div class="content has-foot">
@@ -188,20 +276,20 @@
         </div>
         <div>
           <div class="value" data-field="largestDrop"></div>
-          <div class="label">Largest drop</div>
+          <div class="label">Largest drop<span class="drop-note" data-field="dropNote"></span></div>
         </div>
       </div>
       <div class="close-band">
         <p data-field="closeLine"></p>
         <p data-field="realisedLine"></p>
       </div>
-      <p class="unsold">Nine holdings were never sold. See slide 12.</p>
+      <p class="unsold">Nine holdings were never sold. See slide 15.</p>
       <p class="foot">Sharpe ratio over 8 days is unstable.</p>
     </div>
-    <p class="num">8 / 16</p>
+    <p class="num">11 / 21</p>
   </section>
 
-  <section class="slide" aria-label="Slide 9 of 16" aria-hidden="true">
+  <section class="slide" aria-label="Slide 12 of 21" aria-hidden="true">
     <p class="kicker">Every trade</p>
     <h2 class="headline">Every news trade, and what it taught us.</h2>
     <div class="content">
@@ -217,20 +305,20 @@
         <tbody id="trades-body"></tbody>
       </table>
     </div>
-    <p class="num">9 / 16</p>
+    <p class="num">12 / 21</p>
   </section>
 
-  <section class="slide" aria-label="Slide 10 of 16" aria-hidden="true">
+  <section class="slide" aria-label="Slide 13 of 21" aria-hidden="true">
     <p class="kicker">Did the news help?</p>
     <h2 class="headline" id="verdict-headline"></h2>
     <div class="content has-foot">
       <div class="facts" id="verdict-facts"></div>
       <p class="foot">We could not score the follow-the-move and fade-the-move comparison: the matched records were missing.</p>
     </div>
-    <p class="num">10 / 16</p>
+    <p class="num">13 / 21</p>
   </section>
 
-  <section class="slide" aria-label="Slide 11 of 16" aria-hidden="true">
+  <section class="slide" aria-label="Slide 14 of 21" aria-hidden="true">
     <p class="kicker">What broke: day one</p>
     <h2 class="headline">On the first day, 13 attempts produced zero trades.</h2>
     <img class="duck" src="img/duck-coordinator.svg" alt="Coordinator duck">
@@ -241,10 +329,10 @@
         <p>We cut it to one analyst giving short, strict answers. The next day the desk traded.</p>
       </div>
     </div>
-    <p class="num">11 / 16</p>
+    <p class="num">14 / 21</p>
   </section>
 
-  <section class="slide" aria-label="Slide 12 of 16" aria-hidden="true">
+  <section class="slide" aria-label="Slide 15 of 21" aria-hidden="true">
     <p class="kicker">What broke: the brakes</p>
     <h2 class="headline">The desk stopped itself six times. The last time, it cost us the final sell-off.</h2>
     <img class="duck" src="img/duck-executor.svg" alt="Executor duck">
@@ -278,10 +366,10 @@
       <p class="after">No bad trade was made, but the last stop meant no final sale. For the first five: find the cause, fix it, write it down, add a test. Then a person restarted the desk.</p>
       <p class="foot">A desk that stops when unsure is safer than one that guesses with money.</p>
     </div>
-    <p class="num">12 / 16</p>
+    <p class="num">15 / 21</p>
   </section>
 
-  <section class="slide" aria-label="Slide 13 of 16" aria-hidden="true">
+  <section class="slide" aria-label="Slide 16 of 21" aria-hidden="true">
     <p class="kicker">Lessons</p>
     <h2 class="headline">What we would do differently.</h2>
     <img class="duck" src="img/duck-analyst.svg" alt="Analyst duck">
@@ -293,10 +381,10 @@
         <li><span class="n">4</span><span>Test the last day on its own. It only had three chances to work.</span></li>
       </ol>
     </div>
-    <p class="num">13 / 16</p>
+    <p class="num">16 / 21</p>
   </section>
 
-  <section class="slide" aria-label="Slide 14 of 16" aria-hidden="true">
+  <section class="slide" aria-label="Slide 17 of 21" aria-hidden="true">
     <p class="kicker">How Qoder ran it</p>
     <h2 class="headline">Qoder ran the desk on a timetable: a check every 30 minutes, all day.</h2>
     <img class="duck" src="img/duck-coordinator.svg" alt="Coordinator duck">
@@ -312,10 +400,128 @@
         <img src="img/trading-floor.png" alt="The trading floor replaying a real session">
       </div>
     </div>
-    <p class="num">14 / 16</p>
+    <p class="num">17 / 21</p>
   </section>
 
-  <section class="slide" aria-label="Slide 15 of 16" aria-hidden="true">
+  <section class="slide" aria-label="Slide 18 of 21" aria-hidden="true">
+    <p class="kicker">Reusable skills</p>
+    <h2 class="headline">15 skills: tested steps anyone can copy.</h2>
+    <div class="content has-foot">
+      <div class="skills">
+        <div class="skill-col">
+          <h3>Finding the trade</h3>
+          <div class="skill">
+            <code>explained-move</code>
+            <p>finds stocks moving far more than usual</p>
+          </div>
+          <div class="skill">
+            <code>news-vs-noise-classifier</code>
+            <p>one analyst rating: is there news behind the move?</p>
+          </div>
+          <div class="skill">
+            <code>price-action-setup</code>
+            <p>scores the chart pattern; logged only, never used for sizing</p>
+          </div>
+          <div class="skill">
+            <code>market-regime</code>
+            <p>blocks bounce trades when the S&amp;P 500 is weak</p>
+          </div>
+        </div>
+        <div class="skill-col">
+          <h3>Sizing and guarding</h3>
+          <div class="skill">
+            <code>core-satellite-allocator</code>
+            <p>splits money between steady funds and news trades</p>
+          </div>
+          <div class="skill">
+            <code>risk-desk</code>
+            <p>approves, resizes or vetoes every proposed order</p>
+          </div>
+          <div class="skill">
+            <code>order-ticket-dispatch-check</code>
+            <p>rechecks price and limits just before sending</p>
+          </div>
+        </div>
+        <div class="skill-col">
+          <h3>Keeping the books honest</h3>
+          <div class="skill">
+            <code>broker-input-validation</code>
+            <p>checks broker data before it is trusted</p>
+          </div>
+          <div class="skill">
+            <code>reconciliation-and-halts</code>
+            <p>matches fills to the books; stops on a mismatch</p>
+          </div>
+          <div class="skill">
+            <code>hash-chained-event-log</code>
+            <p>a tamper-evident record of every decision</p>
+          </div>
+          <div class="skill">
+            <code>ledger-persistence-and-locks</code>
+            <p>lets short cloud runs share one ledger safely</p>
+          </div>
+          <div class="skill">
+            <code>pre-registration-and-rule-ledger</code>
+            <p>freezes rules before trading; logs every change</p>
+          </div>
+        </div>
+        <div class="skill-col">
+          <h3>Running and reporting</h3>
+          <div class="skill">
+            <code>qoder-cloud-deploy</code>
+            <p>previews and applies agent and schedule versions</p>
+          </div>
+          <div class="skill">
+            <code>dashboard-feed-publish</code>
+            <p>publishes a public view with private data removed</p>
+          </div>
+          <div class="skill">
+            <code>daily-audit-report</code>
+            <p>after-close numbers, and what is missing</p>
+          </div>
+        </div>
+      </div>
+      <p class="foot">Each skill is a written procedure in skills/ that points to tested code. They are not loaded into the agents automatically.</p>
+    </div>
+    <p class="num">18 / 21</p>
+  </section>
+
+  <section class="slide" aria-label="Slide 19 of 21" aria-hidden="true">
+    <p class="kicker">Reuse it</p>
+    <h2 class="headline">One skill up close: never trust broker data unchecked.</h2>
+    <div class="content">
+      <div class="skill-close">
+        <div class="why-list">
+          <div class="why-row">
+            <b>Why it exists</b>
+            <p>On 18 Nov the coordinator dropped a field while copying a broker record, and the desk stopped.</p>
+          </div>
+          <div class="why-row">
+            <b>What it does</b>
+            <p>Keeps only the fields we need, checks them, and saves the file in one step. A bad reply is fetched again up to twice, then the run stops with a reason.</p>
+          </div>
+          <div class="why-row">
+            <b>Why it is reusable</b>
+            <p>Any agent that reads a broker or an API can follow the same steps: never copy a summary, never guess a field name.</p>
+          </div>
+        </div>
+        <div class="agent-tpl">
+          <h3>Agent templates</h3>
+          <p>Each agent is two files: agent.json (model and tools) and system.md (its instructions), in agents/.</p>
+          <p>permissions.json switches off real-money order tools for every agent.</p>
+          <p>Only the executor can send paper orders. The auditor can only read.</p>
+          <div class="duck-row">
+            <img src="img/duck-coordinator-plain.svg" alt="Coordinator duck">
+            <img src="img/duck-analyst-plain.svg" alt="Analyst duck">
+            <img src="img/duck-executor-plain.svg" alt="Executor duck">
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="num">19 / 21</p>
+  </section>
+
+  <section class="slide" aria-label="Slide 20 of 21" aria-hidden="true">
     <p class="kicker">Reuse it</p>
     <h2 class="headline">Anyone can rerun the desk or borrow its parts.</h2>
     <img class="duck" src="img/duck-coordinator.svg" alt="Coordinator duck">
@@ -325,10 +531,10 @@
       <p>Rules written before trading, every decision logged, tests for every fix</p>
       <p class="small">Live dashboard: <a href="https://moowoo-desk-p36f61ggjia.qoder.website">moowoo-desk-p36f61ggjia.qoder.website</a></p>
     </div>
-    <p class="num">15 / 16</p>
+    <p class="num">20 / 21</p>
   </section>
 
-  <section class="slide" aria-label="Slide 16 of 16" aria-hidden="true">
+  <section class="slide" aria-label="Slide 21 of 21" aria-hidden="true">
     <p class="kicker">Honest summary</p>
     <h2 class="headline">What we claim, and what we don't.</h2>
     <div class="content">
@@ -346,7 +552,7 @@
         </div>
       </div>
     </div>
-    <p class="num">16 / 16</p>
+    <p class="num">21 / 21</p>
   </section>
 
   <aside class="notes" id="notes" hidden aria-label="Speaker note">
@@ -450,6 +656,7 @@
   "spyReturn": "\u22121.4%",
   "sharpe": "3.44",
   "largestDrop": "\u22121.4%",
+  "dropNote": "S&P 500: \u22126.6%",
   "resultsHeadline": "The account ended up 2.0% while the S&P 500 fell 1.4%, but none of that gain was locked in.",
   "closeLine": "Account value at the close: $101,942 (+1.9%)",
   "realisedLine": "Locked in (realised): about \u2212$242",
@@ -525,9 +732,12 @@
     "Point at the Woodward move and the morning news that explained it. The desk's question is whether a big move comes with a reason or without one.",
     "Point at the two orange cells. They are the only cases where the rules say buy; the other two say stay out.",
     "Point at each agent's job, then the line at the bottom. The agents read and report; Python sizes and sends every order.",
+    "Follow one run left to right. The ducks read and report; the Python steps size the trade, check the rules and write the ticket. Watcher runs skip the news step and only look after open positions.",
+    "Play the clip, then pause on the step the room asks about. Space plays and pauses; the arrow keys still move the deck.",
     "Walk the five steps from spotted to exit. The analyst's answer never included the number of shares.",
     "Point at the orange section. News trades are the flexible part, after the core funds, SPY and the cash floor.",
     "Point at the blocked names. The weak-market rule blocked Disney and Target on 19 Nov and PDD on 23 Nov.",
+    "Point at the left column: the test needed 15 closed news trades and never ran. Then point at the right: these limits apply to every order, whoever proposed it.",
     "Point at the orange line, the muted S&P 500 line and the dashed start. The account ended above its start, but nine holdings were never sold.",
     "Point at the rows. Only ACM was sold; the other three were still open at the close.",
     "Point at the two facts. The analyst's calls were close to a coin flip, and its confidence scores missed the target; the follow-and-fade comparison could not be scored.",
@@ -535,6 +745,8 @@
     "Point at the six dates. Each early stop was fixed and restarted; the last one, on 27 Nov, meant the final sell-off never ran.",
     "Read the four lessons in order. They cover the team, the broker data, the audit trail and the last day.",
     "Point at the list, then the floor image. Qoder ran the timetable; people still restarted the desk after a stop.",
+    "Point at one column at a time. Each skill is a written procedure in skills/ with tested code behind it; they are not loaded into the agents automatically.",
+    "Walk the three rows, then the templates. The broker check came from a real failure on 18 Nov, and the same steps work for any API.",
     "Point at the GitHub line and the live dashboard. Both are public ways into the work.",
     "Point at the two columns. The claim is about who controls the money; the limits are the length of the run and the failed final sell-off."
   ]

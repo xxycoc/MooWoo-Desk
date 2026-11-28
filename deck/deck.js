@@ -278,10 +278,43 @@
     document.documentElement.style.setProperty('--scale', String(factor));
   }
 
+  function bindVideo() {
+    var video = document.getElementById('desk-video');
+    var frame = document.getElementById('video-frame');
+    if (!video) return;
+    var missing = function () {
+      if (frame) frame.classList.add('is-missing');
+    };
+    video.addEventListener('error', missing);
+    video.addEventListener('loadedmetadata', function () {
+      if (frame) frame.classList.remove('is-missing');
+    });
+    window.setTimeout(function () {
+      if (video.readyState === 0) missing();
+    }, 1500);
+    video.addEventListener('click', function (event) {
+      if (event.offsetY > video.clientHeight - 44) return;
+      if (video.paused) {
+        video.play();
+      } else {
+        video.pause();
+      }
+    });
+  }
+
   function bind() {
     document.addEventListener('keydown', function (event) {
       if (event.altKey || event.ctrlKey || event.metaKey) return;
       var key = event.key;
+      if (key === ' ' && event.target && event.target.tagName === 'VIDEO') {
+        event.preventDefault();
+        if (event.target.paused) {
+          event.target.play();
+        } else {
+          event.target.pause();
+        }
+        return;
+      }
       if (key === 'ArrowRight' || key === 'PageDown' || key === ' ') {
         event.preventDefault();
         show(state.current + 1);
@@ -302,9 +335,11 @@
     });
 
     document.addEventListener('click', function (event) {
-      if (event.target.closest('.notes') || event.target.closest('a')) return;
+      if (event.target.closest('.notes') || event.target.closest('a') || event.target.closest('video')) return;
       show(event.clientX < window.innerWidth / 2 ? state.current - 1 : state.current + 1);
     });
+
+    bindVideo();
 
     window.addEventListener('hashchange', function () {
       var number = parseInt(String(location.hash).replace('#', ''), 10);

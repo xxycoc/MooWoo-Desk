@@ -783,6 +783,282 @@ h1.headline {
   font: 400 28px/1.8 var(--sans);
 }
 
+/* 5. One run */
+.flow-slide .headline {
+  margin-bottom: 14px;
+}
+
+.flow {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 18px;
+}
+
+.flow-step {
+  border-top: 2px solid var(--rule);
+  padding-top: 12px;
+}
+
+.flow-icon {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.flow-icon img {
+  width: 40px;
+  height: 40px;
+  display: block;
+}
+
+.plat {
+  font: 600 16px/1.2 var(--sans);
+  letter-spacing: 0.04em;
+  color: var(--accent-ink);
+}
+
+.flow-title {
+  margin: 0 0 6px;
+  font: 600 19px/1.2 var(--sans);
+}
+
+.flow-title .idx {
+  margin-right: 6px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.flow-desc {
+  margin: 0;
+  font: 400 16px/1.35 var(--sans);
+  color: var(--muted);
+}
+
+.after-close {
+  display: grid;
+  grid-template-columns: 1fr 440px;
+  gap: 36px;
+  align-items: center;
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+}
+
+.after-close h3 {
+  margin: 0 0 8px;
+  font: 600 16px/1.2 var(--sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--kicker);
+}
+
+.after-close p {
+  margin: 0;
+  max-width: 600px;
+  font: 400 22px/1.45 var(--sans);
+}
+
+.after-close img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1px solid var(--rule);
+}
+
+/* 6. Video */
+.media .content {
+  justify-content: center;
+}
+
+.video-frame {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.video-frame video,
+.video-placeholder {
+  display: block;
+  height: 500px;
+  width: auto;
+  aspect-ratio: 16 / 9;
+  max-width: 100%;
+  max-height: 100%;
+  border: 1px solid var(--rule);
+  background: #efe7d6;
+}
+
+.video-placeholder {
+  display: none;
+}
+
+.video-frame.is-missing video {
+  display: none;
+}
+
+.video-frame.is-missing .video-placeholder {
+  display: block;
+}
+
+.poster-print {
+  display: none;
+}
+
+/* 10. When to stop */
+.stop-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  max-width: 1152px;
+}
+
+.stop-col h3 {
+  margin: 0 0 8px;
+  font: 600 16px/1.2 var(--sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--kicker);
+}
+
+.stop-col p {
+  margin: 0;
+  padding: 14px 0;
+  border-top: 1px solid var(--rule);
+  font: 400 23px/1.5 var(--sans);
+}
+
+.stop-col p.muted-line {
+  font-size: 20px;
+  color: var(--muted);
+  border-bottom: 1px solid var(--rule);
+}
+
+.stop-col ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stop-col li {
+  padding: 9px 0;
+  border-top: 1px solid var(--rule);
+  font: 400 22px/1.45 var(--sans);
+}
+
+.stop-col li:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+
+/* 18. Reusable skills */
+.skills {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 26px;
+}
+
+.skill-col h3 {
+  margin: 0 0 10px;
+  font: 600 16px/1.2 var(--sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--kicker);
+}
+
+.skill {
+  padding: 7px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.skill:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+
+.skill code {
+  display: block;
+  font: 600 14px/1.2 Consolas, "Courier New", monospace;
+  color: var(--accent-ink);
+}
+
+.skill p {
+  margin: 2px 0 0;
+  font: 400 16px/1.28 var(--sans);
+}
+
+/* 19. One skill up close */
+.skill-close {
+  display: grid;
+  grid-template-columns: 1.35fr 1fr;
+  gap: 64px;
+  max-width: 1152px;
+}
+
+.why-row {
+  padding: 12px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.skill-close .why-list {
+  padding-top: 24px;
+}
+
+.why-row:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+
+.why-row b {
+  display: block;
+  margin-bottom: 4px;
+  font: 600 19px/1.3 var(--sans);
+}
+
+.why-row p {
+  margin: 0;
+  font: 400 20px/1.45 var(--sans);
+}
+
+.agent-tpl h3 {
+  margin: 0 0 8px;
+  font: 600 16px/1.2 var(--sans);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--kicker);
+}
+
+.agent-tpl p {
+  margin: 0;
+  padding: 9px 0;
+  border-top: 1px solid var(--rule);
+  font: 400 20px/1.45 var(--sans);
+}
+
+.agent-tpl p:last-of-type {
+  border-bottom: 1px solid var(--rule);
+}
+
+.duck-row {
+  display: flex;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.duck-row img {
+  width: 52px;
+  height: 52px;
+  display: block;
+}
+
+.drop-note {
+  display: block;
+  margin-top: 2px;
+  font: 400 17px/1.3 var(--sans);
+  color: var(--muted);
+}
+
 /* Speaker notes */
 .notes {
   position: absolute;
@@ -856,5 +1132,19 @@ h1.headline {
 
   .notes {
     display: none !important;
+  }
+
+  .video-frame video,
+  .video-frame .video-placeholder {
+    display: none !important;
+  }
+
+  .video-frame .poster-print {
+    display: block;
+    height: 500px;
+    width: auto;
+    aspect-ratio: 16 / 9;
+    border: 1px solid var(--rule);
+    background: url(video/poster.jpg) center / cover no-repeat;
   }
 }
