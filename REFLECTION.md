@@ -37,7 +37,7 @@ The failure that hurt most was the last one. On 27 November the desk had to sell
 before the 13:00 close. One quiet ETF's price was 106 seconds old, a 60-second check rejected
 it, and all nine sells were blocked twice; the last retry started after the close. The rule
 that allowed older prices on the final day had been coded into one step but not the step
-before it. I had seen that same 60-second abort on earlier days and called it harmless,
+before it. We had seen that same 60-second abort on earlier days and called it harmless,
 because the next run always worked. On the last day there was no next run.
 
 I told the organisers before submitting and chose not to trade after the window, so every
