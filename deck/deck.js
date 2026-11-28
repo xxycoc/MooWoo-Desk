@@ -60,38 +60,13 @@
     svg.appendChild(d);
   }
 
-  function dayGapMissing(a, b) {
-    var cursor = Date.parse(a + 'T00:00:00Z') + 86400000;
-    var end = Date.parse(b + 'T00:00:00Z');
-    while (cursor < end) {
-      var day = new Date(cursor).getUTCDay();
-      if (day >= 1 && day <= 5) return true;
-      cursor += 86400000;
-    }
-    return false;
-  }
-
-  function lineSegments(points) {
-    if (!points.length) return [];
-    var segments = [[points[0]]];
-    for (var index = 1; index < points.length; index += 1) {
-      var current = segments[segments.length - 1];
-      if (dayGapMissing(current[current.length - 1].date, points[index].date)) {
-        segments.push([points[index]]);
-      } else {
-        current.push(points[index]);
-      }
-    }
-    return segments.filter(function (segment) { return segment.length > 1; });
-  }
-
   function equityChart() {
     var equity = state.data.equity || [];
     if (!equity.length) return null;
     var spy = Array.isArray(state.data.spy) ? state.data.spy : [];
     var end = state.data.endDate || equity[equity.length - 1].date;
     var start = equity[0].date;
-    var W = 1120, H = 360, L = 96, R = 210, T = 24, B = 56;
+    var W = 1120, H = 210, L = 96, R = 210, T = 10, B = 40;
     var plotW = W - L - R, plotH = H - T - B;
     var values = equity.map(function (p) { return p.value; })
       .concat(spy.map(function (p) { return p.value; }), [100000]);
@@ -118,8 +93,10 @@
       'Account value, ' + (state.data.chartLabel || ''),
       'Account value: ' + equity.map(function (p) {
         return p.label + ' ' + money(p.value);
-      }).join('; ') + '. The line breaks where daily closes are missing. S&P 500: ' +
-        (spy.length ? 'plotted as a muted line.' : '[28 Nov].'));
+      }).join('; ') + '. S&P 500 rebased to $100,000: ' +
+        (spy.length ? spy.map(function (p) {
+          return p.label + ' ' + money(p.value);
+        }).join('; ') : '[28 Nov]') + '.');
 
     for (var tick = dmin; tick <= dmax; tick += step) {
       svg.appendChild(svgNode('line', {
@@ -132,25 +109,23 @@
     svg.appendChild(svgNode('line', {
       x1: L, y1: y(100000), x2: W - R, y2: y(100000), class: 'start'
     }));
-    svg.appendChild(svgText(W - R + 12, y(100000), 'Start $100,000'));
+    svg.appendChild(svgText(L + 8, y(100000) - 12, 'Start $100,000'));
 
     equity.forEach(function (point) {
       svg.appendChild(svgText(x(point.date), H - B + 28, point.label, null, 'middle'));
     });
 
-    lineSegments(spy).forEach(function (segment) {
+    if (spy.length) {
       svg.appendChild(svgNode('polyline', {
         class: 'spy',
-        points: segment.map(function (p) { return x(p.date) + ',' + y(p.value); }).join(' ')
+        points: spy.map(function (p) { return x(p.date) + ',' + y(p.value); }).join(' ')
       }));
-    });
+    }
 
-    lineSegments(equity).forEach(function (segment) {
-      svg.appendChild(svgNode('polyline', {
-        class: 'equity',
-        points: segment.map(function (p) { return x(p.date) + ',' + y(p.value); }).join(' ')
-      }));
-    });
+    svg.appendChild(svgNode('polyline', {
+      class: 'equity',
+      points: equity.map(function (p) { return x(p.date) + ',' + y(p.value); }).join(' ')
+    }));
     equity.forEach(function (point) {
       svg.appendChild(svgNode('circle', { class: 'dot', cx: x(point.date), cy: y(point.value), r: 5 }));
     });
@@ -164,51 +139,15 @@
     return svg;
   }
 
-  function verdictChart() {
-    var rows = state.data.verdict || [];
-    if (!rows.length) return null;
-    var W = 1120, H = 330, axisY = 225, maxBar = 160;
-    var xs = [200, 560, 920];
-    var values = rows.map(function (row) { return row.value; })
-      .filter(function (v) { return typeof v === 'number' && isFinite(v); });
-    var maxAbs = values.length ? Math.max.apply(null, values.map(Math.abs)) : 0;
-
-    var svg = svgNode('svg', { viewBox: '0 0 ' + W + ' ' + H, class: 'verdict', role: 'img' });
-    svgTitle(svg, 'News calls against two simple rules',
-      rows.map(function (row) {
-        return row.label + ': ' + (present(row.value) ? percent(row.value) : '[28 Nov]');
-      }).join('; ') + '.');
-
-    svg.appendChild(svgNode('line', { x1: 50, y1: axisY, x2: 1070, y2: axisY, class: 'axis' }));
-
-    rows.forEach(function (row, index) {
-      var cx = xs[index] || (200 + index * 360);
-      var label = svgText(cx, axisY + 48, row.label, 'label', 'middle');
-      svg.appendChild(label);
-
-      if (!present(row.value) || typeof row.value !== 'number' || !maxAbs) {
-        var guideTop = axisY - maxBar;
-        svg.appendChild(svgNode('line', {
-          x1: cx, y1: axisY - 8, x2: cx, y2: guideTop, class: 'pending'
-        }));
-        var missing = svgText(cx, guideTop - 14, '[28 Nov]', 'tag', 'middle');
-        svg.appendChild(missing);
-        return;
-      }
-      var value = row.value;
-      var height = Math.max(4, Math.abs(value) / maxAbs * maxBar);
-      var positive = value >= 0;
-      svg.appendChild(svgNode('rect', {
-        x: cx - 60,
-        y: positive ? axisY - height : axisY,
-        width: 120,
-        height: height,
-        class: positive ? 'gain' : 'loss'
-      }));
-      var valueY = positive ? axisY - height - 16 : axisY + height + 26;
-      svg.appendChild(svgText(cx, valueY, percent(value), 'value', 'middle'));
+  function renderFacts() {
+    var box = document.getElementById('verdict-facts');
+    if (!box) return;
+    box.textContent = '';
+    (state.data.verdictFacts || []).forEach(function (text) {
+      var line = document.createElement('p');
+      line.textContent = text;
+      box.appendChild(line);
     });
-    return svg;
   }
 
   function render() {
@@ -236,15 +175,12 @@
       if (!Array.isArray(data.spy) || !data.spy.length) {
         spyNote.appendChild(document.createTextNode('S&P 500 '));
         spyNote.appendChild(tag());
+      } else {
+        spyNote.textContent = 'S&P 500 rebased to $100,000';
       }
     }
 
-    var verdict = verdictChart();
-    var verdictBox = document.getElementById('verdict-chart');
-    if (verdictBox) {
-      verdictBox.textContent = '';
-      if (verdict) verdictBox.appendChild(verdict);
-    }
+    renderFacts();
 
     var body = document.getElementById('trades-body');
     if (body) {
@@ -257,8 +193,8 @@
         tr.appendChild(stock);
         ['why', 'result', 'lesson'].forEach(function (key) {
           var cell = document.createElement('td');
-          if (key === 'result' && row.resultTone === 'loss' && present(row.result)) {
-            cell.className = 'loss';
+          if (key === 'result' && present(row.result) && (row.resultTone === 'loss' || row.resultTone === 'gain')) {
+            cell.className = row.resultTone;
           }
           fill(cell, row[key]);
           tr.appendChild(cell);
