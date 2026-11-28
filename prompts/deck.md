@@ -176,6 +176,14 @@ Add `deck/sync_data.py` (standard library only) that copies `deck/data.json` int
 
 ---
 
+### Final-day failure (added 28 Nov, applies to Stage 2)
+
+The desk did not sell its holdings before the 27 Nov close. The organiser said to disclose it in the report. Show it plainly:
+- Slide 8: show two numbers side by side, "Account value at the close: $101,942 (+1.9%)" and "Locked in (realised): about -$315". Add one line under them: "Nine holdings were never sold. See slide 12." Headline from the real figures, for example "The account ended up 1.9%, but most of that gain was never locked in."
+- Slide 12: add a sixth point, in accent colour: "27 Nov: one quiet ETF's price was 106 seconds old. The 60-second check stopped the final sell-off twice, and the last retry started after the close. Nine holdings were never sold." Change the headline to "The desk stopped itself six times. The last time, it cost us the final sell-off." Replace "No bad trade was made." with "No bad trade was made, but the last stop meant no final sale."
+- Slide 13: add a fourth lesson: "Test the last day on its own. It only had three chances to work."
+- Slide 16, "We claim": keep the lines; under "We don't claim" add "A clean finish: the final sell-off failed, and we said so."
+
 ## Stage 2 (28 Nov): fill the numbers
 
 Read `docs/results.md` and the generated results files in `docs/`. Fill every null in `deck/data.json`: full daily equity and SPY series 17-27 Nov, return, SPY return, Sharpe, largest drop, credits, WWD exit, the trades table (WWD, PDD, NVDA rows plus ACM), and the follow/fade comparison with `verdictHeadline`. Write the slide 8 and slide 10 headlines as plain sentences from the actual numbers, even if the result is a loss or "too few trades to tell". Also on slide 5, align the five steps with the left margin and spread them across the full width so each step wraps less. Do not change any other slide text. Run `python deck/sync_data.py`, re-run the checks above, then commit "Fill deck results (Stage 2)". Do not push.
