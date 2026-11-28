@@ -800,15 +800,15 @@ h1.headline {
 }
 
 .flow-icon {
-  height: 40px;
+  height: 56px;
   display: flex;
   align-items: center;
   margin-bottom: 8px;
 }
 
 .flow-icon img {
-  width: 40px;
-  height: 40px;
+  width: 56px;
+  height: 56px;
   display: block;
 }
 
@@ -820,7 +820,7 @@ h1.headline {
 
 .flow-title {
   margin: 0 0 6px;
-  font: 600 19px/1.2 var(--sans);
+  font: 600 21px/1.2 var(--sans);
 }
 
 .flow-title .idx {
@@ -831,8 +831,8 @@ h1.headline {
 
 .flow-desc {
   margin: 0;
-  font: 400 16px/1.35 var(--sans);
-  color: var(--muted);
+  font: 400 19px/1.35 var(--sans);
+  color: var(--ink);
 }
 
 .after-close {
