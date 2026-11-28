@@ -651,3 +651,32 @@ holiday, after every session on 25 November aborted.
   reconciliation give no difference. The book drops ACM and its cash matches the broker's 21,563.17.
 - Operator action: the 25 November halt is cleared by an operator restart after deployment, before the
   27 November morning run. No session is rerun; the market is closed on 26 November.
+
+## 32. Addendum 2026-11-28: the final sell-off did not run; no trades after the window
+
+Written on 28 November 2026 at about 10:00 Singapore, after the window closed. No rule or code changes.
+This records an outcome and an operator decision.
+
+- promptVersion `000293a43af6094844f8d79c1856eee7072af3a37607b49f9da96e5371395075`, unchanged.
+- What happened on 27 November:
+  1. The morning run reconciled the 25 November ACM sale (130 at 80.724) as Addendum 31 intended, placed
+     no buys and finished cleanly.
+  2. The 12:00 New York watcher, which had to start FINAL-CLOSE-01, aborted before planning:
+     `convert_quotes.py` rejected the planning quote batch twice because the USMV quote was older than
+     60 seconds. The 12:30 watcher aborted for the same reason (106 seconds old).
+  3. The 12:55 watcher started at 12:57 and reached its calendar check at 13:00:25, after the early
+     close, and skipped.
+  4. No final-day order was placed. Nine holdings stayed open: GLD 9, IEF 134, NVDA 22, PDD 97, SPY 42,
+     USMV 63, WWD 24, XLP 40, XLV 22. The 13:10 audit reconciled with no difference and reported
+     FINAL-CLOSE-01 as not completed.
+- Cause: Addendum 28 allowed final-liquidation quotes up to 300 seconds old, but only the per-ticket
+  dispatch check used that limit. The earlier planning quote conversion kept the general 60-second limit
+  with no final-day exception, so one quiet ETF blocked every sell. No test covered the final-day
+  planning path. The same 60-second abort had occurred on earlier days and was treated as harmless
+  because the next watcher ran; on the last day there were only three attempts.
+- Result at the 27 November close: account value USD 101,942.17 (broker total), USD 101,980.54 marked
+  at session closes in `docs/results.md`. Realised result about −USD 242 (ACM −302.25, IEF part-sale
+  +71.82, all fees −11.91); the rest is unrealised in the nine holdings.
+- Operator decision: the organiser said actions after the competition date are the entrant's decision.
+  We place no trades after 27 November, so every reported number comes from 17-27 November and every
+  trade on record was authorised by the desk's code. All schedules were paused on 28 November.

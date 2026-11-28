@@ -1,82 +1,67 @@
-# Reflection (draft)
+# Reflection
 
-> DRAFT written 19 November 2026. This is my reflection as the desk owner, not a
-> results report. Final numbers belong in the generated `docs/results.md` and the
-> auditor's last report; this file should be revisited after the 27 November close.
+Written 28 November 2026 by Siang Woo, after the trading window closed. The numbers are in
+[docs/results.md](docs/results.md); the full failure list is in
+[docs/post-mortem.md](docs/post-mortem.md).
+
+## What I set out to do
+
+I wanted a desk where AI does what it is good at, reading the news and explaining a price
+move, and code does what it is good at, following rules exactly. The test was simple: when a
+stock jumps or drops, does knowing the reason help a trade?
 
 ## What worked
 
-The deterministic Python boundary held. Language models researched moves and
-returned structured ratings; they did not size positions, choose quantities or
-place discretionary orders. Code screened candidates, applied risk limits, issued
-tickets and required a dispatch check before the executor forwarded exact paper
-arguments. That separation made failures visible and testable.
+The split held for all eight trading days. No AI agent ever chose a stock size or placed an
+order that code had not approved. When the market was weak, the rules blocked new trades.
+When the broker sent something unexpected, the desk stopped rather than guessed, and the
+ledger showed exactly why within minutes.
 
-The evidence trail also worked. Every decision and reconciliation step appended
-to a hash-chained ledger; the public dashboard was built from a field-allowlisted,
-scrubbed projection rather than the private runtime. Missing or inconsistent
-broker inputs stopped a run instead of being filled with guesses, and optional
-evidence such as unavailable credit counts stayed null. The separate auditor,
-with no order tools, graded calls and reported gaps after the close.
+The account ended about 2% up on paper while the S&P 500 fell 1.4%, with a largest fall of
+1.4%. Eight days is too short for that to mean the idea works. It does mean the risk design
+kept losses small while the desk was learning.
 
-## What failed and why
+## What failed
 
-The desk spent its first day failing at handoffs, not at trading. On 17 November
-thirteen attempts produced no orders and no accepted debate rating: too many
-agents, too much copied context, prose-wrapped or batched model output, and quote
-delay. The cloud also checked out stale code after prompts changed, so local
-fixes were not what ran. Addenda 17-20 replaced the debate path with one
-researcher-rater, enforced strict JSON and aligned the deployed revision with the
-recorded prompt hash.
+The first day was lost to too many agents. Bull, bear, manager and quick agents debated each
+move and passed long text to each other; thirteen attempts produced no trade. Cutting to one
+analyst with short, strict answers fixed it the next day.
 
-On 18 November a watcher halted at 15:04 New York with
-`missing required broker field: qty` because the coordinator dropped a field while
-copying an order-history row. The halt persisted, so later runs and the close
-audit refused to start until an operator restart. Addendum 25 made malformed or
-missing inputs abort one run instead of halting the desk.
+Then the desk stopped itself five times between 18 and 25 November. Four came from broker
+data that looked different from what the code expected: a renamed field, a few seconds of
+price movement, a changed average cost, an order filled in two parts. One came from our own
+coordinator dropping a field while copying a broker record. Each
+time I found the cause, fixed it, wrote it down and restarted the desk.
 
-The public dashboard then stayed on HALTED after that restart, because a restart
-writes no ledger event. The feed now carries the desk's halt state from the
-runtime state file (`meta.desk`), so the banner reflects the current flag rather
-than the last recorded halt.
+The failure that hurt most was the last one. On 27 November the desk had to sell everything
+before the 13:00 close. One quiet ETF's price was 106 seconds old, a 60-second check rejected
+it, and all nine sells were blocked twice; the last retry started after the close. The rule
+that allowed older prices on the final day had been coded into one step but not the step
+before it. We had seen that same 60-second abort on earlier days and called it harmless,
+because the next run always worked. On the last day there was no next run.
+
+I told the organisers before submitting and chose not to trade after the window, so every
+number in this entry comes from 17 to 27 November.
 
 ## What I would change
 
-- Start from the deployed revision and one full paper session, then add agents.
-  Prompt and deployment drift cost more than the first strategy iteration.
-- Treat every broker input as adversarial from day one. The valuation, history
-  copy and after-close watcher failures all came from assuming a clean payload.
-- Design the audit and the public projection alongside the order path. The
-  ledger and scrubber were more valuable than any single model prompt.
-- Keep the experiment narrow. A volatility-weighted core plus a five-name
-  satellite is already hard to attribute in eight sessions.
+- Start with one agent and one full rehearsal day, and add complexity only after it works.
+- Assume every broker reply can be wrong, and test with the strange replies, not just clean ones.
+- Rehearse the last day on its own. It ran different rules and had only three chances.
+- Treat a failure that keeps recurring as a warning, even if it has not cost anything yet.
 
-## How Qoder and Cloud Agents were used
+## How I used Qoder
 
-- **Cloud Agents:** three active trading agents (coordinator, analyst and
-  executor) plus a separate auditor with no order tools. The coordinator owns the
-  clock, files and session phases; the analyst rates one candidate or returns a
-  requested quote; the executor returns private broker snapshots and forwards
-  exact code-authorized paper tickets. The auditor reconciles, grades and reports
-  after the close.
-- **Schedules:** six cron schedules in `America/New_York`: morning at 09:35, a
-  regular watcher every 30 minutes from 10:00 to 15:30, a close watcher at 15:55,
-  an audit at 16:10, and early-close variants on 27 November at 12:55 and 13:10.
-- **Slack:** each audit close summary is written in code (`scripts/audit_report.py`)
-  and posted by the audit schedule sink; only the auditor, which has no order
-  tools, is connected to Slack.
-- **Dashboard and floor:** the read-only dashboard and its 3D trading floor were
-  built in Qoder and published on Qoder Sites. The floor is a visualization of
-  the scrubbed feed, not an order surface.
-- **Results:** `scripts/build_results.py` was written in Qoder to turn the private
-  ledger into submission metrics without exposing account data.
-- **Credits:** usage is measured per session in [docs/qoder-usage.md](docs/qoder-usage.md);
-  a value that was not measured remains unavailable rather than zero.
+- **Cloud Agents:** coordinator, analyst and executor run each session; the auditor runs
+  separately after the close with no order tools.
+- **Schedules:** a morning run, a watcher every 30 minutes, a close watcher and an audit, plus
+  early-close versions for 27 November. 158 cloud sessions used 1,748 credits.
+- **Qoder IDE:** built the dashboard and 3D trading floor (hosted on Qoder Sites), the results
+  script and the presentation deck.
+- **Slack:** the auditor posts a short summary written by code after each close.
 
-## What I am not claiming
+## What I claim
 
-I am not claiming a repeatable edge, a calibrated confidence score, or that the
-dashboard is the broker's book. The window is short, the ratios are unstable,
-and any missing evidence stays missing rather than being filled with a guess.
-What I do claim is a reusable, tested mechanism for running a scheduled paper
-desk where code, not a model, owns sizing, risk and order tickets.
+A tested, reusable way to run a scheduled paper-trading desk where code, not AI, controls the
+money, with every decision on record. I do not claim a way to beat the market, and I do not
+claim a clean finish.

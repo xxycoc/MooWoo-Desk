@@ -8,7 +8,27 @@ LLMs do not size positions or place discretionary orders. Code issues tickets.
 Never edit frozen configuration or bypass permissions. Missing safety-critical
 inputs halt; log optional evidence gaps, with unavailable cost credits null.
 
-## 2. Agent registry
+## 2. Deployed agents at the end of the window
+
+Retrieved from the Qoder Cloud Agents API at 2026-11-28 (UTC), after all schedules were
+paused. Agent IDs are masked. Source revision `7a0e86f`, promptVersion
+`000293a43af6094844f8d79c1856eee7072af3a37607b49f9da96e5371395075`.
+
+| Agent | Agent ID | Cloud version | Model | Moomoo tools (always_allow) | Skills | Last updated (UTC) |
+| --- | --- | ---: | --- | --- | --- | --- |
+| coordinator | ***fbza | 37 | efficient | None | none | 2026-11-26 13:53 |
+| analyst | ***q45l | 37 | ultimate | news_search, quote_market_snapshot, quote_stock_quote, quote_history_kline, quote_financials_earnings_price_move | none | 2026-11-26 13:53 |
+| executor | ***xlsm | 37 | ultimate | sim_trade_input_order, sim_trade_cancel_order, sim_trade_modify_order, sim_trade_account_list, sim_trade_cash_info, sim_trade_position_list, sim_trade_history_order_list, sim_trade_max_buy_sell | none | 2026-11-26 13:53 |
+| auditor | ***8zys | 37 | ultimate | sim_trade_account_list, sim_trade_cash_info, sim_trade_position_list, sim_trade_history_order_list | none | 2026-11-26 13:53 |
+
+Built-in tools follow [agents/permissions.json](agents/permissions.json). Every real-money
+and crypto tool is disabled. Executor order tools are always_allow under the logged
+AUTONOMY-01 decision; no other agent can place, cancel or modify an order. Bull, bear,
+manager and quick still exist as cloud resources but were retired from the session path by
+Addendum 19 on 17 November and are never called. The coordinator moved to the cheaper
+`efficient` model during the window; the table in section 2a is the original plan.
+
+## 2a. Original agent registry (17 November plan)
 
 All paths below are relative to this repository. Local revision is `agents-v1`.
 Agent JSON embeds the prompt and permissions; deployment loads system.md as the
