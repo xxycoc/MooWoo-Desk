@@ -1,0 +1,105 @@
+{
+  "cancelEntryDecisionIds": [],
+  "configHash": "9c1c03d43e142c29788b01947f3c4b6c2ea8206dd074b10c885bb905ae9ed6b4",
+  "coreSellDependencies": {
+    "2026-11-19-morning-a94876388607:GLD": [
+      "2026-11-19-morning-a94876388607:IEF"
+    ],
+    "2026-11-19-morning-a94876388607:USMV": [
+      "2026-11-19-morning-a94876388607:IEF"
+    ],
+    "2026-11-19-morning-a94876388607:XLV": [
+      "2026-11-19-morning-a94876388607:IEF"
+    ]
+  },
+  "executionAuthorized": false,
+  "executionNote": "Offline risk approval only. Executor must verify prompt freeze, current risk and account, then reconcile fills.",
+  "runId": "2026-11-19-morning-a94876388607",
+  "tickets": [
+    {
+      "configHash": "9c1c03d43e142c29788b01947f3c4b6c2ea8206dd074b10c885bb905ae9ed6b4",
+      "createdTs": "2026-11-19T14:43:33.082482Z",
+      "decisionId": "2026-11-19-morning-a94876388607:IEF",
+      "estFees": 1.00411,
+      "kind": "core",
+      "limitPrice": 90.51,
+      "preDropClose": null,
+      "qty": 85,
+      "reason": "core rebalance band",
+      "side": "SELL",
+      "signalAtr": null,
+      "sleeve": "core",
+      "stop": 0,
+      "ticker": "IEF",
+      "ticketHash": "b991f5eb1f5265fdb157c1953416c31db1fe4c88e69890f9fe344984f0755229"
+    },
+    {
+      "configHash": "9c1c03d43e142c29788b01947f3c4b6c2ea8206dd074b10c885bb905ae9ed6b4",
+      "createdTs": "2026-11-19T14:43:33.082482Z",
+      "decisionId": "2026-11-19-morning-a94876388607:USMV",
+      "estFees": 0.99,
+      "kind": "core",
+      "limitPrice": 101.34,
+      "preDropClose": null,
+      "qty": 64,
+      "reason": "core initial buy",
+      "side": "BUY",
+      "signalAtr": null,
+      "sleeve": "core",
+      "stop": 0,
+      "ticker": "USMV",
+      "ticketHash": "59276232e433a747254ec2e6fa0e097f1c8f8ca1e9de2649381f0202c3016059"
+    },
+    {
+      "configHash": "9c1c03d43e142c29788b01947f3c4b6c2ea8206dd074b10c885bb905ae9ed6b4",
+      "createdTs": "2026-11-19T14:43:33.082482Z",
+      "decisionId": "2026-11-19-morning-a94876388607:XLV",
+      "estFees": 0.99,
+      "kind": "core",
+      "limitPrice": 179.45,
+      "preDropClose": null,
+      "qty": 22,
+      "reason": "core initial buy",
+      "side": "BUY",
+      "signalAtr": null,
+      "sleeve": "core",
+      "stop": 0,
+      "ticker": "XLV",
+      "ticketHash": "5fee0c70b0f82c5c09b0d2602c36f7ad8ccc2a3b1e9fc8bdf79d20ff2ec4bd66"
+    },
+    {
+      "configHash": "9c1c03d43e142c29788b01947f3c4b6c2ea8206dd074b10c885bb905ae9ed6b4",
+      "createdTs": "2026-11-19T14:43:33.082482Z",
+      "decisionId": "2026-11-19-morning-a94876388607:GLD",
+      "estFees": 0.99,
+      "kind": "core",
+      "limitPrice": 339.87,
+      "preDropClose": null,
+      "qty": 8,
+      "reason": "core initial buy",
+      "side": "BUY",
+      "signalAtr": null,
+      "sleeve": "core",
+      "stop": 0,
+      "ticker": "GLD",
+      "ticketHash": "834da9422cefd1736916d091872685c93a8e6db98303f4bcf213e741c3006a93"
+    },
+    {
+      "configHash": "9c1c03d43e142c29788b01947f3c4b6c2ea8206dd074b10c885bb905ae9ed6b4",
+      "createdTs": "2026-11-19T14:43:33.082482Z",
+      "decisionId": "2026-11-19-morning-a94876388607:TJX",
+      "estFees": 0.99,
+      "kind": "drift",
+      "limitPrice": 139.11,
+      "preDropClose": null,
+      "qty": 67,
+      "reason": "drift from explained_up",
+      "side": "BUY",
+      "signalAtr": 4.281526540752383,
+      "sleeve": "satellite",
+      "stop": 133.22822787571775,
+      "ticker": "TJX",
+      "ticketHash": "d95e2f7e879d331866ecb889b1791050ca5005895757a7bd2696c71b135ed102"
+    }
+  ]
+}

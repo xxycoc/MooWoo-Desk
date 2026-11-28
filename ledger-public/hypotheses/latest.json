@@ -1,0 +1,837 @@
+{
+  "H1": {
+    "count": 50,
+    "hitRate": 0.52,
+    "interval95": [
+      0.3851174489004462,
+      0.6520286471342195
+    ],
+    "right": 26,
+    "verdict": "can't tell yet"
+  },
+  "H2": {
+    "comparisons": {
+      "versusFade": {
+        "interval95": null,
+        "mean": null
+      },
+      "versusFollow": {
+        "interval95": null,
+        "mean": null
+      }
+    },
+    "count": 0,
+    "dispositions": [],
+    "matched": [],
+    "unavailable": [
+      {
+        "book": "llm",
+        "decisionId": "2026-11-18-morning-d32bc89ad591:ACM",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-18-morning-d32bc89ad591:ACM",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-18-morning-d32bc89ad591:ACM",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-18-morning-d32bc89ad591:NKE",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-18-morning-d32bc89ad591:NKE",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-18-morning-d32bc89ad591:NKE",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-18-morning-d32bc89ad591:ED",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-18-morning-d32bc89ad591:ED",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-18-morning-d32bc89ad591:ED",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-18-morning-d32bc89ad591:UNH",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-18-morning-d32bc89ad591:UNH",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-18-morning-d32bc89ad591:UNH",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-18-morning-d32bc89ad591:CRM",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-18-morning-d32bc89ad591:CRM",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-18-morning-d32bc89ad591:CRM",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-18-morning-ebd4816e4caf:ACM",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-18-morning-ebd4816e4caf:ACM",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-18-morning-ebd4816e4caf:ACM",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-18-morning-ebd4816e4caf:NKE",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-18-morning-ebd4816e4caf:NKE",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-18-morning-ebd4816e4caf:NKE",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-18-morning-ebd4816e4caf:ED",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-18-morning-ebd4816e4caf:ED",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-18-morning-ebd4816e4caf:ED",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-18-morning-ebd4816e4caf:UNH",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-18-morning-ebd4816e4caf:UNH",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-18-morning-ebd4816e4caf:UNH",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-18-morning-ebd4816e4caf:CRM",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-18-morning-ebd4816e4caf:CRM",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-18-morning-ebd4816e4caf:CRM",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-19-morning-61efe81ba764:TJX",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-19-morning-61efe81ba764:TJX",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-19-morning-61efe81ba764:TJX",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-19-morning-61efe81ba764:PANW",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-19-morning-61efe81ba764:PANW",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-19-morning-61efe81ba764:PANW",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-19-morning-61efe81ba764:DIS",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-19-morning-61efe81ba764:DIS",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-19-morning-61efe81ba764:DIS",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-19-morning-61efe81ba764:TGT",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-19-morning-61efe81ba764:TGT",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-19-morning-61efe81ba764:TGT",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-19-morning-61efe81ba764:UNH",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-19-morning-61efe81ba764:UNH",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-19-morning-61efe81ba764:UNH",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-19-morning-a94876388607:TJX",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-19-morning-a94876388607:TJX",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-19-morning-a94876388607:TJX",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-19-morning-a94876388607:PANW",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-19-morning-a94876388607:PANW",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-19-morning-a94876388607:PANW",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-19-morning-a94876388607:DIS",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-19-morning-a94876388607:DIS",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-19-morning-a94876388607:DIS",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-19-morning-a94876388607:TGT",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-19-morning-a94876388607:TGT",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-19-morning-a94876388607:TGT",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-19-morning-a94876388607:UNH",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-19-morning-a94876388607:UNH",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-19-morning-a94876388607:UNH",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-20-morning-68c155ec9f70:UGI",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-20-morning-68c155ec9f70:UGI",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-20-morning-68c155ec9f70:UGI",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-20-morning-68c155ec9f70:WSM",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-20-morning-68c155ec9f70:WSM",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-20-morning-68c155ec9f70:WSM",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-20-morning-68c155ec9f70:PDD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-20-morning-68c155ec9f70:PDD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-20-morning-68c155ec9f70:PDD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-20-morning-68c155ec9f70:WWD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-20-morning-68c155ec9f70:WWD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-20-morning-68c155ec9f70:WWD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-20-morning-68c155ec9f70:P",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-20-morning-68c155ec9f70:P",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-20-morning-68c155ec9f70:P",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-20-morning-7c93b9d5e17a:UGI",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-20-morning-7c93b9d5e17a:UGI",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-20-morning-7c93b9d5e17a:UGI",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-20-morning-7c93b9d5e17a:WSM",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-20-morning-7c93b9d5e17a:WSM",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-20-morning-7c93b9d5e17a:WSM",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-20-morning-7c93b9d5e17a:PDD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-20-morning-7c93b9d5e17a:PDD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-20-morning-7c93b9d5e17a:PDD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-20-morning-7c93b9d5e17a:WWD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-20-morning-7c93b9d5e17a:WWD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-20-morning-7c93b9d5e17a:WWD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-20-morning-7c93b9d5e17a:P",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-20-morning-7c93b9d5e17a:P",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-20-morning-7c93b9d5e17a:P",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-20-morning-c140f058ebb3:UGI",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-20-morning-c140f058ebb3:UGI",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-20-morning-c140f058ebb3:UGI",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-20-morning-c140f058ebb3:WSM",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-20-morning-c140f058ebb3:WSM",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-20-morning-c140f058ebb3:WSM",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-20-morning-c140f058ebb3:PDD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-20-morning-c140f058ebb3:PDD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-20-morning-c140f058ebb3:PDD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-20-morning-c140f058ebb3:WWD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-20-morning-c140f058ebb3:WWD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-20-morning-c140f058ebb3:WWD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-20-morning-c140f058ebb3:P",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-20-morning-c140f058ebb3:P",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-20-morning-c140f058ebb3:P",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-23-morning-d2adacc177d3:GAP",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-23-morning-d2adacc177d3:GAP",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-23-morning-d2adacc177d3:GAP",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-23-morning-d2adacc177d3:INTU",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-23-morning-d2adacc177d3:INTU",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-23-morning-d2adacc177d3:INTU",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-23-morning-d2adacc177d3:BJ",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-23-morning-d2adacc177d3:BJ",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-23-morning-d2adacc177d3:BJ",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-23-morning-d2adacc177d3:PDD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-23-morning-d2adacc177d3:PDD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-23-morning-d2adacc177d3:PDD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-23-morning-d2adacc177d3:NVDA",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-23-morning-d2adacc177d3:NVDA",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-23-morning-d2adacc177d3:NVDA",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-24-morning-284305587ef1:CRWD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-24-morning-284305587ef1:CRWD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-24-morning-284305587ef1:CRWD",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-24-morning-284305587ef1:HPE",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-24-morning-284305587ef1:HPE",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-24-morning-284305587ef1:HPE",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-24-morning-284305587ef1:BJ",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-24-morning-284305587ef1:BJ",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-24-morning-284305587ef1:BJ",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-24-morning-284305587ef1:NVDA",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-24-morning-284305587ef1:NVDA",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-24-morning-284305587ef1:NVDA",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-24-morning-284305587ef1:IP",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-24-morning-284305587ef1:IP",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-24-morning-284305587ef1:IP",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-25-morning-2c22f7e3a63a:ADI",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-25-morning-2c22f7e3a63a:ADI",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-25-morning-2c22f7e3a63a:ADI",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-25-morning-2c22f7e3a63a:DKS",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-25-morning-2c22f7e3a63a:DKS",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-25-morning-2c22f7e3a63a:DKS",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-25-morning-2c22f7e3a63a:DLTR",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-25-morning-2c22f7e3a63a:DLTR",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-25-morning-2c22f7e3a63a:DLTR",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-25-morning-2c22f7e3a63a:HPE",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-25-morning-2c22f7e3a63a:HPE",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-25-morning-2c22f7e3a63a:HPE",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "llm",
+        "decisionId": "2026-11-25-morning-2c22f7e3a63a:NTNX",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "follow",
+        "decisionId": "2026-11-25-morning-2c22f7e3a63a:NTNX",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "book": "fade",
+        "decisionId": "2026-11-25-morning-2c22f7e3a63a:NTNX",
+        "reason": "missing completed decision-book record"
+      },
+      {
+        "decisionId": "2026-11-27-morning-460b1ac09625:NTNX",
+        "reason": "entry opportunity not yet resolved"
+      },
+      {
+        "decisionId": "2026-11-27-morning-460b1ac09625:HPQ",
+        "reason": "entry opportunity not yet resolved"
+      },
+      {
+        "decisionId": "2026-11-27-morning-460b1ac09625:DE",
+        "reason": "entry opportunity not yet resolved"
+      },
+      {
+        "decisionId": "2026-11-27-morning-460b1ac09625:ADI",
+        "reason": "entry opportunity not yet resolved"
+      },
+      {
+        "decisionId": "2026-11-27-morning-460b1ac09625:EXE",
+        "reason": "entry opportunity not yet resolved"
+      }
+    ],
+    "verdict": "can't tell yet"
+  },
+  "H3": {
+    "brier": 0.28968,
+    "count": 50,
+    "interval95": [
+      0.23718611428571426,
+      0.35171555555555556
+    ],
+    "verdict": "not met"
+  },
+  "excludedSecondOpinions": 0,
+  "missing": [
+    {
+      "decisionId": "2026-11-27-morning-460b1ac09625:NTNX",
+      "reason": "no next regular-session open before final valuation"
+    },
+    {
+      "decisionId": "2026-11-27-morning-460b1ac09625:HPQ",
+      "reason": "no next regular-session open before final valuation"
+    },
+    {
+      "decisionId": "2026-11-27-morning-460b1ac09625:DE",
+      "reason": "no next regular-session open before final valuation"
+    },
+    {
+      "decisionId": "2026-11-27-morning-460b1ac09625:ADI",
+      "reason": "no next regular-session open before final valuation"
+    },
+    {
+      "decisionId": "2026-11-27-morning-460b1ac09625:EXE",
+      "reason": "no next regular-session open before final valuation"
+    }
+  ],
+  "primaryCalls": 55,
+  "resamples": 2000,
+  "returnUnit": "fraction",
+  "schemaVersion": 1,
+  "seed": "***1117"
+}

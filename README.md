@@ -14,6 +14,7 @@
   Moomoo x Qoder AI Paper Trading Agent Challenge<br>
   <a href="https://moowoo-desk-p36f61ggjia.qoder.website">Live dashboard</a> &middot;
   <a href="https://moowoo-results-p36f61ggjia.qoder.website/">Results deck</a> &middot;
+  <a href="ledger-public/README.md">Decision log</a> &middot;
   <a href="PREREGISTRATION.md">Pre-registration</a> &middot;
   <a href="docs/">Documentation</a>
 </p>
@@ -381,7 +382,7 @@ No trading edge is claimed: eight sessions is too short.
 
 ## Documentation
 
-Start with the [results](docs/results.md), [post-mortem](docs/post-mortem.md), [reflection](REFLECTION.md), [skills index](skills/README.md), [Qoder usage guide](docs/qoder-usage.md),
+Start with the [results](docs/results.md), [decision log](ledger-public/README.md), [post-mortem](docs/post-mortem.md), [reflection](REFLECTION.md), [skills index](skills/README.md), [Qoder usage guide](docs/qoder-usage.md),
 [runtime](docs/runtime.md), [execution](docs/execution.md),
 [event contract](docs/event-contract.md), [screener](docs/screener.md),
 [risk desk](docs/risk-desk.md), [agent design](docs/agents.md),

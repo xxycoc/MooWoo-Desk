@@ -680,3 +680,22 @@ This records an outcome and an operator decision.
 - Operator decision: the organiser said actions after the competition date are the entrant's decision.
   We place no trades after 27 November, so every reported number comes from 17-27 November and every
   trade on record was authorised by the desk's code. All schedules were paused on 28 November.
+
+## 33. Addendum 2026-11-28: the ledger is published as a masked copy
+
+Written on 28 November 2026, after the window closed. No rule or code changes to the desk.
+
+- promptVersion `000293a43af6094844f8d79c1856eee7072af3a37607b49f9da96e5371395075`, unchanged.
+- Section 9 promised to publish the raw hash-chained ledger in full after 27 November. The raw
+  ledger holds broker order IDs and other long identifiers that this project never publishes, so
+  publishing it unchanged is not possible.
+- Published instead: [`ledger-public/`](ledger-public/README.md), made by `scripts/mask_ledger.py`
+  from the private ledger branch at commit `2a2b1e92c2ba26afe07505d1950eafe7fa776f6f`. It holds all
+  155 run logs (742 events), the order tickets, the daily audit reports and the hypothesis settings.
+- Masking: every standalone run of seven or more digits becomes `***` plus its last four digits;
+  `hash`, `prevHash`, `runId`, `sourceRunId` and `decisionId` are unchanged. Before masking, every
+  private log verified. After masking, the 660 unmasked events still verify against their own hashes
+  and every chain link is intact; the 82 masked events are listed in `ledger-public/MANIFEST.json`,
+  with the SHA-256 of each private file, and verify only against the private copy.
+- Not published: raw broker payloads (input snapshots, order receipts), agent hand-off files and the
+  runtime state file. Their effects are recorded as events in the published logs.

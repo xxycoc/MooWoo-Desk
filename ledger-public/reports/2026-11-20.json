@@ -1,0 +1,368 @@
+{
+  "accountMetrics": {
+    "calmar": null,
+    "maxDrawdown": null,
+    "sharpe": null,
+    "sortino": null,
+    "totalReturn": null
+  },
+  "baselinePct": null,
+  "brier": null,
+  "complete": false,
+  "creditsUsed": null,
+  "dailyPnlPct": -1.2790990306254746,
+  "drawdownPct": -1.4430949616317301,
+  "equity": 98562.3749465979,
+  "hypotheses": {
+    "H1": {
+      "count": 0,
+      "hitRate": null,
+      "interval95": null,
+      "right": 0,
+      "verdict": "can't tell yet"
+    },
+    "H2": {
+      "comparisons": {
+        "versusFade": {
+          "interval95": null,
+          "mean": null
+        },
+        "versusFollow": {
+          "interval95": null,
+          "mean": null
+        }
+      },
+      "count": 0,
+      "dispositions": [],
+      "matched": [],
+      "unavailable": [
+        {
+          "decisionId": "2026-11-18-morning-d32bc89ad591:ACM",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-18-morning-d32bc89ad591:NKE",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-18-morning-d32bc89ad591:ED",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-18-morning-d32bc89ad591:UNH",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-18-morning-d32bc89ad591:CRM",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-18-morning-ebd4816e4caf:ACM",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-18-morning-ebd4816e4caf:NKE",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-18-morning-ebd4816e4caf:ED",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-18-morning-ebd4816e4caf:UNH",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-18-morning-ebd4816e4caf:CRM",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-19-morning-61efe81ba764:TJX",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-19-morning-61efe81ba764:PANW",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-19-morning-61efe81ba764:DIS",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-19-morning-61efe81ba764:TGT",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-19-morning-61efe81ba764:UNH",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-19-morning-a94876388607:TJX",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-19-morning-a94876388607:PANW",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-19-morning-a94876388607:DIS",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-19-morning-a94876388607:TGT",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-19-morning-a94876388607:UNH",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-20-morning-68c155ec9f70:UGI",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-20-morning-68c155ec9f70:WSM",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-20-morning-68c155ec9f70:PDD",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-20-morning-68c155ec9f70:WWD",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-20-morning-68c155ec9f70:P",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-20-morning-7c93b9d5e17a:UGI",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-20-morning-7c93b9d5e17a:WSM",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-20-morning-7c93b9d5e17a:PDD",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-20-morning-7c93b9d5e17a:WWD",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-20-morning-7c93b9d5e17a:P",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-20-morning-c140f058ebb3:UGI",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-20-morning-c140f058ebb3:WSM",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-20-morning-c140f058ebb3:PDD",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-20-morning-c140f058ebb3:WWD",
+          "reason": "entry opportunity not yet resolved"
+        },
+        {
+          "decisionId": "2026-11-20-morning-c140f058ebb3:P",
+          "reason": "entry opportunity not yet resolved"
+        }
+      ],
+      "verdict": "can't tell yet"
+    },
+    "H3": {
+      "brier": null,
+      "count": 0,
+      "interval95": null,
+      "verdict": "not assessable"
+    },
+    "excludedSecondOpinions": 0,
+    "missing": [
+      {
+        "decisionId": "2026-11-18-morning-d32bc89ad591:ACM",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-18-morning-d32bc89ad591:NKE",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-18-morning-d32bc89ad591:ED",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-18-morning-d32bc89ad591:UNH",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-18-morning-d32bc89ad591:CRM",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-18-morning-ebd4816e4caf:ACM",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-18-morning-ebd4816e4caf:NKE",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-18-morning-ebd4816e4caf:ED",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-18-morning-ebd4816e4caf:UNH",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-18-morning-ebd4816e4caf:CRM",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-19-morning-61efe81ba764:TJX",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-19-morning-61efe81ba764:PANW",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-19-morning-61efe81ba764:DIS",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-19-morning-61efe81ba764:TGT",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-19-morning-61efe81ba764:UNH",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-19-morning-a94876388607:TJX",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-19-morning-a94876388607:PANW",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-19-morning-a94876388607:DIS",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-19-morning-a94876388607:TGT",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-19-morning-a94876388607:UNH",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-20-morning-68c155ec9f70:UGI",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-20-morning-68c155ec9f70:WSM",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-20-morning-68c155ec9f70:PDD",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-20-morning-68c155ec9f70:WWD",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-20-morning-68c155ec9f70:P",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-20-morning-7c93b9d5e17a:UGI",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-20-morning-7c93b9d5e17a:WSM",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-20-morning-7c93b9d5e17a:PDD",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-20-morning-7c93b9d5e17a:WWD",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-20-morning-7c93b9d5e17a:P",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-20-morning-c140f058ebb3:UGI",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-20-morning-c140f058ebb3:WSM",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-20-morning-c140f058ebb3:PDD",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-20-morning-c140f058ebb3:WWD",
+        "reason": "horizon pending or not yet graded"
+      },
+      {
+        "decisionId": "2026-11-20-morning-c140f058ebb3:P",
+        "reason": "horizon pending or not yet graded"
+      }
+    ],
+    "primaryCalls": 35,
+    "resamples": 2000,
+    "returnUnit": "fraction",
+    "schemaVersion": 1,
+    "seed": "***1117"
+  },
+  "maxDrawdownPct": null,
+  "missing": {
+    "accountDailySeries": "missing session-close equities; daily ratios and intervals unavailable",
+    "baselinePct": "exact SPY price at first eligible entry unavailable; daily-open comparison is a labelled proxy only",
+    "brier": "no completed graded primary forecasts",
+    "calmar": "insufficient observations or zero denominator",
+    "creditsUsed": "complete measured cost telemetry unavailable",
+    "equalWeight": "complete frozen-universe buy-and-hold prices at first eligible entry unavailable",
+    "interval95": "complete paired account, SPY and equal-weight session-return vectors unavailable",
+    "maxDrawdown": "insufficient observations or zero denominator",
+    "shadow.fade": "complete matched decision-book observations unavailable",
+    "shadow.follow": "complete matched decision-book observations unavailable",
+    "shadow.llm": "complete matched decision-book observations unavailable",
+    "sharpe": "insufficient observations or zero denominator",
+    "sortino": "insufficient observations or zero denominator",
+    "totalReturn": "insufficient observations or zero denominator"
+  },
+  "orders": 7,
+  "pnlPct": -1.4376250534020918,
+  "reconciliationVerified": true,
+  "returnUnit": "fraction except fields ending Pct",
+  "sessionDate": "2026-11-20",
+  "shadowMeanExcess": {
+    "fade": null,
+    "follow": null,
+    "llm": null
+  },
+  "skips": 24,
+  "spyOpenProxyBasis": "17 Nov regular-session open to audit close; not the preregistered entry-time baseline",
+  "spyOpenProxyReturn": -0.06495215403940313,
+  "vetoes": 1
+}

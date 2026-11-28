@@ -1,0 +1,1267 @@
+{
+  "files": {
+    "hypotheses/latest.json": {
+      "privateSha256": "12594100202a53a1dc53454f31d817abc49d88027b521a0a3ccd5d593cac9436"
+    },
+    "reports/2026-11-19.json": {
+      "privateSha256": "3d18c6c13f4f35b270718aefbb362dbf2c9c7e8cb795ef9ef875f8d78ff8ba1f"
+    },
+    "reports/2026-11-20.json": {
+      "privateSha256": "54ef9a12f463e487a3491d1ac9745653802513e7dd6e371592220ea91b44f548"
+    },
+    "reports/2026-11-23.json": {
+      "privateSha256": "5555e3230b4316929af0b9d707ed248e872be4fb0cd92c6f727ff35896edea27"
+    },
+    "reports/2026-11-24.json": {
+      "privateSha256": "a6b8833b1a5290482fe97dec81e6ca69f9d4f958c69c63a0c3aef3846878e280"
+    },
+    "reports/2026-11-25.json": {
+      "privateSha256": "17d7a3540475c81d7bb4eb8fed7e27c22bcba23a5e047077b9791f5b5e8ca6ee"
+    },
+    "reports/2026-11-27.json": {
+      "privateSha256": "234a830690950dae4830fb8097943d4428d89f85fd50c20470d98d779488debb"
+    },
+    "tickets/2026-11-17-watch-1799845048ca.json": {
+      "privateSha256": "7cb6badfcf67af24b1366a094dc2613ae1c46f2d04ca25d5451de3e50c3ce6c0"
+    },
+    "tickets/2026-11-17-watch-619fd6ddcf63.json": {
+      "privateSha256": "036e2258b8a013b6f2332cc99233262ce992bfade7e2b682f716e94ecf616bff"
+    },
+    "tickets/2026-11-18-morning-d32bc89ad591.json": {
+      "privateSha256": "e913772b2565bf6e7cb48bd5637c21b10facbba2a08f67920ef58fbb6cc4c44d"
+    },
+    "tickets/2026-11-18-morning-ebd4816e4caf.json": {
+      "privateSha256": "3f408d40ba55493f043fca9c6a03559a37323eac1893319258c6047ee9d06d18"
+    },
+    "tickets/2026-11-18-watch-26217f098dd4.json": {
+      "privateSha256": "703607de3684196c4d76b4c4eaaa7257cba4f8662d013bcafcaf7055d31e1d6a"
+    },
+    "tickets/2026-11-18-watch-3a73122e1833.json": {
+      "privateSha256": "43bfd51d36a6b5d84bc6dbf8b0e807dcc372046db871e3cd64f644bf3abdafcc"
+    },
+    "tickets/2026-11-18-watch-5051e1a291ef.json": {
+      "privateSha256": "2419069aa8d2406b8a5becd323ecda6041f78fde1b688c1b5de5dd791cec3adc"
+    },
+    "tickets/2026-11-18-watch-57d5a4c012b9.json": {
+      "privateSha256": "70a69f59b9eafb0c03a0e72aa81a5cc48da3dd5f9d77800c9684a6d3645aedc2"
+    },
+    "tickets/2026-11-18-watch-9b9dd9bad9dc.json": {
+      "privateSha256": "26c10ddb7f1aa08ce473938ab35275a8f97fdfbcd033b0d0bef0ef3769b26db8"
+    },
+    "tickets/2026-11-18-watch-a08b4e30466a.json": {
+      "privateSha256": "3cb52625ca45276e0ccb9434dbaae6a79ccd9173b619168033a1c06078e61a8b"
+    },
+    "tickets/2026-11-18-watch-d53cf53da0f4.json": {
+      "privateSha256": "8d927f82fb85f56f86e26667db798b5604d35a37d00d579c08b0262732e0edfc"
+    },
+    "tickets/2026-11-18-watch-df25818f13fe.json": {
+      "privateSha256": "71423a53c7055b2ac7307a4c930bca0f3f7456a571eca5cf31e18f0d047d570a"
+    },
+    "tickets/2026-11-19-morning-a94876388607.json": {
+      "privateSha256": "6ab1f3a781ee9bb3e41c47dea63b3dafa075738f8494caa679009a3fda11c145"
+    },
+    "tickets/2026-11-19-watch-01a624402def.json": {
+      "privateSha256": "d7de92ac86e71e78fe907b1609af95fdaf6679a0c1f508ae9da77944ddfc60f0"
+    },
+    "tickets/2026-11-19-watch-3a83b5421177.json": {
+      "privateSha256": "db3396d604d895360efa0c69c809287fd493db047be635e2db5593f98b447b90"
+    },
+    "tickets/2026-11-19-watch-4063ac1553b5.json": {
+      "privateSha256": "d239bda94e92cd8d7624c40995636fb63d542ea22f108f774065e99b9acdfeaa"
+    },
+    "tickets/2026-11-19-watch-4e2101cad516.json": {
+      "privateSha256": "59d6f306fbd60f26dbb60fe2afcb555bf5b344a0007435675eb9dfc93776ff16"
+    },
+    "tickets/2026-11-19-watch-67a655e9fa6f.json": {
+      "privateSha256": "381b399d988542407437fa216f0fad41234a9c8922d29bb3c32ce1a2b980f5d6"
+    },
+    "tickets/2026-11-19-watch-6ab5295cd7e6.json": {
+      "privateSha256": "de3aada66df0806df5052a3c2ba2227238ceadacedefb014b28bc132c3a38999"
+    },
+    "tickets/2026-11-19-watch-78a6f47ed045.json": {
+      "privateSha256": "2215b07282dbec33966d2b74c43da329a5191bd8d94326f282457c951b4ae0c5"
+    },
+    "tickets/2026-11-19-watch-91c9d80dac5b.json": {
+      "privateSha256": "73bfaf4bacf939d7ce3410863ba845c45d62be714789e0a2420f29777fd4a489"
+    },
+    "tickets/2026-11-19-watch-a82e95691632.json": {
+      "privateSha256": "6f43dfc2589de4bc3b1a356c7d95e397469e31d430d8ecf671928ec1b8f01384"
+    },
+    "tickets/2026-11-19-watch-ac1e67a27414.json": {
+      "privateSha256": "5de89f87dd07530bcc9fd01faa14d2cbec57b1c2e82ac7b08287a75e1b4342b2"
+    },
+    "tickets/2026-11-19-watch-c1711b9b9d8f.json": {
+      "privateSha256": "f965ff278c4a3437455d50f0f95600644df4668b88d0ed0bdbe51ae17c9ad717"
+    },
+    "tickets/2026-11-19-watch-cbc901e1ca7f.json": {
+      "privateSha256": "e1624eedb5cb03f4de4d8373cad7bf20267ba06e00b0880b3106bc07173c2bcd"
+    },
+    "tickets/2026-11-19-watch-fdb326ccaf85.json": {
+      "privateSha256": "f969755fbaadc92bef130bce0f7cdfcfb102af2266366004e441a43c1319689d"
+    },
+    "tickets/2026-11-20-morning-68c155ec9f70.json": {
+      "privateSha256": "6b1ff0821ae36253e03fcf37721c46d2d1ce06b78c7d09629ce4d789a703e026"
+    },
+    "tickets/2026-11-20-morning-7c93b9d5e17a.json": {
+      "privateSha256": "4b974880ddce2d73f9be3bca6f2f98b9123153e784fb08eca79f2c0750de00f9"
+    },
+    "tickets/2026-11-20-morning-c140f058ebb3.json": {
+      "privateSha256": "d05a724426df3ef148f97d57e700a70d85759b20d321e8111d5d481f3b07cc5e"
+    },
+    "tickets/2026-11-20-watch-000dc9a84ff4.json": {
+      "privateSha256": "c889fcfb0c0f41b629e684d39f481677123d6b7d29d0892a3456b6a7152469ac"
+    },
+    "tickets/2026-11-20-watch-04ae179b9537.json": {
+      "privateSha256": "ec53ce7fa353cf31b754e8cc3c05699014942451db74e1e05fc819b5382b5759"
+    },
+    "tickets/2026-11-20-watch-1e6bfa3ec876.json": {
+      "privateSha256": "ecb5534f54dd6cac4ae7102b1c69c9827f5aafd8364d06f8e0303449fbe55b5f"
+    },
+    "tickets/2026-11-20-watch-35f822e45048.json": {
+      "privateSha256": "8840e65f62822d184f1c196cc056a10a864a71bccffbd220f2483e32236fd5eb"
+    },
+    "tickets/2026-11-20-watch-449eb5855371.json": {
+      "privateSha256": "dc795b64008947d24ecf87a6fca4fb1dddabf1d896f64b638107322373332807"
+    },
+    "tickets/2026-11-20-watch-4e20155b92e3.json": {
+      "privateSha256": "d339b0aea7d7157e473aaa5a552c7a29b37c0a7b26567924246065565acf8e26"
+    },
+    "tickets/2026-11-20-watch-50aefec385fd.json": {
+      "privateSha256": "fb7764fa43ad45233fabd26ce0a0dfd254c6c2186f54325afc6b18eff2aa6faa"
+    },
+    "tickets/2026-11-20-watch-6a2197c20e6b.json": {
+      "privateSha256": "f6d22db26c8ab4cd8135b45c2615c80bbacf4c9dbc567e3d02ce5de0bf9ee303"
+    },
+    "tickets/2026-11-20-watch-ac4e7ba6cbdf.json": {
+      "privateSha256": "bfb5036607855f1285e6d869817d4be2fa4ad5227fab4099346f19fe65601658"
+    },
+    "tickets/2026-11-20-watch-ecd4322776d7.json": {
+      "privateSha256": "9e79a7a3444f07edc63d1907ad92c84ebd749fde5192ffc2c487952ac18b65cb"
+    },
+    "tickets/2026-11-20-watch-f1c1a60a5635.json": {
+      "privateSha256": "0443b25511f33e63b42671d1975f681da2fdd622fbdd0fa08234c0cd28ffe61c"
+    },
+    "tickets/2026-11-20-watch-f890ce91d991.json": {
+      "privateSha256": "1494fda597a2679149f202a7a1833ecce8906e5fe11c88babff190b8e636df51"
+    },
+    "tickets/2026-11-23-morning-d2adacc177d3.json": {
+      "privateSha256": "e1a131c6c0e35d31e98c430737ff409bd9010c4bfa6b15809fbf974f517f939f"
+    },
+    "tickets/2026-11-23-watch-015bfe895914.json": {
+      "privateSha256": "31c11834d1041438550a49d118cc5d8cd4166ee0d3be22cde1346884a490c863"
+    },
+    "tickets/2026-11-23-watch-40f48406a967.json": {
+      "privateSha256": "4955333444f6c1bbbed0f91c11116f1e82931a80cb1b656727abe879ed4ddbf2"
+    },
+    "tickets/2026-11-23-watch-5ba49a2c8ae7.json": {
+      "privateSha256": "b1fcecc62ac9831ed840ff818ef5baa247eaaca7380aae09f46add6e016a9fcc"
+    },
+    "tickets/2026-11-23-watch-5f48e4d503e1.json": {
+      "privateSha256": "b96344dc450f4bd13e5fccc967cd2a41c8bada48a72a312f8d6152fe00bb748e"
+    },
+    "tickets/2026-11-23-watch-77d012fe6041.json": {
+      "privateSha256": "d3551643acd9d4fafd61414897707e3178736d99c5f5fa4f2ad3e027370f808c"
+    },
+    "tickets/2026-11-23-watch-88910e497524.json": {
+      "privateSha256": "92d3ea471e03a00a004dc4714b90d000e303ab44f4b85bcb2f377a9a2df6c353"
+    },
+    "tickets/2026-11-23-watch-b14348ff065f.json": {
+      "privateSha256": "1b7ba7d208f29af056c756136494d5191f1320efa426abdf11dd52ae8fe74ae0"
+    },
+    "tickets/2026-11-23-watch-d7c1eaef37ac.json": {
+      "privateSha256": "2912e8656fc73f155049d328460ce70f7b12f7aae1837c4fd95536dc3640ce87"
+    },
+    "tickets/2026-11-23-watch-de00bbda7800.json": {
+      "privateSha256": "a0f5ecfb220340dfecf2eb46c0c0a557d778127250dde31f7ee8d90d93be7307"
+    },
+    "tickets/2026-11-23-watch-e64bfe9501e6.json": {
+      "privateSha256": "764ff2a1a7a9be85f622bb7ebd400c431d66cb5377176b5b87b6d8e73d6d1207"
+    },
+    "tickets/2026-11-24-morning-284305587ef1.json": {
+      "privateSha256": "393e6390582f62c68ed33098e84f30192d11df9abb28df72f052a3252bce5e98"
+    },
+    "tickets/2026-11-24-watch-0eede69d91cf.json": {
+      "privateSha256": "b57426ca7c2fea2b2ddb2322d3ca71f1cb169e278495fb4741582108781ee6bd"
+    },
+    "tickets/2026-11-24-watch-3cbe7761fb89.json": {
+      "privateSha256": "f9158c35a67aafab7b88ad54a0d860fdd3feb87bb04a6d3937deddbfcf6c973e"
+    },
+    "tickets/2026-11-24-watch-404b87594ce2.json": {
+      "privateSha256": "83e1db93284e8cc649df772602f4d872581dc1dd8cae55fc7e42b20682ab72ad"
+    },
+    "tickets/2026-11-24-watch-85566a90ba8f.json": {
+      "privateSha256": "f34f9f544a0cbf0a10ee46d2f2fb0dea50200b02b3a7fdf241c9dadc71d53016"
+    },
+    "tickets/2026-11-24-watch-94970381d4bb.json": {
+      "privateSha256": "4e7f89fca058329ab19b6c8062b62a57e471ecf43919c188ca8ef6bf9c9afbd4"
+    },
+    "tickets/2026-11-24-watch-a796143eedc5.json": {
+      "privateSha256": "210227daf398d0779bbb3146957d96b59093fd1f9911acb9c962de44e29e6002"
+    },
+    "tickets/2026-11-24-watch-af9370263eb2.json": {
+      "privateSha256": "4de5a3035116f061b96fe02db39aa26dc391397da7676a0eb532bcf61d2c5ed6"
+    },
+    "tickets/2026-11-24-watch-c29a1227771f.json": {
+      "privateSha256": "b8921df68930d3dbf50453f85c0c721d6f2f924049ca322bbbb594ef4bfa18e4"
+    },
+    "tickets/2026-11-24-watch-cf12038de955.json": {
+      "privateSha256": "ad405f3de4ddc696cba65ae149923995a6c6b9f8ed9157fa0e09631b7a2ce171"
+    },
+    "tickets/2026-11-24-watch-e6f38a0d8f6d.json": {
+      "privateSha256": "4716c54919628239825acf1a456469645b6137db869beaa0551aedc6fd3caf56"
+    },
+    "tickets/2026-11-24-watch-ed703cf99bcb.json": {
+      "privateSha256": "e3a1490c4ca7e1d5132723fd48faea534aad3faae2d01fbecfb3be3ea2e606f7"
+    },
+    "tickets/2026-11-25-morning-2c22f7e3a63a.json": {
+      "privateSha256": "f3ffceaa18f1edf05a6282f5c82d69c3bb09073104a2d06cd862bfd3f515c6f7"
+    },
+    "tickets/2026-11-27-morning-460b1ac09625.json": {
+      "privateSha256": "a04027c9060ceb7769faa9217f77b0ed354626d319f165225e8eb08ed16f3edf"
+    },
+    "tickets/2026-11-27-watch-0827d972ff7d.json": {
+      "privateSha256": "600b7395e7d3b49db0650012db5f692ba8356de7a99dccb0bb1c676126259cb7"
+    },
+    "tickets/2026-11-27-watch-bdb1703ae395.json": {
+      "privateSha256": "a9867c3694b5b8ea31746b0f1b1d270e2078e6ee3311265f7db1447e04c4df07"
+    },
+    "tickets/2026-11-27-watch-e576ca0e9faf.json": {
+      "privateSha256": "174390b237034c5c02a08707ba56ad3eb556c395f5dab741d3693a196f6ba0ac"
+    },
+    "tickets/2026-11-27-watch-f85e0aaef48d.json": {
+      "privateSha256": "813173e53cc5a49be3c5c07fb0183b84472be9ac9dc7ea07f678b6b06583c5f1"
+    }
+  },
+  "logs": {
+    "2026-11-17-audit-a49eb197e1e8.jsonl": {
+      "events": 3,
+      "headHash": "1d404dde7fb83287d0de2db750c54a78d7ae899d078a9db2f83b239a035a3fd2",
+      "maskedSeqs": [],
+      "privateSha256": "a0d17597be807c1dd68a028df68e8137bb31bb9a6f078fdab46339dfff61e74e"
+    },
+    "2026-11-17-morning-0291def30503.jsonl": {
+      "events": 4,
+      "headHash": "c25930e441a65312cf68a60a495bcaee1f375017b84cb79110bcf1c247e7443b",
+      "maskedSeqs": [],
+      "privateSha256": "de56488c0354e5c05087ced4d96f94255ecbb0b9fe58ffc70a5c24b41ba04a20"
+    },
+    "2026-11-17-morning-153ab6cdf442.jsonl": {
+      "events": 2,
+      "headHash": "e9bf048528436e9324e99e5969f1113667f815bdcba593824c816648f3c16fa3",
+      "maskedSeqs": [],
+      "privateSha256": "c9fc76eb991352d291c754a515917483cde58bc94c72ce4b2851fe186705bab8"
+    },
+    "2026-11-17-morning-184ee65d2d5c.jsonl": {
+      "events": 4,
+      "headHash": "c154f152e3bada75977b614300f0108e4578b176937dea775712211673bd648a",
+      "maskedSeqs": [],
+      "privateSha256": "4bdbaab4415dd45a09b62d7eb2300aad58461266351aff04783325fba4f03e94"
+    },
+    "2026-11-17-morning-35df8a68d152.jsonl": {
+      "events": 2,
+      "headHash": "72d314004f0104ceb1b06d404c617beb6d6a80bae5c968f3745808b7b57102ab",
+      "maskedSeqs": [],
+      "privateSha256": "2aaa446409ad61a61237239d6a40216b03502966907a46bf7b401b6a3d3ad486"
+    },
+    "2026-11-17-morning-398eae7c55ee.jsonl": {
+      "events": 1,
+      "headHash": "5d3720eab4786c3e3133fa91d48fced5cd6fa4cd5139daff4672c15d621364ea",
+      "maskedSeqs": [],
+      "privateSha256": "383ee30324fb379e20ab2e7189bb9f6020e51b3ffc7af561a38bf8f6959f59e9"
+    },
+    "2026-11-17-morning-503775ce35aa.jsonl": {
+      "events": 3,
+      "headHash": "a7104ca4a5d13ab80ead70c232d4946cab32bbdac1370590f8621fed4000863d",
+      "maskedSeqs": [],
+      "privateSha256": "0ab86aa373a10b69d3040cd98105c253cde34af3dbfcd759ba74596f22dd0c73"
+    },
+    "2026-11-17-morning-6e16a7906a8a.jsonl": {
+      "events": 14,
+      "headHash": "8c0a27b34ed9126031d2eca621e9661de9f1d82c1ecca4e974b3d1aff34a2203",
+      "maskedSeqs": [],
+      "privateSha256": "b201407a4cb33f2e53e46423fca22c3f12969caefd550fdf260fdb47f31fd319"
+    },
+    "2026-11-17-morning-885cab1b83ed.jsonl": {
+      "events": 2,
+      "headHash": "3b74ec6708e712d2ca606944437f39bd736129038f95d110030e3419e62d9b05",
+      "maskedSeqs": [],
+      "privateSha256": "3919a54bb44d4a42a639aea771c4991c486628bf449554dce173b5654b3d2f38"
+    },
+    "2026-11-17-morning-8e73d892dd8f-screen.jsonl": {
+      "events": 1,
+      "headHash": "74d87cd6fe37f962bc13e38a4085d72740d51c79573b7113c56d921a1c68a04e",
+      "maskedSeqs": [],
+      "privateSha256": "96e27975066308c0c6ea1491243c27fd7c2d2b1785ba4bd5b88bbd08ed6d7bb9"
+    },
+    "2026-11-17-morning-8e73d892dd8f.jsonl": {
+      "events": 19,
+      "headHash": "9b437ceb7eeabfdd8fa01182fc690eda32255cec08384c23694dee6fc6009d3a",
+      "maskedSeqs": [],
+      "privateSha256": "ff646536c2b0b3378f11a9bf562f3108dec99bbe4d820d8b931fd6469a3cf871"
+    },
+    "2026-11-17-morning-b4679430a71f.jsonl": {
+      "events": 2,
+      "headHash": "1256be4edd6df7c8863d73158cc2139b2eda7db3141d62381341a807ecb7485c",
+      "maskedSeqs": [],
+      "privateSha256": "d16af4ee7e35145a3e9328220b62e15e6d95265e2f297510b13f576b7da075b7"
+    },
+    "2026-11-17-morning-c82f90aa3e9f.jsonl": {
+      "events": 2,
+      "headHash": "b98e7a627dde0bbe9cb31c6598de756e74029cb32ae609e4838bd32af16c4a19",
+      "maskedSeqs": [],
+      "privateSha256": "eba7da60c20f6a9a64a0f2af47d2b3de845a869187e93df581e4c99edc6c455f"
+    },
+    "2026-11-17-morning-d369db15a7cf.jsonl": {
+      "events": 3,
+      "headHash": "688d2141de6bf269b5fc01f668f3b07229d57f0e82be36b8bf125f365d7c5f26",
+      "maskedSeqs": [],
+      "privateSha256": "0b86ac4d3ce28d27a5a21dd05b211afce0ce46c6335d53c4ee0fc960c77c9379"
+    },
+    "2026-11-17-morning-ddc139aff339.jsonl": {
+      "events": 14,
+      "headHash": "966ca5147f165b6083f7d5644bc4973cbb120191aac890d6e47b0c0e84f1a29b",
+      "maskedSeqs": [],
+      "privateSha256": "e57bce7952d5111115ac6b43318fcb90d2b2f49f2bcd53ad318d82e8e7417793"
+    },
+    "2026-11-17-morning-e8bb69194931.jsonl": {
+      "events": 3,
+      "headHash": "f8d22bf8e879a5edf461be77fa9bed622a03eccf91679351e4d7719596163c0a",
+      "maskedSeqs": [],
+      "privateSha256": "7a989add64478400819a4d639a39aa186dd5271bc762714e947b29034e1c5888"
+    },
+    "2026-11-17-watch-1799845048ca.jsonl": {
+      "events": 2,
+      "headHash": "3e88499d851f07ce2e9ea09c0ec89dc38a6dca5826f0b6ce796b3e66ee211301",
+      "maskedSeqs": [],
+      "privateSha256": "10d92511b0c18756a9c6d4ba49a32d338a111b48bff1b49b193310011baafb2b"
+    },
+    "2026-11-17-watch-1848cac17ba6.jsonl": {
+      "events": 1,
+      "headHash": "ac9ca99f95e052cd8fa4308f282124cd8a1f71ebd794acaf1023a038c2a90c95",
+      "maskedSeqs": [],
+      "privateSha256": "d5795165cc2bd945b8671e4695b1a5f81b305519dc45027a6fda28bbb4936800"
+    },
+    "2026-11-17-watch-58997456f3ce.jsonl": {
+      "events": 2,
+      "headHash": "e70a9b2940b88158a61caa7f1655634bfe358acb0e0d0d5925ee6674e079efbc",
+      "maskedSeqs": [],
+      "privateSha256": "c7e9371586b59fa7b703f4b792f65a4882ee453518e952f43120b4c923967bf3"
+    },
+    "2026-11-17-watch-619fd6ddcf63.jsonl": {
+      "events": 2,
+      "headHash": "fb6b9f21dd829a68ef24313351cbc79f56637c92e12c75ac67a4a92542686e36",
+      "maskedSeqs": [],
+      "privateSha256": "b43e2b393e613768c756c5d7a990a9257e29a1255fffebb16cc00b9ddea149c6"
+    },
+    "2026-11-17-watch-b8d01710ba2b.jsonl": {
+      "events": 2,
+      "headHash": "4333491e57961ee4fcc6983002a340501dcb98346c1aaf8011048d7713411627",
+      "maskedSeqs": [],
+      "privateSha256": "f6dda80c8b215c49dd052bd4434fa0a280570522b1cc2496472a76d7b0db3cba"
+    },
+    "2026-11-17-watch-df7235184bf1.jsonl": {
+      "events": 2,
+      "headHash": "76c78ad26b29689875be1ee7ca9c3f689104929dee032d2e218f26428b16c905",
+      "maskedSeqs": [],
+      "privateSha256": "6602855f78d795519d58eff65fbf061192011460f653213f8995ec2e262f416a"
+    },
+    "2026-11-18-audit-d670fb3fa105.jsonl": {
+      "events": 2,
+      "headHash": "02e18fe60c4a381ee3756a285e6d9bb5e18d8016528713ff89e6ba739a14b581",
+      "maskedSeqs": [],
+      "privateSha256": "c04ac88d6c2789c6ad5e8cd294e3780e2d241879e38213f4c452d322c72a7c07"
+    },
+    "2026-11-18-morning-8a3264191cb9.jsonl": {
+      "events": 14,
+      "headHash": "e7d38fff724036796162c5ec820f366470d64c0d459d51da2cd1524f942a4eda",
+      "maskedSeqs": [],
+      "privateSha256": "da45eae8653606bf9fce13b04fc8b71dc92e751792da749d0aa274d442160bd7"
+    },
+    "2026-11-18-morning-d32bc89ad591.jsonl": {
+      "events": 41,
+      "headHash": "9d7c9aedb154b36ada79d5824080054f1e0a931dd6ea03469a7695da117bebd5",
+      "maskedSeqs": [
+        4,
+        5,
+        6,
+        8,
+        39,
+        41
+      ],
+      "privateSha256": "31da56f2a1a2b348dc1924f929ba838646c368b59d71c34d12d2fd49725a3e7a"
+    },
+    "2026-11-18-morning-ebd4816e4caf.jsonl": {
+      "events": 45,
+      "headHash": "81454ee83b07aa60ffa7a917535c7efb0e645d98d3b017d7c9dc47998efa7da7",
+      "maskedSeqs": [
+        4,
+        5,
+        6,
+        7,
+        8,
+        38,
+        40,
+        41,
+        42
+      ],
+      "privateSha256": "92fec4a02708423755b3979947ff2c648a72c34ac7ab5a687560f101b608d819"
+    },
+    "2026-11-18-watch-1a297936ac34.jsonl": {
+      "events": 1,
+      "headHash": "3c99451984be9b72aad1acefe36fff5b79a7ae5b91f9f993c0a4bcbb0ddc2551",
+      "maskedSeqs": [],
+      "privateSha256": "9482ecc9e7794855d47dda2385ffee8d70b06ead292e5264234f2b1e46482fac"
+    },
+    "2026-11-18-watch-26217f098dd4.jsonl": {
+      "events": 2,
+      "headHash": "eddad468dd340aea8ddd4950025333382fb33fafb9a16f6703a4eb6c16b6b6ed",
+      "maskedSeqs": [],
+      "privateSha256": "51f009685d70b1608ae07cd68b84cf10beed9f91e04c8fc8b7b37040e89bb1d4"
+    },
+    "2026-11-18-watch-2996184375ac.jsonl": {
+      "events": 1,
+      "headHash": "05210e56c1dfd72c0398f385eef93fd4a55b401271d6b8219c93c1ffe4845484",
+      "maskedSeqs": [],
+      "privateSha256": "f31b2c0049298b54575c9a971000ab662b04a6c1f25216a834177774dcf3e953"
+    },
+    "2026-11-18-watch-3a73122e1833.jsonl": {
+      "events": 2,
+      "headHash": "7fe49c0164ce7ffe773a013868ebbd7c31cd2bc955eb26cb93de1bed46e98b00",
+      "maskedSeqs": [],
+      "privateSha256": "7ebf65ab95aa9cadbb32c26047316237e405818819e8f8f151e01ee5a2ef521b"
+    },
+    "2026-11-18-watch-3b3195222e99.jsonl": {
+      "events": 3,
+      "headHash": "b0881777ee6e32925c777423a649305b41825012aa5f0e39656669213d4c8514",
+      "maskedSeqs": [],
+      "privateSha256": "7096e68a1b76edbc5cf647885bb437e266da49f89305be990a7800e83d8ee9a7"
+    },
+    "2026-11-18-watch-3d88342934ec.jsonl": {
+      "events": 3,
+      "headHash": "09a3e73114284608b22ef5e9b3070786562144eb0c4c5d3d38d9860b16489213",
+      "maskedSeqs": [],
+      "privateSha256": "99e71d366674195684a543d0821ee40380d401b3485d62ac8a7edb7f82040c35"
+    },
+    "2026-11-18-watch-5051e1a291ef.jsonl": {
+      "events": 2,
+      "headHash": "a2a5a756b7890653f6a5e4d601883b7f0585a86bfa8d3fea891b984a9f7a826a",
+      "maskedSeqs": [],
+      "privateSha256": "bf7e4006421c894bd9b853dc23a5a204b832e23db0a88d99692b5f37ac719bb2"
+    },
+    "2026-11-18-watch-57d5a4c012b9.jsonl": {
+      "events": 2,
+      "headHash": "80370586d9b1dd5b6164523482242f23b849d7b6eeb33f54dac82a96bc714481",
+      "maskedSeqs": [],
+      "privateSha256": "2aa7eb0231609b9eafd1b6c0f2abc6feaec2e07cd4dedd35bc38d8b22c06d8e0"
+    },
+    "2026-11-18-watch-614da83aaa8a.jsonl": {
+      "events": 4,
+      "headHash": "ade53f5b61deef14fe0ae33d52cb3b2732f4554491e128ba9a89a60a963d251c",
+      "maskedSeqs": [],
+      "privateSha256": "70af3762a648e4fb11583aa8f9a7004487e96c59fd1670de63b64a33de257921"
+    },
+    "2026-11-18-watch-9b9dd9bad9dc.jsonl": {
+      "events": 2,
+      "headHash": "b2a83152b36d9f57efb92db28e985e70cf6250d60a70fbe27ae154b5bb2ea31a",
+      "maskedSeqs": [],
+      "privateSha256": "12bcd059a95f36fe747037affe05ab77942a654a461f2be5bef3cc9aaf7ce7a1"
+    },
+    "2026-11-18-watch-a08b4e30466a.jsonl": {
+      "events": 2,
+      "headHash": "b944c85b55a6c24beeafd4a4ccc20cebb090c1f70bef85d83522cffd74fba012",
+      "maskedSeqs": [],
+      "privateSha256": "256db190de7313bcdaebf7842afb942ef44eeccf14599eb967148a1820c5265c"
+    },
+    "2026-11-18-watch-b7e8ec5664e5.jsonl": {
+      "events": 3,
+      "headHash": "1beec606bbfb6039e5040f79bc4562e9d2151644792d1ee27c9c37cc8791af10",
+      "maskedSeqs": [],
+      "privateSha256": "a17b327d1facb0117407512eadf08a7961b1845d25cc4487244807f2b2bdaecf"
+    },
+    "2026-11-18-watch-c10c103711a9.jsonl": {
+      "events": 3,
+      "headHash": "43bb11cf3607d825696a13665e46e2c7229a2a83a0a50c4a41a6483dabfa9637",
+      "maskedSeqs": [],
+      "privateSha256": "5d79a8938c688231bd5a13363186bb856503edbc4d7ea8ba2ea4a7a63b0cc98b"
+    },
+    "2026-11-18-watch-d53cf53da0f4.jsonl": {
+      "events": 2,
+      "headHash": "21640a432ff0d2c5b7a40ea3960ff58e68e9f4c8881db3ee0298fe959e6f1fd4",
+      "maskedSeqs": [],
+      "privateSha256": "426413419e3688ccd5c4863fe4b63dfd14f26685c96cf23a8e194fcb12c2eedf"
+    },
+    "2026-11-18-watch-df25818f13fe.jsonl": {
+      "events": 2,
+      "headHash": "fb207f73179dc34ee616db4c6a353065274e7427cb0a3a9648662c6b73b2dcbc",
+      "maskedSeqs": [],
+      "privateSha256": "b7698920fb41c9c5367369606dc58caa5be237a5698fb910bb9b7464229383ff"
+    },
+    "2026-11-18-watch-ffa0fb2101a7.jsonl": {
+      "events": 4,
+      "headHash": "14f55335dc61ca2762a865e0a1587f6ab49edf979efd3c56d5755bf54775ac4e",
+      "maskedSeqs": [],
+      "privateSha256": "a2a143ae7f7d4b00e1254975c6f91ae7246ed75a527d9fa90f8627ddb280b632"
+    },
+    "2026-11-19-audit-0b92a33b990b.jsonl": {
+      "events": 4,
+      "headHash": "b3804282ed4160248cb47394dfac4829b0f00864c8a454e22159dfd64b07bd4f",
+      "maskedSeqs": [],
+      "privateSha256": "267391499ef335bec48e370e0be44de2d27ed39798f245e47733553dde2f9380"
+    },
+    "2026-11-19-morning-61efe81ba764.jsonl": {
+      "events": 9,
+      "headHash": "38db18061a68f7f752be24aa96b0c61fcc8e11001d5d3a9dfa8852f8f2243cbb",
+      "maskedSeqs": [
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "privateSha256": "f47e67138a96bf896f7e16ce2cc6ca4d5a90914684af1d6a58794315d2d015a0"
+    },
+    "2026-11-19-morning-a94876388607.jsonl": {
+      "events": 38,
+      "headHash": "c6b6001c5331bd51a7258c0e56dc3c87f19e2a08b46e5164190eff64f331ec80",
+      "maskedSeqs": [
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "privateSha256": "9ee81a948400bbc8b0ca7fa65e2c1304b6558a5cd6efc3a4b86d311f5b57a183"
+    },
+    "2026-11-19-watch-01a624402def.jsonl": {
+      "events": 2,
+      "headHash": "9c53f19c81a71d141914aef30e1647c4e10652743d115f7801c6a0e8d96ff3ae",
+      "maskedSeqs": [],
+      "privateSha256": "16e7997562f8fa559d5725b41370713e12d582f0361a67d1b0422afae1d51ba9"
+    },
+    "2026-11-19-watch-1ddbb6627979.jsonl": {
+      "events": 1,
+      "headHash": "a68ca6e2f2ae39500829a624b0997117a1892b9a036ae470691bde7ba55b623a",
+      "maskedSeqs": [],
+      "privateSha256": "45d253264bc69882fecfc2283010e2bd5c73bbf32b68e6cf8b8be4ca68d349e9"
+    },
+    "2026-11-19-watch-3a83b5421177.jsonl": {
+      "events": 2,
+      "headHash": "fe234497b0f7194b0f12f3e5ee79b6a786b210c3f749a984bd0db33108c7e2bd",
+      "maskedSeqs": [],
+      "privateSha256": "e3a297c1e903c31e7d16b92eccbced69fc4c6c9e603bb9f593b6afcd409b868e"
+    },
+    "2026-11-19-watch-4063ac1553b5.jsonl": {
+      "events": 2,
+      "headHash": "e2dd8f1ffe24ac36a7890dbffedd1e1b78f126cd5012bdac99b4fcbb5757e5ad",
+      "maskedSeqs": [],
+      "privateSha256": "cb3e8c71e9c7620ae97e50eee8e7e5ee0c80a00c4a66235cd2e5a7b16c815e65"
+    },
+    "2026-11-19-watch-4e2101cad516.jsonl": {
+      "events": 2,
+      "headHash": "78fc30bc6247708facf6644e79825771ede38f04ffd5a72048800740366b1080",
+      "maskedSeqs": [],
+      "privateSha256": "621333942be989288fc3015f24b62aae8c0687a31101b3c4bd560df2fd93c28b"
+    },
+    "2026-11-19-watch-67a655e9fa6f.jsonl": {
+      "events": 2,
+      "headHash": "2c2dabe34f9a9fc5c836be435879e2641847be136a4b6fb73c3c6f95218a0ef1",
+      "maskedSeqs": [],
+      "privateSha256": "8b9178cd3ca8e18cbe36466c1a4796fbe28afcaa0cde9c85e68f81a7d060a7a2"
+    },
+    "2026-11-19-watch-6ab5295cd7e6.jsonl": {
+      "events": 2,
+      "headHash": "57e8502323e2f534b4f2076bca07f2450990ccd471c0f681bf957fea60cf9f21",
+      "maskedSeqs": [],
+      "privateSha256": "5f560dc7831471807c47e0013e809a8a7430719da65780bfafbc6c6682b29f40"
+    },
+    "2026-11-19-watch-78a6f47ed045.jsonl": {
+      "events": 2,
+      "headHash": "a890e285d0c1562173b57eb5c91f2a18129f5c9f4e0c56c226dc2a70e8ee4774",
+      "maskedSeqs": [],
+      "privateSha256": "12c0137738285c15290bd0ec58df942695b287eb743fe8977eeb89ee1e515845"
+    },
+    "2026-11-19-watch-91c9d80dac5b.jsonl": {
+      "events": 2,
+      "headHash": "18b491a7a0e1a67aa2fc08c51f1dfa8e92c04020b3488788acfacb69fb6df9a5",
+      "maskedSeqs": [],
+      "privateSha256": "a0580813e2b89df245dbfda431075413fd32f2e4e771c27fc4a90b8cdf373b21"
+    },
+    "2026-11-19-watch-96d20f1375c4.jsonl": {
+      "events": 4,
+      "headHash": "297b481c1aee460059a38652904bad144d5de6238cdc6684af544539f1cad8ca",
+      "maskedSeqs": [],
+      "privateSha256": "4f8ca4a63517e2f4d8150388b1611e37880d205ea0be6e7a05d8229901b8d788"
+    },
+    "2026-11-19-watch-a82e95691632.jsonl": {
+      "events": 2,
+      "headHash": "44bce95e4075e66fcbf67f6f730a9c6998c89c0d1c6cad89d73baf1a69004bc9",
+      "maskedSeqs": [],
+      "privateSha256": "fc24a740e1c75e43ee779f91092c2ddf9be11cfdd5cb6cad86ecd7d0e95f9384"
+    },
+    "2026-11-19-watch-ac1e67a27414.jsonl": {
+      "events": 2,
+      "headHash": "b11a18401c07c34bc0d1779c91ad9a1accc05bfffc028da067698e6860c9b4eb",
+      "maskedSeqs": [],
+      "privateSha256": "0513b434fd9fd11e3a22ea7a17a19ca8f79290eddbddb1ffcd1d2ce6d07d05ed"
+    },
+    "2026-11-19-watch-c1711b9b9d8f.jsonl": {
+      "events": 4,
+      "headHash": "80938bd1d934a996e1afbca43e809f3eae03cf411f46a491b1c714be18f0bf79",
+      "maskedSeqs": [],
+      "privateSha256": "e3d28915726f35935f6176906b6a8d93ae3a11faa8e512cb462fe9314410a63e"
+    },
+    "2026-11-19-watch-cbc901e1ca7f.jsonl": {
+      "events": 2,
+      "headHash": "a3ff2bae53fcfb9fcf4c784cb2c63440a118179978657df007bd983b45efce42",
+      "maskedSeqs": [],
+      "privateSha256": "fae1908d19f376d0a2ecfe5f0df6e70b42c456f2e837baa410fed440252b45e5"
+    },
+    "2026-11-19-watch-fdb326ccaf85.jsonl": {
+      "events": 2,
+      "headHash": "da6ad004bc0c0d9b91ff126b69959595782ad36c20ff16328b8195d36de7a8f0",
+      "maskedSeqs": [],
+      "privateSha256": "4f1f8897e36d541be454a9ce0a393d73d652812be565ebc418edc030a43cb96f"
+    },
+    "2026-11-20-audit-38d7138867fc.jsonl": {
+      "events": 3,
+      "headHash": "d0e226c42ad4d7a9d30f560d415f9ce02f57ae8158c96d07961fbee9126cc96e",
+      "maskedSeqs": [],
+      "privateSha256": "75ac019e191756fb4d2b64c81156c4f04d7a4d6d75ba98bba61e8bb19dd67bd8"
+    },
+    "2026-11-20-morning-68c155ec9f70.jsonl": {
+      "events": 52,
+      "headHash": "a14dd20aa7c423dfe77b7851196ebe3475b031307eb61d713d05941bc711f01a",
+      "maskedSeqs": [
+        4,
+        5,
+        6,
+        7,
+        8,
+        35,
+        37,
+        39,
+        41,
+        44,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52
+      ],
+      "privateSha256": "e02e30f6c612b473c713002030b53cd2cc27ed6988d75daf48e99d378787bd43"
+    },
+    "2026-11-20-morning-7c93b9d5e17a.jsonl": {
+      "events": 46,
+      "headHash": "3275fa94e85007815e2b8b224d988c74fc82c81dcb676f62e838707e9eaf1f8b",
+      "maskedSeqs": [
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "privateSha256": "484a3ccc03a9b9cde0e64430a40a8952da09a4a91384dd461697dfa19787ec98"
+    },
+    "2026-11-20-morning-c140f058ebb3.jsonl": {
+      "events": 48,
+      "headHash": "9ad6dba132fe70b887b5f30eb22fcf8afa0faafc5d3624814a1a6d1ad6201cf8",
+      "maskedSeqs": [
+        4,
+        5,
+        6,
+        7,
+        8,
+        38,
+        39
+      ],
+      "privateSha256": "4aec8eb58ea19ab37ec38d37a69a1bb3f12398891a7a8c51dc723365f080bd47"
+    },
+    "2026-11-20-watch-000dc9a84ff4.jsonl": {
+      "events": 4,
+      "headHash": "c6ed86286498212131f56e062ae9a743056986c8118f5720426bb403f5f2410f",
+      "maskedSeqs": [],
+      "privateSha256": "592c34f87a95401bdb7ec17343347211ba932646ddac4afb53871683892655b3"
+    },
+    "2026-11-20-watch-04ae179b9537.jsonl": {
+      "events": 3,
+      "headHash": "d3db8d6beaac2c2174733f9366e3a2dac0fceb3b8768f3bb93f92e34eac3ea2f",
+      "maskedSeqs": [],
+      "privateSha256": "35a94021c6181ba3caec43de305c39200a974ab7d8471fdc13ae14cc9df4d876"
+    },
+    "2026-11-20-watch-1e6bfa3ec876.jsonl": {
+      "events": 2,
+      "headHash": "304399cbf16305a3f7bd92e58386cc69440268af0e566b8daae7f324ea3dc248",
+      "maskedSeqs": [],
+      "privateSha256": "6705c817d006706503793019166d09ce4271b79759d3ef08c0c0b52f02df8226"
+    },
+    "2026-11-20-watch-35f822e45048.jsonl": {
+      "events": 2,
+      "headHash": "be8a108f8b29a4e2d76ff629c8787a24a40efe148aa44edc453656a3a4a403f8",
+      "maskedSeqs": [],
+      "privateSha256": "18960bf0b88559adb008b8011600dab49b8adbe50b800859296f1da292a4c6b2"
+    },
+    "2026-11-20-watch-449eb5855371.jsonl": {
+      "events": 2,
+      "headHash": "aa5863bbb460e40c9acfb5f07f5439f9e75ab683fb82a5a58e70cdd77cfdec17",
+      "maskedSeqs": [],
+      "privateSha256": "64123afb4d86680573687dcdbaf86bdc61735d04d6aaedc09137666dc6cf31e8"
+    },
+    "2026-11-20-watch-4e20155b92e3.jsonl": {
+      "events": 2,
+      "headHash": "7a4675e4724c8b3156c05e1f924093fcbf7f47ddcff7d93c8901a4f73d1d382c",
+      "maskedSeqs": [],
+      "privateSha256": "9cbfe3393b69fd4e3d693745ae38c5a1c520628503f437a3833540532509f8a0"
+    },
+    "2026-11-20-watch-50aefec385fd.jsonl": {
+      "events": 2,
+      "headHash": "792bf06e69acbec070f7045f30f812e9c70977ce0c2bea63f524ade6a98c2d58",
+      "maskedSeqs": [],
+      "privateSha256": "45eb3c929f6426850de5fda28c4e2d6b68e7fe2102bd7cfa8b0e13f5ba204f59"
+    },
+    "2026-11-20-watch-6a2197c20e6b.jsonl": {
+      "events": 2,
+      "headHash": "9babc5994007bffd6425be5f90136a6a826047725154e3dfad62dadf02c999de",
+      "maskedSeqs": [],
+      "privateSha256": "0c03e043f3081919dd37cb3e74d9ef7f884739f1d72b014a0cb0d88719852763"
+    },
+    "2026-11-20-watch-ac4e7ba6cbdf.jsonl": {
+      "events": 2,
+      "headHash": "9f2d6d9501c13413bb6510eb8021b9d595411bf6b0d4f234f181870241b05da6",
+      "maskedSeqs": [],
+      "privateSha256": "0777288ea667c90cd0cae1939813792ce7d293c0fd6a845251bd9da55ae685e0"
+    },
+    "2026-11-20-watch-ecd4322776d7.jsonl": {
+      "events": 2,
+      "headHash": "1e5d1fe145882a8bfed982287735807016b7c338ecd2ca381e3758dff3d889c7",
+      "maskedSeqs": [],
+      "privateSha256": "2a8958c469621efe02c85304a66830490c52d00d6eb4b48117efcedad24a4fee"
+    },
+    "2026-11-20-watch-f1c1a60a5635.jsonl": {
+      "events": 2,
+      "headHash": "c157ff2d1bc359e959fecfe2733c41b1f73cfb0d16dc71e4e5a416df6cc95634",
+      "maskedSeqs": [],
+      "privateSha256": "21e88fe3834160908d21e082880b0030fe00fe8a21fcd27ae000577a533cf77e"
+    },
+    "2026-11-20-watch-f890ce91d991.jsonl": {
+      "events": 2,
+      "headHash": "3389e158c88e6efa6a1fe4525b0b8253bf4f9994213778243b2f762cd78c15e7",
+      "maskedSeqs": [],
+      "privateSha256": "0e2bc65b2484731d3fca95924ebf03efa47ec9a0a37c4a5ae792bc906bdfc8ea"
+    },
+    "2026-11-23-audit-2998a7523020-grading.jsonl": {
+      "events": 3,
+      "headHash": "f88470da99c82077fa48ee998530dfdacd58708a7baf152f25e92c4ff1b348e8",
+      "maskedSeqs": [],
+      "privateSha256": "0575a5ddec3650460f18713ab1c53a8538289b33fac2ad5953a75c2f9e7ff287"
+    },
+    "2026-11-23-audit-2998a7523020.jsonl": {
+      "events": 3,
+      "headHash": "8f8578fc47f60168a8fbce426d36987c5b99a88949fe8b92bb30e17dc17d5c98",
+      "maskedSeqs": [],
+      "privateSha256": "ba3cabc78095e93d65a446f00cea03d1599edecf4ff71d99b4d6c183b726bacc"
+    },
+    "2026-11-23-morning-d2adacc177d3.jsonl": {
+      "events": 14,
+      "headHash": "0e7296bfd9850438104c19a3376b34e861e76567f6ab80b2127cc2506e37ee61",
+      "maskedSeqs": [
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "privateSha256": "46ea12eddd5c34b3de3db71f84426d131f97ce49d1fa30ba98fe7c012aa4e1d7"
+    },
+    "2026-11-23-watch-015bfe895914.jsonl": {
+      "events": 2,
+      "headHash": "7b99db58ec7659a87ae6ccbcaf4114321c0783e88eac64706d38a53f9ae4c0e5",
+      "maskedSeqs": [],
+      "privateSha256": "ac28d2ea7ef9c43f7a2a6227f08c2ddc3314a8887a3678d5b78674e35530aafa"
+    },
+    "2026-11-23-watch-40f48406a967.jsonl": {
+      "events": 2,
+      "headHash": "164269b24abf9fe24384408a0c3e4cb64560dc4f64fbf869c323e9638b82abdd",
+      "maskedSeqs": [],
+      "privateSha256": "e4cb9507bf08cf7ded5caefe45c98cf10656ca57fcff8a0a0af0358c1ea528b2"
+    },
+    "2026-11-23-watch-5ba49a2c8ae7.jsonl": {
+      "events": 2,
+      "headHash": "469f527384c2cb4794a1d7dc069d7b178659ac4bbe172bab48ec1ced8d916c5c",
+      "maskedSeqs": [],
+      "privateSha256": "efac375595641c2403f879f1c4af1d0268096dea4eab4845de24e5dc95089a67"
+    },
+    "2026-11-23-watch-5f48e4d503e1.jsonl": {
+      "events": 2,
+      "headHash": "782de2a2ddb997305bd3ac203ba53045142abba9bea207a8a2c05f16c4bd2a45",
+      "maskedSeqs": [],
+      "privateSha256": "a4e579ac557f4ea62cdf1303d0106bbf37331f868906413a883d15bf69c7380d"
+    },
+    "2026-11-23-watch-77d012fe6041.jsonl": {
+      "events": 2,
+      "headHash": "0165987cf345037211515761d7a840eb7d7e91b3d63c1c973a8e36ec62b0cc94",
+      "maskedSeqs": [],
+      "privateSha256": "47a51317942425a263fc9e3cb7cb20fbb005c2d8f6b9a63a7a99fe079e516b76"
+    },
+    "2026-11-23-watch-7a6eaf2e1dbb.jsonl": {
+      "events": 3,
+      "headHash": "74bd5d8db2711f710889eda3b0a5f3d697237b478a1d3f42900bda6c54fa4d74",
+      "maskedSeqs": [
+        3
+      ],
+      "privateSha256": "54af2825708494939badac7ab47a8ff128edfc8e9659b6606d7fc3b89cc54828"
+    },
+    "2026-11-23-watch-88910e497524.jsonl": {
+      "events": 2,
+      "headHash": "8e9fc4ee30a2673e85aaac83ae6f495b1b601c529777edb74feef467d0f24259",
+      "maskedSeqs": [],
+      "privateSha256": "5613017599714a9f443e7330b0e68deaeeda96dfff61af6180c1d959e5e885c4"
+    },
+    "2026-11-23-watch-b14348ff065f.jsonl": {
+      "events": 2,
+      "headHash": "9ddfc67bcc0c962824706fe4c59062a11cf72ef3c1af50af543ed725877c03a2",
+      "maskedSeqs": [],
+      "privateSha256": "0deb18d6fa855deef2a5cf8da409865a58890d6bb2320c2f0d34ac5e00692a4a"
+    },
+    "2026-11-23-watch-d7c1eaef37ac.jsonl": {
+      "events": 2,
+      "headHash": "a711cd3a144ef0eaf5ad0d9792b96057a55c12fc6ef3e879fd0af9b0497f4dc9",
+      "maskedSeqs": [],
+      "privateSha256": "fc3d672af036e5be6679ea530a2a6704c330b154ada6e7aa1e7dc076204b3362"
+    },
+    "2026-11-23-watch-de00bbda7800.jsonl": {
+      "events": 2,
+      "headHash": "d8108936fa7c4ada5fa5a2492f43e847847f18b66c74fc1cefa1c3e04e7d3176",
+      "maskedSeqs": [],
+      "privateSha256": "e5fa49eebc96d490b8c8d94d62443ecaddef0e066148525e6a9715c10493f7c7"
+    },
+    "2026-11-23-watch-e64bfe9501e6.jsonl": {
+      "events": 2,
+      "headHash": "8bdda963f742c296b67ce4d3bc1d7cd9d9236861cc316f5fef18cf1bc7cab722",
+      "maskedSeqs": [],
+      "privateSha256": "e90e227c04fd97c12c4c97dd478eade307d2745823d068b5718a6ed6cf77cac1"
+    },
+    "2026-11-23-watch-fa3b415030c7.jsonl": {
+      "events": 2,
+      "headHash": "0ddefdd2df9cfda56abfc4fdee669636c13544dbe4d06d550f3de083e4160cec",
+      "maskedSeqs": [],
+      "privateSha256": "94e85b3ca37edbe18ad0139a1fab0ecbfbfad72ee2d5b22d260e4fe44b0433e5"
+    },
+    "2026-11-24-audit-48ad73fa743a-grading.jsonl": {
+      "events": 2,
+      "headHash": "a80a16ba204899ed89f3c78ff197b6244c766a6fc2185621df17c93302eede3b",
+      "maskedSeqs": [],
+      "privateSha256": "79c72f710dfb63533098d147e44319cf3e4fbf02a5e8e97f30a1523fc7c4fb58"
+    },
+    "2026-11-24-audit-48ad73fa743a.jsonl": {
+      "events": 3,
+      "headHash": "51052ea05af1ad25b0d345d552aecf698f8c0c8117c642f403a0dbc269282814",
+      "maskedSeqs": [],
+      "privateSha256": "7edea3a877db18445547c06a805b5947cea09ea9dcf88ea693326fabada5a7ec"
+    },
+    "2026-11-24-morning-284305587ef1.jsonl": {
+      "events": 18,
+      "headHash": "ff2ccfdcb0d69ea76318e7f3bdf348399ceb8fac416f6137e594779f4f76b22f",
+      "maskedSeqs": [
+        4,
+        5,
+        6,
+        7,
+        17,
+        18
+      ],
+      "privateSha256": "18a0e0a4a4dd3537cdcd2adcf31495b676049bcfb24def08ba1979ac068b83a7"
+    },
+    "2026-11-24-watch-0eede69d91cf.jsonl": {
+      "events": 2,
+      "headHash": "df1f45c3e27fc4155c39dba729ea113d18996714a890ad3dc1d2d288179389a9",
+      "maskedSeqs": [],
+      "privateSha256": "edf4c7898dac93eb647a06e273f12b4ad211fede77db8616f6be50c80561ba79"
+    },
+    "2026-11-24-watch-160fce63a452.jsonl": {
+      "events": 3,
+      "headHash": "6c1d0c11247af01e3f99c1a7b8569d8733cd4add8a92b0b566d9fc6b13652af3",
+      "maskedSeqs": [
+        3
+      ],
+      "privateSha256": "b0b4a4a2d3c858c505fec28280007b0ddf9392e4eb4b0de6ede2e83cc95b408d"
+    },
+    "2026-11-24-watch-3cbe7761fb89.jsonl": {
+      "events": 2,
+      "headHash": "1e735366291f3afee1a46922e76c5c5b34a9d3b1d5b10d6aaf617457c0cfedb3",
+      "maskedSeqs": [],
+      "privateSha256": "9886ab75528710febb90df2a009e8b75d6260c6e3d7470618a16d5d2b8f62018"
+    },
+    "2026-11-24-watch-404b87594ce2.jsonl": {
+      "events": 2,
+      "headHash": "cc845fdeb967c8e4c5033fc52e2b96e0e799f4bee8b429684031d9d45dc7314c",
+      "maskedSeqs": [],
+      "privateSha256": "dabd891a280d2f6fe13f0f9bae4eae899bbe85a95ff37776baadf0a475b96d52"
+    },
+    "2026-11-24-watch-85566a90ba8f.jsonl": {
+      "events": 2,
+      "headHash": "ca11bd20f465b42efd2d201f20596d73bc6b2ebc893b51bb7a153e042487c6bf",
+      "maskedSeqs": [],
+      "privateSha256": "ea70d231f47ab6f42acd2fd047c4c19bc363631a3ef7e149b5fbcb272238335d"
+    },
+    "2026-11-24-watch-94970381d4bb.jsonl": {
+      "events": 2,
+      "headHash": "49dae7375d867b7f48402b913fd6eba0084a8f1a0b90cea1503d483e8bd4b9a2",
+      "maskedSeqs": [],
+      "privateSha256": "98122ad5696c317893f7340746b911c0bf2db239212cfec6da21220e34a73100"
+    },
+    "2026-11-24-watch-a796143eedc5.jsonl": {
+      "events": 2,
+      "headHash": "00d5bd0331fdf5e157110a20cafbdf099f4a6bd93179134aa1836a4d48b8d23f",
+      "maskedSeqs": [],
+      "privateSha256": "85341da041caa7590a5bf8c40a26155dc97058cac4a60d849b38baeb09325dd8"
+    },
+    "2026-11-24-watch-af9370263eb2.jsonl": {
+      "events": 2,
+      "headHash": "bfce39236b32a79c8a2d8ec1ec12ffa238032f2bbc73196071f5a7948de98c2f",
+      "maskedSeqs": [],
+      "privateSha256": "4634af70f492608560a4264074a76e195e5c8c32e767b1b8514e78fb7f557e68"
+    },
+    "2026-11-24-watch-c29a1227771f.jsonl": {
+      "events": 2,
+      "headHash": "f14b5cb8de43d4cddabf6272606fcb7ae5c51333a4ac07a73af768e231dc636b",
+      "maskedSeqs": [],
+      "privateSha256": "470be61dfe583d49531d73004d088cbdac9a6a5510e141094a63ae51fd37d363"
+    },
+    "2026-11-24-watch-cf12038de955.jsonl": {
+      "events": 2,
+      "headHash": "64d6292a1383216090e5d9180104f11716285290f0ca2caebbf0983d170f53da",
+      "maskedSeqs": [],
+      "privateSha256": "3d7d2385cdc74ea0c65ebe026c4d69d9ed4b49e375dce522a317c1d8fd393772"
+    },
+    "2026-11-24-watch-e6f38a0d8f6d.jsonl": {
+      "events": 2,
+      "headHash": "0708145fb0be1921316624e2e230515243e7bc8db844a5d7fa8dacc6cdeab8f4",
+      "maskedSeqs": [],
+      "privateSha256": "416688bb18a124349b69757f6a01e69bbfc9746ce78eed7321e0bb380a1160c4"
+    },
+    "2026-11-24-watch-ed703cf99bcb.jsonl": {
+      "events": 2,
+      "headHash": "fe134af6564aff8f9b212d9e423a9344978ed2472624db43ec4b9f23d76efb5e",
+      "maskedSeqs": [],
+      "privateSha256": "cbe44ebaac0ec8855e5041756e50b9e25622cac5bdd7730cd6c672f278cf9251"
+    },
+    "2026-11-24-watch-fd79dd1cb60c.jsonl": {
+      "events": 2,
+      "headHash": "f25e9f5de59433d462fd3fea1ebafeb294faa4f0bed7a195c27adfe534f3c6e2",
+      "maskedSeqs": [],
+      "privateSha256": "86b58150e3f146d6504be6a79497be3d6d73bc18f8457d6f3456fd117d233ebb"
+    },
+    "2026-11-25-audit-a9391aaf3265.jsonl": {
+      "events": 4,
+      "headHash": "a1456660754ceeee30827bd495f99c07911061c61315315718929249ef3091d5",
+      "maskedSeqs": [],
+      "privateSha256": "f9202523f6164b3dcf119b146ac36b28e8e4ed17741655a875cb1359f0419861"
+    },
+    "2026-11-25-morning-2c22f7e3a63a.jsonl": {
+      "events": 24,
+      "headHash": "16190f254bfa4b4275aaa6a7c1f065a6044ff141d600dfe29b22413f76d8e8fa",
+      "maskedSeqs": [
+        4,
+        5,
+        6,
+        7,
+        20,
+        24
+      ],
+      "privateSha256": "52b2077c000418e31dbf8002a02f9fa8dd5550c0d415d6f6806da3e7dd4e3988"
+    },
+    "2026-11-25-watch-0fddc20d11b8.jsonl": {
+      "events": 2,
+      "headHash": "ee32d0737153311f8c081095c76c851fb3ea9db1ae9953761e6be1bb463563e3",
+      "maskedSeqs": [],
+      "privateSha256": "0b5c5b95dcf75180c9dcf561afee5a1f2c143766b89d1dd284cf2d3089d504bd"
+    },
+    "2026-11-25-watch-18a581b86ecc.jsonl": {
+      "events": 2,
+      "headHash": "0147569c61d120a048d0846235d11390ce60657ff7474e506234c744515d8f0f",
+      "maskedSeqs": [],
+      "privateSha256": "b54f7c1997545a59bde5c42ddad58f9b6b83874960707e3cf3c72e8eff8565f8"
+    },
+    "2026-11-25-watch-2f7d4928d1fa.jsonl": {
+      "events": 2,
+      "headHash": "823a6df02f270162b8d11767b273fa9dd62ccf1c8957ae765bb41af79fee030c",
+      "maskedSeqs": [],
+      "privateSha256": "2adad0b1d676d733e6454159eb35a433cfac4da70caab786ad24b3b2d73702e6"
+    },
+    "2026-11-25-watch-3f66e8bed14e.jsonl": {
+      "events": 2,
+      "headHash": "ebde50689ec1bff753b78229149e264703b5638c4fb6b4e7efb550e1ad99180e",
+      "maskedSeqs": [],
+      "privateSha256": "e523de666e348b979fc2bb215333dea01a181fec5cf882885c9c0604f6eaae46"
+    },
+    "2026-11-25-watch-471ea8feb00c.jsonl": {
+      "events": 2,
+      "headHash": "c781a744fd4e84fbcf239230c0cee348c4c8076c08ac0db5ee12d8c3d0c3f966",
+      "maskedSeqs": [],
+      "privateSha256": "48893eea9db98ede2d8d660d5d95619ba6ff5e3666f1c96d4044cf3755948c9b"
+    },
+    "2026-11-25-watch-4b422946f51e.jsonl": {
+      "events": 2,
+      "headHash": "409adb11e5b48e37d4e061f5f71ab9538c37d8fc13b582045a5c2528a7990e0b",
+      "maskedSeqs": [],
+      "privateSha256": "cb4ecf6e5234569b9b268a6fe3a07abfa32c009a1214e39674627b75d5d929bd"
+    },
+    "2026-11-25-watch-5510710dd391.jsonl": {
+      "events": 2,
+      "headHash": "3ae454dd1c1ae33d3c4a8918e92a61d6d2c0cc856aa81ee1556cbd363675563a",
+      "maskedSeqs": [
+        2
+      ],
+      "privateSha256": "a9f84a329a7166a5ba2e5ba774145646b9e0589fde37939f6cd276d5a64c1380"
+    },
+    "2026-11-25-watch-57767811bd2b.jsonl": {
+      "events": 2,
+      "headHash": "abd4abfebb09fc1286ccd92b196a0bdbd648e48361a7b19af0b71bf808155a5b",
+      "maskedSeqs": [],
+      "privateSha256": "7ea11b588f305e7454509a995193c6adcf3eb505e6b56ac80f701a3fb3414a5a"
+    },
+    "2026-11-25-watch-8b51d562675e.jsonl": {
+      "events": 2,
+      "headHash": "f5033157b3cdfb070e476179479214f1db0ac001c7480f5470e8120c0ef42228",
+      "maskedSeqs": [],
+      "privateSha256": "101b9cbaaa6eed65090138a78bd7fa744e9b77f0184e38294133722c6652a96f"
+    },
+    "2026-11-25-watch-8f80bd606c95.jsonl": {
+      "events": 2,
+      "headHash": "875aa407ef75a76ed8d737009451111feb550b381cbe4d375d7e9dffaf41dfe3",
+      "maskedSeqs": [],
+      "privateSha256": "221f4ff83425fddfbe331bc0d9a141a9eaff3e7649b039f4563ea1a9bbdfe55e"
+    },
+    "2026-11-25-watch-bea706aac35b.jsonl": {
+      "events": 2,
+      "headHash": "7845730e0f5a61a65ad0ae571389c7b48cc9715814c1e11f35ebdc5625e8d028",
+      "maskedSeqs": [
+        2
+      ],
+      "privateSha256": "2dbba7f00ab7967e7cf8504c806e14b82169146df0f1220bc0bfffefb81b620b"
+    },
+    "2026-11-25-watch-e3d77f968f6a.jsonl": {
+      "events": 2,
+      "headHash": "2f17ed2400e0140f383fd022bcd09afbe6e375d7f8ddeed93ab31ba6bb35c283",
+      "maskedSeqs": [],
+      "privateSha256": "486a6dc045bc0183fb68ede1fa5ecfb392de317a24a8e6dfb1c7be3195e82f41"
+    },
+    "2026-11-26-audit-3e2cdceb8c56.jsonl": {
+      "events": 1,
+      "headHash": "1ba59518b3d772c487e6f43dde138bfac073912c14a181d0341e3f90d07de949",
+      "maskedSeqs": [],
+      "privateSha256": "600709877a1e4fe2054fbf20865c94b16fda84abaacfd6241378e1dde3137c8a"
+    },
+    "2026-11-26-morning-c20221aadb08.jsonl": {
+      "events": 1,
+      "headHash": "bcf3d5f8afa4c28f00003803085e4aedce72b3ca97247c7a847b953f7b0912f1",
+      "maskedSeqs": [],
+      "privateSha256": "125c8fdfe68e9e64476ca3667de32485d10ce90f96a0220622dc3b5b56fc9733"
+    },
+    "2026-11-26-watch-1934e11ff0fc.jsonl": {
+      "events": 1,
+      "headHash": "53cffdb2acf801f1451d2b9b769005eb981a1ebd72fce25c969825aa49a84092",
+      "maskedSeqs": [],
+      "privateSha256": "ce6361e7c47118070a889c20a0d8707eccdda545fc4d4ab8b7b1fd8754b5fc93"
+    },
+    "2026-11-26-watch-1e9feda85ec4.jsonl": {
+      "events": 1,
+      "headHash": "9554671cd1883caf068637198ab611d11988c3bdd3b15f7e5ecef0cf6db5eddc",
+      "maskedSeqs": [],
+      "privateSha256": "d210dd1cc81fc50da416b84215d4f80589e38df365e4278afdfdded0e2779634"
+    },
+    "2026-11-26-watch-1f9bdd9f2c38.jsonl": {
+      "events": 1,
+      "headHash": "0d8075eae65d79ee2cb23489ea17ba7908b29c67b0eb535e8ca37e84e216e8a1",
+      "maskedSeqs": [],
+      "privateSha256": "d07523450e3862d7cb8a2f884b1fb8f0e44fbd9e31b26e92ac6cf1dc456ab3b0"
+    },
+    "2026-11-26-watch-44729b7b996a.jsonl": {
+      "events": 1,
+      "headHash": "d3d7e742fd327278f7a8e4ac724ab258f8cbe55f16a70b8a2830fe45dc12da75",
+      "maskedSeqs": [],
+      "privateSha256": "080404e2d1f141bd1f896ca23a43298d6995b8d6b40a0fa2016d6bfbe1f375f8"
+    },
+    "2026-11-26-watch-6e36cf913e5f.jsonl": {
+      "events": 1,
+      "headHash": "288cb270b18af93f6b602a50defe8fdaa14bb00fc37962cd469e048128f49d28",
+      "maskedSeqs": [],
+      "privateSha256": "745903f2e0b50bed5b560e9f4ea43333695514580751172948691ccee99b2099"
+    },
+    "2026-11-26-watch-82f6d770ef6b.jsonl": {
+      "events": 1,
+      "headHash": "e95eed285708640bdf3d3310141b87263cd70b09de15d3aca17b36350dd1ecff",
+      "maskedSeqs": [],
+      "privateSha256": "1b27606d162a5787eb222d7d3b6220718dc0ef6f314b83e76c44a7d8a0c57781"
+    },
+    "2026-11-26-watch-8ead52688e9e.jsonl": {
+      "events": 1,
+      "headHash": "7e5d3b43c41404a01a77ede1b42f824bfdd7476e2a38cf23ca7afb1c494d61ae",
+      "maskedSeqs": [],
+      "privateSha256": "6df9ff80bf1f885410b3cf0120a12b872ab184f7957c89337a3ab3f7ab0e2029"
+    },
+    "2026-11-26-watch-91a8f6769257.jsonl": {
+      "events": 1,
+      "headHash": "d05eacabec8fdb763ca52fdb782795eeeb05b1601cb5837e2b2aef7494475a3a",
+      "maskedSeqs": [],
+      "privateSha256": "98eece900f1dd939020bb2a73ef813196f2776bc40b93c71b173e94411d3bf91"
+    },
+    "2026-11-26-watch-a4c6aa79f995.jsonl": {
+      "events": 1,
+      "headHash": "ed3d9838313a4d6b1f48126cff3c7d67f6fb5d0a29b180487a3ffd97f15645b5",
+      "maskedSeqs": [],
+      "privateSha256": "17394582fd03d6ba676ca211501fcd3330a21fb692e93fa4b4a1afe0951f8a3a"
+    },
+    "2026-11-26-watch-c6dc7d7f102e.jsonl": {
+      "events": 1,
+      "headHash": "e35e2539e6eef20d7470897876d35c52a0821c2166d0c204d0be83f1470152b9",
+      "maskedSeqs": [],
+      "privateSha256": "38d175302ade977031c487269416708f804ce3cca88c36d594964efdf817b1c0"
+    },
+    "2026-11-26-watch-e0fe899037dd.jsonl": {
+      "events": 1,
+      "headHash": "17cecefe2617355aa3c1169e9763206c579ca61677a6bb10f4deccacaaa519c7",
+      "maskedSeqs": [],
+      "privateSha256": "44038d664f2492a3769c75016a0220841c8f8fb2300276c7ed6f951910cc6a17"
+    },
+    "2026-11-26-watch-ea58a744d9fd.jsonl": {
+      "events": 1,
+      "headHash": "4557b755e708b3a16ad6a0d969d24c32f3a6c4697dc3a5f0d8f34ab6e27c5f57",
+      "maskedSeqs": [],
+      "privateSha256": "5ead7903b0982875c114886610bb41509872b2b2845bb4c9aa8fdeda203abfe1"
+    },
+    "2026-11-27-audit-0109eec086f5-grading.jsonl": {
+      "events": 50,
+      "headHash": "ce6c6012cd734aa86245d823e540290455eb8f242d2d174a64e3c7ab42eff1f9",
+      "maskedSeqs": [],
+      "privateSha256": "c7e60d726837b1c671eea1b9f0a67291cfd8c6d6d331ac4099f8161a90889c32"
+    },
+    "2026-11-27-audit-0109eec086f5.jsonl": {
+      "events": 3,
+      "headHash": "1cccf41e6ba11554c1f2761adb8015dd66e5f16edd65fcd1166e1477a5bea7f3",
+      "maskedSeqs": [],
+      "privateSha256": "9122261beb89a0e2c97d88a483a61f972085fa4b813cda13b01527753e60177d"
+    },
+    "2026-11-27-audit-a44c99d7c286.jsonl": {
+      "events": 1,
+      "headHash": "a65ab85d5e09e33359fb363c5fe35ce62e4add1e36b78dd7201aee80295c622d",
+      "maskedSeqs": [],
+      "privateSha256": "61442b110bf0f9fe6670fc3c0d9e3f215528d326972733521dcc6af3112763a8"
+    },
+    "2026-11-27-morning-460b1ac09625.jsonl": {
+      "events": 12,
+      "headHash": "74dd86fa3c9fec90b65832226d69728d8b08b1e3365c74de0505bfbb73bac714",
+      "maskedSeqs": [
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "privateSha256": "ab4813b438e9b8a9f5e160424ffd3dbf4a24a6bb2f8c9c0ac9c0e595d9c8ee6c"
+    },
+    "2026-11-27-watch-0827d972ff7d.jsonl": {
+      "events": 2,
+      "headHash": "b2ea01eb13d71e9e968aa8c82ac91578f097a6bf7b463bbe55fcf23f32cb1147",
+      "maskedSeqs": [],
+      "privateSha256": "174b7627e08375cea72f979604a093500f90a983d989465b199d1892dcd42383"
+    },
+    "2026-11-27-watch-1599765f3518.jsonl": {
+      "events": 1,
+      "headHash": "986f3dec7eb8a4cd9dd1e93b442ad6dd843886c0555c1c465fb5e8598ab2d753",
+      "maskedSeqs": [],
+      "privateSha256": "4a002a55e1815de3c77bd78b0880bc07c8ab60d6df5fb1ae25d579d9bb1d4035"
+    },
+    "2026-11-27-watch-3cd46b4376c0.jsonl": {
+      "events": 3,
+      "headHash": "0ccaaba9c8673b6301102bf21ebe9b64ee9ebf54ad75d20e515c2166050bd9e7",
+      "maskedSeqs": [
+        3
+      ],
+      "privateSha256": "946563333283d47bcce3238adcc885fd380686cb7d93a161c5349867d794f37f"
+    },
+    "2026-11-27-watch-50a004fef4b9.jsonl": {
+      "events": 3,
+      "headHash": "8310d169ceedc24dba1b23caeb0f57cddbfbd5529520788aef9838efe6932cda",
+      "maskedSeqs": [
+        3
+      ],
+      "privateSha256": "b4b9619df6132499882f0a4af380dfd28c334ad48896ae9b39fda8fa4bc02755"
+    },
+    "2026-11-27-watch-715fabbbe52c.jsonl": {
+      "events": 1,
+      "headHash": "db00c646b08eb7a98149a82c05dd276db5aa89b2c40a1964bc7e99da01c4d00b",
+      "maskedSeqs": [],
+      "privateSha256": "46b3910b7f15c4f3da70d6c9dda0507481315f97a9345ce320fc98f42c965770"
+    },
+    "2026-11-27-watch-818095d16907.jsonl": {
+      "events": 1,
+      "headHash": "bbbda619c2e166e6ce961195db4ce57e7f546c656a441e4f48e58f1cc1ccd27e",
+      "maskedSeqs": [],
+      "privateSha256": "3745abe6df8806233b92ee7fc3e2e60564fdfeaacc2f5876110631ad07f7601a"
+    },
+    "2026-11-27-watch-81afe07afd8a.jsonl": {
+      "events": 1,
+      "headHash": "891c493f08f30fecb2725768f30a4db3d52d80d6612355a623249ac1a56892cb",
+      "maskedSeqs": [],
+      "privateSha256": "b2d833b25f0a80b6b8f0eace75822de85351cb1f1d8792b71840433f8b3405c3"
+    },
+    "2026-11-27-watch-af0efe499827.jsonl": {
+      "events": 2,
+      "headHash": "941f7b752d18dba9638cbd6cb8070d5b6afddbd09ab6e6b4fd17c6ede7ec1f98",
+      "maskedSeqs": [],
+      "privateSha256": "c0d79e448909e657a78ea4b64f85324edf63b6367653dc4c44a03769d99ea47a"
+    },
+    "2026-11-27-watch-b10f33ba3fc6.jsonl": {
+      "events": 1,
+      "headHash": "9895a722fd194842ee7844862f8e36965def45b72ba759ed3c0d198be333f30b",
+      "maskedSeqs": [],
+      "privateSha256": "35982d0556228128683464e4efe616faa94d354b4cfd721148e4a55fe3ef4822"
+    },
+    "2026-11-27-watch-b24d49f59569.jsonl": {
+      "events": 1,
+      "headHash": "5a2668c06b9f937d192fd96b5dc031838d1b97be830b13bf472528af717ea59e",
+      "maskedSeqs": [],
+      "privateSha256": "1923768697650a6003cf2c936a3b9ffad7629e07d4da77036910e483332ea206"
+    },
+    "2026-11-27-watch-bdb1703ae395.jsonl": {
+      "events": 2,
+      "headHash": "a0e1933a9db9b11c74be094b6b416ca5d464a2242c7a687fa986b8f891254d1d",
+      "maskedSeqs": [],
+      "privateSha256": "c2585b2ee31332656cc92029c7ccc32215103628227b7d75c12c6ee98c6300b3"
+    },
+    "2026-11-27-watch-e576ca0e9faf.jsonl": {
+      "events": 2,
+      "headHash": "0befb49cfc5080513fb81715b632a4f1b92e07911a2fb5fffd10e05aaf46c2ec",
+      "maskedSeqs": [],
+      "privateSha256": "defeffc0cb7545cad5123e1e350c8a816dc0876e79ff8c68afe0bef87228e9d0"
+    },
+    "2026-11-27-watch-e85c85aa168b.jsonl": {
+      "events": 1,
+      "headHash": "e94a86b6a5793910c49c1fdf77b3e6cf5446bd993e3c66a64bf478c550277175",
+      "maskedSeqs": [],
+      "privateSha256": "9d22d4e5a9a73258a44a084d476cb4cfcb04c21b7966d55e108ee5c5d5794f7a"
+    },
+    "2026-11-27-watch-f85e0aaef48d.jsonl": {
+      "events": 2,
+      "headHash": "6c51e1a6bacb976c66983bdcc1c68fe7039ebda123a0df761f3f34e3a794249f",
+      "maskedSeqs": [],
+      "privateSha256": "d3104f99a44d17e770e8f2e8c3cabec89da5e7c28dd95893e9955c68ca5c4b65"
+    },
+    "lock-07be6e0c504e4c5ea8ae23ccc6e42a03.jsonl": {
+      "events": 1,
+      "headHash": "5a1f8a511ab05fc78a010eebf66270f032a5d7bc775adfc23fc94ab5cccab106",
+      "maskedSeqs": [],
+      "privateSha256": "c5a1f8817df9d8f0fd51f0720de9549724b345e1dca14688d7a39883e0618fff"
+    },
+    "lock-4389194643ce4ca3b9a8189e293a1f7b.jsonl": {
+      "events": 1,
+      "headHash": "1af2a550875e3024d9173b25f4075c5a20fa36e5689679793d5b47098ac95162",
+      "maskedSeqs": [],
+      "privateSha256": "f26ae1ea9999746e354ec5d2d01a05e364ef4a0050f463fb0338dfaa32c5d8e7"
+    }
+  },
+  "rule": "standalone runs of 7+ digits -> *** + last 4 digits; hash, prevHash, runId, sourceRunId, decisionId unchanged"
+}
