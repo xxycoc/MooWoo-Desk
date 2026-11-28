@@ -35,7 +35,10 @@ private ledger.
 
 ## A paper session from signal to review
 
-<!-- TODO screenshot: docs/images/dashboard-now.png, dashboard Now tab -->
+<p align="center"><img src="docs/images/dashboard-now.png" alt="MooWoo Desk dashboard Now tab: equity, return, invested share, equity curve and positions from the public feed" width="100%"></p>
+
+<sub>Now tab on 28 Nov. Equity and prices are the last marks the desk logged during its runs, not session closes;
+the official figures (USD 101,942 broker total, +1.98% close-marked) are in <a href="docs/results.md">docs/results.md</a>.</sub>
 
 <table>
   <tr>
