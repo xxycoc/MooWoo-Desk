@@ -197,7 +197,7 @@ Final numbers, all from `docs/results.md`, `docs/post-mortem.md` and `docs/qoder
   - ACM: keep as is.
   - WWD: why "Earnings beat 13%, rated explained up"; result "Not sold; +$587 on paper"; tone gain; lesson "The trade worked; the exit didn't run."
   - PDD: why "Earnings beat, rated explained up"; result "Not sold; +$230 on paper"; tone gain; lesson "A later bounce trade on PDD was blocked by the weak-market rule."
-  - NVDA: why "Earnings move, rated explained up"; result "Not sold; −$123 on paper"; tone loss; lesson "Bought late in the window, with little time to work."
+  - NVDA: why "Jumped 24% when its CEO was reinstated; rated explained up"; result "Not sold; −$123 on paper"; tone loss; lesson "Bought late in the window, with little time to work."
 - Slide 10: `verdictHeadline` "Too few graded trades to tell whether reading the news helped." Replace the three bars with two plain facts from `docs/results.md`: "The analyst's up/down calls were right 52% of the time (50 graded calls)" and "Its confidence scores were not well calibrated (Brier 0.29; target was below 0.25)". Footer: "We could not score the follow-the-move and fade-the-move comparison: the matched records were missing."
 - `credits`: "1,748 credits over 158 cloud sessions".
 - Slide 12 now lists six stops (see "Final-day failure" above).
