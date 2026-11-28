@@ -1,7 +1,7 @@
 # Qoder usage and evidence
 
 MooWoo Desk uses Qoder for development and scheduled paper-trading orchestration.
-This guide describes the repository implementation as of 19 November 2026. The
+This guide describes the repository implementation as of 28 November 2026, after the window closed. The
 owner reports that the dashboard is live on Qoder Sites and that Qoder was used
 to build the dashboard and trading floor. Those are project-provenance statements,
 not a fresh hosting or cloud-resource verification by this documentation task.
@@ -131,23 +131,37 @@ without updating the environment's code revision failed. For reproducibility,
 keep source revision, registered prompt content and cloud resource versions
 aligned, and preserve the original freeze plus the rule-change ledger.
 
-## Credits so far
+## Credits used (final)
 
-Interim aggregate export, collected 2026-11-19 12:00 UTC with the command below
-(`--search "MooWoo" --timezone America/New_York`). Days are New York dates. Groups
-are inferred from session titles. Sessions still running can add credits, so this is
-not final; the full table is replaced after the last session on 27 Nov.
+Collected 2026-11-28 with `--search "MooWoo" --timezone America/New_York`, after all
+schedules were paused. These are Cloud Agent session credits only; Qoder IDE work
+(building the dashboard, trading floor, results script and deck) is not included.
+Groups are inferred from session titles.
 
-| Day (New York) | Group | Sessions | Model credits | Sandbox credits | Total credits |
-| --- | --- | ---: | ---: | ---: | ---: |
-| 2026-11-17 | morning | 13 | 278.66 | 58.07 | 336.78 |
-| 2026-11-17 | watcher | 13 | 19.75 | 5.97 | 25.80 |
-| 2026-11-17 | audit | 1 | 9.16 | 1.01 | 10.18 |
-| 2026-11-17 | manual | 2 | 4.07 | 0.00 | 4.07 |
-| 2026-11-18 | morning | 3 | 60.51 | 7.49 | 68.02 |
-| 2026-11-18 | watcher | 15 | 40.07 | 14.76 | 54.93 |
-| 2026-11-18 | audit | 1 | 7.03 | 0.98 | 8.02 |
-| All | All | 48 | 419.25 | 88.28 | 507.80 |
+| Day (New York) | Sessions | Credits |
+| --- | ---: | ---: |
+| 2026-11-17 | 29 | 376.83 |
+| 2026-11-18 | 19 | 130.97 |
+| 2026-11-19 | 16 | 144.76 |
+| 2026-11-20 | 17 | 176.53 |
+| 2026-11-23 | 15 | 157.39 |
+| 2026-11-24 | 15 | 206.67 |
+| 2026-11-25 | 15 | 131.56 |
+| 2026-11-26 (holiday, calendar skips) | 15 | 15.66 |
+| 2026-11-27 | 17 | 407.15 |
+| **All** | **158** | **1,747.52** |
+
+| Session type | Sessions | Credits | Share |
+| --- | ---: | ---: | ---: |
+| Morning (screen, rate, trade) | 26 | 761.31 | 44% |
+| Watcher (stops and exits) | 120 | 784.60 | 45% |
+| Audit (after close) | 10 | 197.54 | 11% |
+| Manual tests | 2 | 4.07 | 0% |
+
+Model credits were 1,458.27 and sandbox credits 288.44. The first day cost the most
+(thirteen failed morning attempts with the old multi-agent debate). A holiday watcher
+that only checks the calendar costs about 1 credit; a full watcher on a normal day
+costs 5 to 12.
 
 ### Collect when authorized
 

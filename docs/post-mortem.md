@@ -1,106 +1,117 @@
-# Post-mortem (draft)
+# Post-mortem
 
-> Draft written 19 November 2026, before the 27 November early close. Final
-> account results, hypothesis verdicts and credit figures must be taken from the
-> completed audit and `docs/results.md`; this draft does not assert a finished
-> trading result or an edge.
+Written 28 November 2026, after the trading window closed. Numbers come from
+[results.md](results.md), which is built from the private ledger by
+`scripts/build_results.py`. Rule changes are in [PREREGISTRATION.md](../PREREGISTRATION.md).
+
+## The short version
+
+MooWoo Desk traded a USD 100,000 paper account on a schedule from 17 to 27 November 2026.
+AI agents read the news about unusual stock moves; Python code decided what to buy, how much,
+and when to sell.
+
+| | Result |
+| --- | --- |
+| Account value at the 27 Nov close | USD 101,942 broker total (+1.94%); USD 101,981 marked at session closes (+1.98%) |
+| S&P 500 (SPY), 17 Nov open to 27 Nov close | −1.36% |
+| Sharpe ratio, daily closes | 3.44 (eight sessions; unstable) |
+| Largest fall from a peak | −1.44% (20 Nov) |
+| Realised | about −USD 242 (ACM −302, IEF part-sale +72, fees −12) |
+| Unrealised, nine holdings never sold | about +USD 2,185 |
+| News-rating hit rate (H1) | 52% of 50 graded calls; can't tell yet |
+| Confidence calibration (H3) | Brier 0.290; target below 0.25 not met |
+
+The desk failed its last job: it did not sell everything before the 27 November close.
+That failure is explained in full below.
 
 ## What we set out to test
 
-The Moomoo x Qoder challenge asked for a paper-trading desk with a stated
-strategy and evidence trail. MooWoo Desk asked one narrow question: does a
-news-aware rating of unusual US stock moves add value over simple
-follow-the-move and fade-the-move rules? The preregistered hypotheses, their
-horizons and the frozen universe are in [PREREGISTRATION.md](../PREREGISTRATION.md).
-Only paper trading, US stocks and ETFs, long only.
+When a stock moves unusually, does a news-aware rating of that move help a paper trade, compared
+with simply following or fading the move? The rules, hypotheses and stock universe were frozen on
+16 November, before the first trade.
 
 ## What we built
 
-- A deterministic Python boundary for screening, core allocation, sizing, risk
-  checks, dispatch authorization and reconciliation. Language models rate moves
-  and forward exact code-issued paper tickets; they never size or place orders.
-- A hash-chained event ledger plus a private runtime repository, with a
-  field-allowlisted scrubber that feeds a read-only dashboard.
-- Qoder Cloud Agents and schedules for the morning, watcher and audit sessions,
-  with a separate auditor that has no order tools.
-- A reusable skills index and failure-path tests, not just a happy path.
+- Python screens daily moves, sizes positions, applies risk limits, approves each order and
+  reconciles every fill against the broker.
+- Three Qoder Cloud Agents run the day: a coordinator (timetable and files), an analyst (news
+  ratings and quotes) and an executor (forwards only code-approved paper orders). A fourth agent,
+  the auditor, checks the books after the close and has no order tools.
+- Six Qoder schedules: a morning run, a watcher every 30 minutes, a close watcher and an audit.
+- A hash-chained ledger records every decision, veto, order and fill. A scrubbed copy feeds the
+  public dashboard and its 3D trading floor.
 
-## What happened during the window
+## What worked
 
-- **17 November:** thirteen attempts produced no orders and no accepted debate
-  rating. Addendum 19 retired bull, bear, manager and quick in favour of one
-  researcher-rater and per-order quote calls.
-- **Addendum 20:** the cloud checked out stale code after prompts changed.
-  Revision and prompt-hash alignment became part of the deployment contract.
-- **Addendum 21:** a small fresh-quote move rejected an otherwise marketable
-  limit. Dispatch now checks marketability without changing price or identity.
-- **18 November, 20:04 UTC (15:04 New York):** a watcher halted with
-  `missing required broker field: qty` after the coordinator dropped one field
-  while copying an order-history row. Trading stayed halted through the close
-  and audit until an operator restart on 19 November. Addendum 25 made malformed
-  or missing input files abort only that run instead of setting the persistent
-  halt.
-- **After the restart:** the dashboard kept showing HALTED because a restart
-  writes no ledger event. The public feed now carries the desk's halt state
-  (`meta.desk`) so the banner reflects the runtime flag rather than the last
-  recorded halt.
-- **Addenda 22-25:** allocation was too small for the designed experiment,
-  position field names were wrong, asynchronous valuation caused false halts,
-  never-sent authorizations reserved cash, audits lacked bars, core buys could
-  not follow sells, and a close watcher fired after closing. Each produced a
-  code or prompt correction plus a regression test where the failure is
-  deterministic.
-- **Performance and hypothesis grading:** to be filled from
-  `docs/results.md` and the final audit. No interim number is extrapolated.
+- **No AI agent ever sized or invented an order.** Every one of the 12 trades came from a
+  code-issued ticket.
+- **The risk rules said no when they should.** The weak-market rule blocked Disney and Target on
+  19 November and a PDD bounce on 23 November. Cash-floor, spread and core-target checks vetoed
+  six more tickets.
+- **The money split held up.** SPY was down 1.36% over the window; the account, mostly in core
+  ETFs and SPY bought after the 20 November dip, ended up about 2% on paper.
+- **When unsure, the desk stopped instead of guessing.** It never made a wrong trade from a bad
+  broker reply. Every stop left evidence that made the cause easy to find.
 
-- **19 November, 11:47 New York:** with about 66% of the account in cash, Siang Woo
-  asked to invest it the same day, so the morning schedule was started by hand on
-  agent version 33 (Addendum 27). It re-rated the movers, then stopped before
-  planning because the 14-symbol quote batch failed the 60-second freshness check
-  twice: at midday, quieter ETFs had last-update times 60 to 150 seconds old. No
-  order was prepared. The 60-second limit was kept, and the next attempt is the
-  scheduled 09:35 run on 20 November.
+## What failed, in order
 
-## What went right
-
-- The model boundary held: no model-sized or discretionary order was placed, and
-  order arguments came from checked tickets.
-- Missing or inconsistent broker inputs halted a run instead of filling gaps with
-  guesses; optional evidence such as unavailable credit counts stays null.
-- The ledger, exporter and dashboard kept private account data out of public
-  output, and the dashboard never became an order surface.
-- **19 November:** Anthropic listed as ANT on Nasdaq. The desk did not trade it:
-  ANT was outside the universe frozen on 16 November and had no price history for
-  the screener. No discretionary exception was made.
-- Each deterministic failure above has a regression test, so a repeat of the same
-  input shape fails visibly instead of silently.
-
-## What went wrong, and what changed
-
-| Problem | Response | Where |
+| Date | What happened | What changed |
 | --- | --- | --- |
-| Too many agents and a long context made a daily session impractical | One researcher-rater, inline briefs, five candidates, shorter context | Addenda 13-19 (`9960049`, `92fecfa`, `016da7c`) |
-| Prose-wrapped or batched model output broke ingestion | Strict JSON, one ticker per call, explicit null model provenance | Addenda 17-18 (`08a9fb6`, `8ee921d`) |
-| Cloud revision drift masked local fixes | Pinned revision, prompt hashes checked in deployment | Addendum 20 (`99ba8b1`) |
-| Quote age and marketability rejected valid tickets | Re-check at dispatch without altering the saved ticket | Addendum 21 (`8390191`) |
-| Snapshot cash and positions came from different moments | Scaled valuation tolerance and an explicit reconciliation contract | Addenda 22-24 (`283c534`, `7053f49`, `ed612cb`) |
-| Close watchers fired after the close | Close schedules run five minutes before the early and regular closes | Addendum 25 (`082123d`, `9ed01e3`) |
-| A copied order-history row lost its quantity and halted the desk | Trimmed broker replies, save checks, per-run abort instead of a persistent halt | Addendum 25 (`c2d44d2`, `082123d`) |
-| The dashboard kept showing HALTED after the operator restart | Feed carries the desk halt state from runtime state (`meta.desk`) | `1c1209e`, `8adffc6` |
+| 17 Nov | Thirteen attempts, no trades. Several debating agents passed long text around and answered in prose. | One analyst, strict short JSON answers (Addenda 17-19). |
+| 18 Nov | The broker named a price field differently from what we expected. Desk stopped. | Field names fixed (Addendum 22). |
+| 18 Nov | Cash and holdings were read seconds apart; prices moved; totals were USD 9.75 apart. Desk stopped. | Tolerance scaled with holdings (Addendum 23). |
+| 18 Nov | The coordinator dropped a field while copying a broker record. Desk stopped. | Trimmed broker replies, save-time checks, one-run abort instead of a desk-wide halt (Addendum 25). |
+| 20 Nov | After a part-sale the broker's average cost differed from ours. Desk stopped. | Book follows the broker's cost (Addendum 30). |
+| 25 Nov | A sell order filled in two parts and looked like a mismatch; then a closed zero-share row failed validation. Every later run that day stopped. | Part-filled orders wait; closed rows are dropped (Addendum 31). Worked live on 27 Nov. |
+| **27 Nov** | **The final sell-off never ran. Nine holdings stayed open at the close.** | **None; the window had closed (Addendum 32).** |
+
+Each of the five stops from 18 to 25 November needed a person to restart the desk after the fix was deployed.
+No stop caused a wrong trade.
+
+## The final day
+
+The organisers counted only realised results and asked for every position to be closed by the
+13:00 New York early close on 27 November. Addendum 28 told the desk to sell everything from
+12:00, with retries at 12:30 and 12:55, and to accept exit quotes up to 300 seconds old because
+quiet ETFs update slowly.
+
+What happened:
+
+1. **12:00.** The watcher collected quotes for all nine holdings before planning. USMV's quote
+   was more than 60 seconds old. The quote step rejected the whole batch, retried once, and the
+   run aborted. No sell order was prepared.
+2. **12:30.** Same failure; USMV's quote was 106 seconds old.
+3. **12:55.** Qoder started the run at 12:57. By the time it checked the market calendar it was
+   13:00:25, after the close, so it skipped.
+4. **13:10.** The auditor reconciled the account with no difference and flagged that the final
+   sell-off had not happened. It has no order tools and placed nothing.
+
+**Why.** The 300-second limit was written into the per-order check only. The earlier step that
+collects planning quotes kept its general 60-second limit, with no final-day exception. One slow
+quote on one quiet ETF therefore blocked all nine sells. This 60-second abort had happened on
+earlier days, and we treated it as harmless because the next watcher simply ran. On the last day
+there were only three chances, and no test covered the final-day planning path.
+
+**What we decided.** We told the organisers before submitting. They said anything done after the
+competition date was our decision. We chose not to trade after 27 November, so every number in
+this report comes from the window and every trade on record was approved by the desk's code.
+The schedules were paused on 28 November.
+
+## What we would do differently
+
+1. **Start with one agent and one full day, then add more.** The first day was lost to too many
+   agents talking to each other.
+2. **Treat every broker reply as possibly wrong.** Most of these failures came from broker or quote
+   data that looked different from what the code expected.
+3. **Test the last day on its own.** It had a different rule set and only three chances. A
+   rehearsal with a stale quote would have found the gap.
+4. **Treat a repeated harmless failure as a warning.** The quote abort was a known pattern before
+   it cost the final sell-off.
+5. **Build the audit trail first.** The ledger made every failure above traceable within hours.
 
 ## Limits
 
-- The experiment is about eight sessions. Annualised ratios are unstable and
-  descriptive only; they are not evidence of a durable edge.
-- Grading needs matured outcomes. Unmatched or ungraded calls are reported as
-  unavailable, never as zero.
-- Paper fills, modelled fees and delayed marks are not a broker statement.
-- The auditor's observations and the final report are separate from this draft;
-  where the two disagree, the ledger and the audit take precedence.
-
-## Open items before submission
-
-- [ ] Run `.venv/Scripts/python.exe scripts/build_results.py --ledger <private-ledger> --out docs/` on the final ledger and review the generated files.
-- [ ] Complete the final audit: verified fills, drawdown, credits and Brier score.
-- [ ] Confirm the deployed revision and prompt hash match the pushed source.
-- [ ] Fill the performance and hypothesis placeholders above from that output.
+- Eight sessions is far too short to show an edge. The annualised ratios are descriptive only.
+- H2 (news rating versus follow and fade rules) could not be scored: the matched records were
+  missing.
+- Paper fills, modelled fees and delayed quotes are not a broker statement.
