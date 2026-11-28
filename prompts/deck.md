@@ -205,3 +205,106 @@ Final numbers, all from `docs/results.md`, `docs/post-mortem.md` and `docs/qoder
 Read `docs/post-mortem.md` before writing slide 12's sixth point and the slide 8 headline, so wording matches it.
 
 Read `docs/results.md` and the generated results files in `docs/`. Fill every null in `deck/data.json`: full daily equity and SPY series 17-27 Nov, return, SPY return, Sharpe, largest drop, credits, WWD exit, the trades table (WWD, PDD, NVDA rows plus ACM), and the follow/fade comparison with `verdictHeadline`. Write the slide 8 and slide 10 headlines as plain sentences from the actual numbers, even if the result is a loss or "too few trades to tell". Also on slide 5, align the five steps with the left margin and spread them across the full width so each step wraps less. Do not change any other slide text. Run `python deck/sync_data.py`, re-run the checks above, then commit "Fill deck results (Stage 2)". Do not push.
+
+---
+
+## Stage 3 (28 Nov): match the judging criteria
+
+The judges score: risk-adjusted return 25%, Qoder and Cloud Agent use 30%, strategy and risk design 30%, reusability and documentation 15%. Stage 3 adds five slides and changes three. Keep style C exactly (warm paper, Georgia headlines, Segoe UI body, pixel ducks, thin rules). Plain words, no buzzwords, no exclamation marks. Every fact below is checked against the repo; do not add others.
+
+### New order (21 slides)
+
+| New # | Slide | Source |
+|---|---|---|
+| 1-4 | Title, The question, Our bet, The desk | unchanged |
+| 5 | **NEW: One run, start to finish** | below |
+| 6 | **NEW: See it run** (30-second video) | below |
+| 7 | A trade, start to finish (WWD) | old 5 |
+| 8 | Where the money sits | old 6 |
+| 9 | Saying no | old 7, one row changed |
+| 10 | **NEW: How we'd know we're wrong** | below |
+| 11 | Results | old 8, two changes |
+| 12-16 | Every trade, Did the news help, Day one, The brakes, Lessons | old 9-13 |
+| 17 | How Qoder ran it | old 14 |
+| 18 | **NEW: 15 reusable skills** | below |
+| 19 | **NEW: One skill up close, and the agent templates** | below |
+| 20-21 | Reuse it, Honest summary | old 15-16 |
+
+Slide numbers ("n / 21") and notes must follow the new order. Add a speaker note (1-3 sentences) for each new slide.
+
+### Slide 5 (new): One run, start to finish
+- Kicker "HOW THE AGENTS WORK TOGETHER". Headline: "Every 30 minutes, one run goes from schedule to order to record."
+- A left-to-right flow of six steps. Agent steps show their duck; code steps show a small "Python" label in the accent colour, so the split between AI and code is visible at a glance:
+  1. **Qoder schedule**: starts a cloud session (morning, then every 30 minutes).
+  2. **Coordinator** (duck): restores the ledger and runs each step in order.
+  3. **Analyst** (duck): reads the news, rates each unusual move, fetches fresh quotes.
+  4. **Python**: checks the rating, sizes the trade, applies the risk rules, writes the order ticket.
+  5. **Executor** (duck): sends exactly that paper order to moomoo.
+  6. **Python**: matches the fill to the books and saves the ledger.
+- Below the flow, a band "After the close": "The Auditor (duck) checks the books. Code writes the summary. It is posted to Slack." Show `deck/img/slack-close.png` (already added: the real 19 Nov Slack post) at a readable size beside that text.
+- Footer: "Watcher runs skip the news step and look after open positions. The Auditor has no order tools."
+
+### Slide 6 (new): See it run
+- Kicker "SEE IT RUN". Headline: "The desk in 30 seconds."
+- A `<video>` filling most of the slide: `src="video/moowoo-desk-30s.mp4"`, `poster="video/poster.jpg"`, `controls`, `preload="metadata"`, no autoplay, no loop. Both files will be in `deck/video/`; if they are missing when you build, still write the markup and leave a thin-rule placeholder box of the same size.
+- Pressing Space or clicking the video plays and pauses it; arrow keys still change slides. In print mode show the poster image only.
+
+### Slide 9 (changed): Saying no
+- Row "The account is down 2%, 4% or 6%": add "from its peak" to the left cell, and change the right cell to "Smaller trades, then sells only, then sell everything (the kill switch)."
+
+### Slide 10 (new): How we'd know we're wrong
+- Kicker "WHEN TO STOP". Headline: "We wrote down in advance what would prove the idea wrong."
+- Left column "The idea fails if":
+  - "After 15 closed news trades, the analyst's picks do worse than simply following every move, or simply fading every move."
+  - "Then news trades stop for the rest of the window, money moves to the steady funds, and we report the idea as failed."
+  - Muted line: "We closed only one news trade, so this test never ran."
+- Right column "Hard limits on every order":
+  - "At most 20% of the account in one stock"
+  - "At most 60% in news trades, 40% when the market is weak"
+  - "At least 10% kept in cash"
+  - "Price spread at most 0.5%; prices no older than 60 seconds"
+  - "Missing data can never approve a buy"
+  - "Real-money order tools are switched off for every agent"
+
+### Slide 11 (changed): Results
+- Next to "−1.4% Largest drop" add, in muted text: "S&P 500: −6.6%". (Both measured from the 17 Nov start to the lowest close: account 98,562, S&P 500 rebased 93,421.)
+- Change "Nine holdings were never sold. See slide 12." to "See slide 15."
+
+### Slide 18 (new): 15 reusable skills
+- Kicker "REUSABLE SKILLS". Headline: "15 skills: tested steps anyone can copy."
+- Four columns, one plain line per skill (skill name in small mono, line in body text):
+  - **Finding the trade**
+    - explained-move: finds stocks moving far more than usual
+    - news-vs-noise-classifier: one analyst rating: is there news behind the move?
+    - price-action-setup: scores the chart pattern; logged only, never used for sizing
+    - market-regime: blocks bounce trades when the S&P 500 is weak
+  - **Sizing and guarding**
+    - core-satellite-allocator: splits money between steady funds and news trades
+    - risk-desk: approves, resizes or vetoes every proposed order
+    - order-ticket-dispatch-check: rechecks price and limits just before sending
+  - **Keeping the books honest**
+    - broker-input-validation: checks broker data before it is trusted
+    - reconciliation-and-halts: matches fills to the books; stops on a mismatch
+    - hash-chained-event-log: a tamper-evident record of every decision
+    - ledger-persistence-and-locks: lets short cloud runs share one ledger safely
+    - pre-registration-and-rule-ledger: freezes rules before trading; logs every change
+  - **Running and reporting**
+    - qoder-cloud-deploy: previews and applies agent and schedule versions
+    - dashboard-feed-publish: publishes a public view with private data removed
+    - daily-audit-report: after-close numbers, and what is missing
+- Footer (muted): "Each skill is a written procedure in skills/ that points to tested code. They are not loaded into the agents automatically."
+
+### Slide 19 (new): One skill up close, and the agent templates
+- Kicker "REUSE IT". Headline: "One skill up close: never trust broker data unchecked."
+- Left, three short rows:
+  - **Why it exists**: "On 18 Nov the coordinator dropped a field while copying a broker record, and the desk stopped."
+  - **What it does**: "Keeps only the fields we need, checks them, and saves the file in one step. A bad reply is fetched again up to twice, then the run stops with a reason."
+  - **Why it is reusable**: "Any agent that reads a broker or an API can follow the same steps: never copy a summary, never guess a field name."
+- Right, "Agent templates":
+  - "Each agent is two files: agent.json (model and tools) and system.md (its instructions), in agents/."
+  - "permissions.json switches off real-money order tools for every agent."
+  - "Only the executor can send paper orders. The auditor can only read."
+  - Small duck row: coordinator, analyst, executor.
+
+### Checks, then commit
+Run `python deck/sync_data.py`. At 1920x1080 confirm nothing overlaps or is cut off on slides 5, 6, 10, 18 and 19 (slide 18 has the most text: if it does not fit at body size, reduce the skill lines to a smaller size rather than cutting skills). Confirm the counter shows "n / 21", the print/PDF output is 21 pages, and arrow keys, Home, End, `p` and `#n` links still work. Commit "Deck Stage 3: judging criteria slides". Do not push.
